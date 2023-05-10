@@ -1,83 +1,41 @@
-#!/usr/bin/env -S deno run --allow-net=irc-ws.chat.twitch.tv --allow-read="./data","../frontend" --allow-write="./data" 
-import * as TwitchIrc from "https://deno.land/x/twitch_irc@0.11.0/mod.ts";
-import { ChannelRole } from "https://deno.land/x/twitch_irc@0.11.0/mod.ts";
-import { Application, Router } from "https://deno.land/x/oak/mod.ts";
+const tmi = require("tmi.js");
+const fs = require("fs");
+import Db from "./Db";
+require("dotenv").config();
 
 //= = = my own variables = = =
 // CHANNEL NAME
-const channel = "#kirinokirino";
-
+const channelName = "LisadiKaprio";
 // is bot active?
 let botActive = true;
 
-const enum COMMANDS {
+const COMMANDS = {
   //start bot
-  botStart = "start",
+  botStart: "start",
   //end bot
-  botEnd = "exit",
+  botEnd: "exit",
   //clear users in this session
-  clearUsers = "clearUsers",
-  deleteUser = "deleteUser",
-  deleteEveryUser = "deleteEveryUser",
-  messageCount = "messages",
-}
+  clearUsers: "clearUsers",
+  deleteUser: "deleteUser",
+  deleteEveryUser: "deleteEveryUser",
+  messageCount: "messages",
+};
 
 // = = = construction: users database in data/users = = =
-const USER_ALLOW_LIST: string[] = [];
+const USER_ALLOW_LIST = [];
 const DATA_DIR = "./data";
 const USER_DATA_DIR = DATA_DIR + "/users";
 
-type UnhandledCommand = {
-  command: string;
-  args: string[];
-  argUsers: string[];
-};
+const users = loadUsers();
+let activeUsers = [];
+let newEmotes = [];
+let newMessages = {};
 
-type User = {
-  name: string;
-  displayName: string;
-  messageCount: number;
-  color: string;
-  xp: number;
-  unhandledCommands?: UnhandledCommand[];
-};
-
-type Users = {
-  [name: string]: User;
-};
-
-type Emote = {
-  name: string;
-  id: string;
-};
-
-type Messages = {
-  [name: string]: string[];
-};
-
-const users: Users = loadUsers();
-let activeUsers: string[] = [];
-let newEmotes: Emote[] = [];
-let newMessages: Messages = {};
-
-function loadUsers(): Users {
-  const users: Users = {};
-  const decoder = new TextDecoder("utf-8");
-  let dir: Iterable<Deno.DirEntry> = [];
-  try {
-    dir = Deno.readDirSync(USER_DATA_DIR);
-  } catch (e) {
-    if (e instanceof Error) {
-      if (e.name === "NotFound") {
-        console.error(`Couldn't find directory {USER_DATA_DIR}!`);
-        return {};
-      }
-    }
-  }
-  for (const file of dir) {
-    const user = JSON.parse(
-      decoder.decode(Deno.readFileSync(`${USER_DATA_DIR}/${file.name}`)),
-    ) as User;
+function loadUsers() {
+  const users = {};
+  const files = fs.readdirSync(USER_DATA_DIR);
+  for (const file of files) {
+    const user = JSON.parse(fs.readFileSync(`${USER_DATA_DIR}/${file}`));
     if (USER_ALLOW_LIST.length === 0 || USER_ALLOW_LIST.includes(user.name)) {
       users[user.name] = user;
     }
@@ -85,13 +43,13 @@ function loadUsers(): Users {
   return users;
 }
 
-function userFile(username: string): string {
+function userFile(username) {
   return `${USER_DATA_DIR}/${username}.json`;
 }
 
-function deleteUser(username: string) {
+function deleteUser(username) {
   delete users[username];
-  Deno.removeSync(userFile(username));
+  fs.rmSync(userFile(username));
 }
 
 function deleteEveryUser() {
@@ -101,11 +59,23 @@ function deleteEveryUser() {
   }
 }
 
-function saveUser(username: string) {
-  Deno.writeTextFileSync(userFile(username), JSON.stringify(users[username]));
+
+function saveUser(username) {
+  fs.writeFileSync(userFile(username), JSON.stringify(users[username]));
 }
 
-function searchUser(query: string): string | undefined {
+function putUserIntoObject(_object, tags) {
+  // WHAT's IN THE USER?
+  return {
+    name: tags.username,
+    displayName: tags["display-name"],
+    messageCount: 0,
+    color: tags.color,
+    xp: 0,
+  };
+}
+
+function searchUser(query) {
   if (query.startsWith("@")) {
     query = query.replace("@", "");
   }
@@ -121,44 +91,59 @@ function searchUser(query: string): string | undefined {
   }
 }
 
-// = = = TwitchIrc = = =
-const client = new TwitchIrc.Client();
+// = = = tmi = = =
+// tmi client options
+const options = {
+  options: {
+    debug: true,
+  },
+  connection: {
+    cluster: "aws",
+    reconnect: true,
+  },
+  channels: [channelName],
+};
 
-client.on("open", async () => {
-  await client.join(channel);
-  console.log("joined", channel);
+// insert options to client
+const client = new tmi.client(options);
+
+// connect the client to the chat
+client.connect();
+
+// when client is connected to chat
+client.on("connected", (address, port) => {
+  console.log("Connected to chat!" + address + port);
 });
-/*
-32 Moscowwbish:	`raw` is the raw message, you can use it to get raw tags as `t.raw.tags.tagNameInCamelCase`
-33 Moscowwbish:	or use `t.raw.tag("tagNameInCamelCase")` which accepts a 2nd parameter that accepts the kind of value you want to convert to
-34 Moscowwbish:	for example `t.raw.tag("emotes", "csv")` is how the `privmsg.emotes` is parsed
-*/
-client.on("privmsg", ({ message, emotes, sentAt, user, raw, ...rest }) => {
-  const { login, role, badges, displayName, color, ..._ } = user;
-  const username = login;
-  console.log(displayName, "[", ChannelRole[role], "]", message);
+
+// when client recieves a normal chat message
+client.on("message", (_channel, tags, message) => {
+  // extract the username out of the tags?? T_T
+  // i don't undewstand how this wowks but ok
+  // so like const username = tags.username? or what?
+
+  // kirino's explanation:
+  // it extracts what's in {} out of what's on the right
+  const { username } = tags;
+  const displayName = tags["display-name"];
+
   if (USER_ALLOW_LIST.length > 0 && !USER_ALLOW_LIST.includes(username)) {
     return;
   }
+
   if (botActive) {
     // detect user chatting as a participator of the game
     // first, save the user in the db if they weren't yet
     if (!(username in users)) {
-      users[username] = {
-        name: username,
-        displayName,
-        messageCount: 0,
-        color,
-        xp: 0,
-      } as User;
+      users[username] = putUserIntoObject(users, tags);
     }
+    users[username].displayName = displayName;
+
     // same, but for new users in current session aka current stream
     if (!(username in activeUsers)) {
       activeUsers.push(username);
     }
 
     const detectedCommand = message.match(/^!([\w]+)($|\s.*)/);
-
     if (detectedCommand) {
       const command = detectedCommand[1];
       const args = detectedCommand[2].split(/\s+/);
@@ -167,10 +152,10 @@ client.on("privmsg", ({ message, emotes, sentAt, user, raw, ...rest }) => {
           const username = searchUser(arg);
           return username;
         })
-        .filter((user) => user != undefined) as string[];
-      let handled = true;
+        .filter((user) => user != undefined);
 
-      if (role === ChannelRole.Moderator || role === ChannelRole.Streamer) {
+      let handled = true;
+      if (tags.mod || tags.badges?.broadcaster) {
         // MOD/BROADCASTER COMMANDS
         if (command === COMMANDS.clearUsers) {
           activeUsers = [username];
@@ -185,15 +170,13 @@ client.on("privmsg", ({ message, emotes, sentAt, user, raw, ...rest }) => {
           }
         } else if (
           command === COMMANDS.deleteEveryUser &&
-          displayName === channel
+          displayName === channelName
         ) {
           deleteEveryUser();
         } else if (command === COMMANDS.messageCount) {
           for (const username of argUsers) {
             console.log(
-              `${users[username].displayName} has written ${
-                users[username].messageCount
-              } messages`,
+              `${users[username].displayName} has written ${users[username].messageCount} messages`
             );
           }
         } else {
@@ -223,22 +206,20 @@ client.on("privmsg", ({ message, emotes, sentAt, user, raw, ...rest }) => {
         }
         // Pass all the unknown commands (starting with ! ) to the frontend
         // in hopes that it knows what to do with them.
-        if (payed) {
-          if (users[username].unhandledCommands) {
-            users[username].unhandledCommands!.push({
+        if (!users[username].unhandledCommands && payed) {
+          users[username].unhandledCommands = [
+            {
               command: command,
               args: args,
               argUsers: argUsers,
-            });
-          } else {
-            users[username].unhandledCommands = [
-              {
-                command: command,
-                args: args,
-                argUsers: argUsers,
-              },
-            ];
-          }
+            },
+          ];
+        } else if (payed) {
+          users[username].unhandledCommands.push({
+            command: command,
+            args: args,
+            argUsers: argUsers,
+          });
         }
       }
     } else {
@@ -246,7 +227,7 @@ client.on("privmsg", ({ message, emotes, sentAt, user, raw, ...rest }) => {
       // counts messages written by the user and gives xp
       users[username].messageCount += 1;
       users[username].xp += 15;
-      if (emotes.length === 0) {
+      if (!tags.emotes) {
         // NOT A COMMAND
         if (newMessages[username]) {
           newMessages[username].push(message);
@@ -254,13 +235,11 @@ client.on("privmsg", ({ message, emotes, sentAt, user, raw, ...rest }) => {
           newMessages[username] = [message];
         }
       } else {
-        // console.log(emotes);
-        // console.log(raw.tags?.emotes);
-        for (let emote of emotes) {
-          for (let range of emote.ranges) {
+        for (const [emote, charPositions] of Object.entries(tags.emotes)) {
+          for (let i = 0; i < charPositions.length; i++) {
             newEmotes.push({
               name: username,
-              id: emote.id,
+              id: emote,
             });
           }
         }
@@ -275,51 +254,60 @@ client.on("privmsg", ({ message, emotes, sentAt, user, raw, ...rest }) => {
   }
 });
 
+// COMMUNICATION WITH THE DATABASE
+async function communicateWithDatabase() {
+  const db = new Db(process.env.DB_CONNECT_STR, "");
+  await db.connect();
+  console.log("Connected to database.");
+}
+communicateWithDatabase();
+
 // COMMUNICATION WITH THE FRONTEND
-const app = new Application();
-const router = new Router();
+const express = require("express");
+//const { URLSearchParams } = require("url");
+const app = express();
 
 // what port do we run on?
 const port = 2501;
-// where is our frontend
-app.use(async (Context, next) => {
-  try {
-    await Context.send({ root: "../frontend/dist", index: "index.html" });
-  } catch {
-    await next();
-  }
-});
 
-router
-  .get("/dbg", (context) => {
-    let filteredUsers: Users = {};
-    for (const name of activeUsers) {
-      filteredUsers[name] = users[name];
-    }
-    context.response.body = {
+// what folder will express start up?
+// where is our frontend
+app.use(express.static("../frontend/dist"));
+
+// what's displayed in localhost:2501
+app.get("/dbg", (_req, res) => {
+  let filteredUsers = {};
+  for (const name of activeUsers) {
+    filteredUsers[name] = users[name];
+  }
+  res.send(
+    JSON.stringify({
       users: users,
       active: activeUsers,
-      filtered: filteredUsers,
-    };
-  })
-  // send over the info inside the users variable
-  .get("/users", (context) => {
-    let filteredUsers: Users = {};
-    for (const name of activeUsers) {
-      filteredUsers[name] = users[name];
-    }
-    context.response.body = {
-      users: filteredUsers,
-      emotes: newEmotes,
-      messages: newMessages,
-    };
-    for (const user of activeUsers) {
-      users[user].unhandledCommands = [];
-    }
-    newEmotes = [];
-    newMessages = {};
-  });
+      filtered: filteredUsers
+    })
+  );
+});
 
-app.use(router.routes());
-app.use(router.allowedMethods());
-await app.listen({ port });
+// send over the info inside the users variable
+app.get("/users", (_req, res) => {
+  let filteredUsers = {};
+  for (const name of activeUsers) {
+    filteredUsers[name] = users[name];
+  }
+  res.send({
+    users: filteredUsers,
+    emotes: newEmotes,
+    messages: newMessages,
+  });
+  for (const user of activeUsers) {
+    users[user].unhandledCommands = [];
+  }
+  newEmotes = [];
+  newMessages = {};
+});
+
+// (:
+app.listen(port, () => {
+  console.log(`Web-Avatars listening on http://localhost:${port}`);
+});
