@@ -256,8 +256,9 @@ client.on("message", (_channel, tags, message) => {
 
 // COMMUNICATION WITH THE DATABASE
 async function communicateWithDatabase() {
-  const db = new Db(process.env.DB_CONNECT_STR, "");
+  const db = new Db(process.env.DB_CONNECT_STR, process.env.DB_PATCHES_DIR);
   await db.connect();
+  await db.patch();
   console.log("Connected to database.");
 }
 communicateWithDatabase();
