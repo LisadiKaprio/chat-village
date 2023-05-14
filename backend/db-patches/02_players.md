@@ -1,0 +1,6 @@
+-- players need:
+-- state
+-- channel_username?
+--
+-- channels need:
+-- bot_active (active only when stream on, OR when broadcaster/mod so decides - but then switch to off when next stream ends or when br/mod disables bot)
