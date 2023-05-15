@@ -1,70 +1,38 @@
 const tmi = require('tmi.js')
-const fs = require('fs')
 import Db from './Db'
+import { getChannelId } from './functions'
+import State, { getPlayersInChannel } from './State'
+import { Message, Player, Players, PlayerState } from './Types'
+import Webserver from './Webserver'
+
 require('dotenv').config()
-
-
-
-const enum COMMANDS {
-  //start bot
-  botStart = 'start',
-  //end bot
-  botEnd = 'exit',
-  //clear users in this session
-  clearUsers = 'clearUsers',
-  deleteUser = 'deleteUser',
-  deleteEveryUser = 'deleteEveryUser',
-  messageCount = 'messages',
-}
-
-// // = = = construction: users database in data/users = = =
-// const USER_ALLOW_LIST: string[] = []
-// const DATA_DIR = './data'
-// const USER_DATA_DIR = DATA_DIR + '/users'
-
-type UnhandledCommand = {
-  command: string;
-  args: string[];
-  argUsers: string[];
-};
-type Player = {
-  username: string;
-  displayName: string;
-  color: string;
-  points: number;
-  unhandledCommands?: UnhandledCommand[];
-};
-type Players = {
-  [name: string]: Player;
-};
-type Emote = {
-  name: string;
-  id: string;
-};
-type Messages = {
-  [name: string]: string[];
-};
-
 
 async function main() {
   // COMMUNICATION WITH THE DATABASE
-  let db: Db
+  let dbConnectStr = ''
+  let dbPatchesDir = ''
+
   if(process.env.DB_CONNECT_STR && process.env.DB_PATCHES_DIR) {
-    db = new Db(process.env.DB_CONNECT_STR, process.env.DB_PATCHES_DIR)
-    await db.connect()
-    await db.patch()
-    console.log('Connected to database.')
+    dbConnectStr = process.env.DB_CONNECT_STR
+    dbPatchesDir = process.env.DB_PATCHES_DIR
   } else {
     console.log('Warning: define the database path in an env file to be able to connect!')
   }
 
-  
-  const players: Players = await loadPlayers()
-  const activeUsers: string[] = []
-  let newEmotes: Emote[] = []
-  let newMessages: Messages = {}
+  const db = new Db(dbConnectStr, dbPatchesDir)
+  await db.connect()
+  await db.patch()
+  console.log('Connected to database.')
 
-  const botActive = true
+  const state = new State()
+  await state.init(db)
+
+  const IS_BOT_ACTIVE = true
+  const BONK_COMMAND = 'bonk'
+  const HUG_COMMAND = 'hug'
+  const BONK_PRICE = 10
+  const HUG_PRICE = 5
+  const IDLE_GAIN = 1
 
   // = = = tmi = = =
   // tmi client options
@@ -84,46 +52,45 @@ async function main() {
     },
     channels: await channelUsernames(),
   }
-  
-  // insert options to client
+
   const client = new tmi.client(options)
-  
-  // connect the client to the chat
   client.connect()
-  
-  // when client is connected to chat
+
   client.on('connected', (address: any, port: number) => {
     console.log('Connected to chat!' + address + port)
   })
-  
-  // when client recieves a normal chat message
-  client.on('message', (_channel: any, tags: any, message: any) => {
+
+  client.on('message', async (channel: any, tags: any, message: any) => {
     const { username } = tags
     const displayName = tags['display-name']
-  
-    // blacklist a chatter: 
-    // if (USER_ALLOW_LIST.length > 0 && !USER_ALLOW_LIST.includes(username)) {
-    //   return
-    // }
-  
-    if (botActive) {
-      // detect user chatting as a participator of the game
-      // first, save the user in the db if they weren't yet
 
-      // db-todo: check if username in list of users,
-      // if no -> save one with their color and username
-      // then -> create player for user with assigned channel
-      if (!(username in users)) {
-        users[username] = putUserIntoObject(users, tags)
+    const currentChannelUsername = channel.match(/^#([\w]+)($|\s.*)/)[1]
+    const currentChannelId = await getChannelId(db, currentChannelUsername)
+    const playersInChannel = await getPlayersInChannel(db, currentChannelUsername)
+
+    if (IS_BOT_ACTIVE) {
+      if(!(username in state.chatters)) {
+        console.log(`${username} not found among chatters: creating new chatter...`)
+        await createNewChatter(username, displayName, tags.color)
       }
-      users[username].displayName = displayName
-  
-      // same, but for new users in current session aka current stream
-      // db-todo: set user's state as "active"
-      if (!(username in activeUsers)) {
-        activeUsers.push(username)
+
+      const chatterId = await getChatterId(username)
+
+      if (!(username in playersInChannel)) {
+        console.log(`${username} not found among ${currentChannelUsername} players: creating new player...`)
+        await createNewPlayer(chatterId, currentChannelId)
       }
-  
+
+      const currentPlayer = await getPlayer(currentChannelId, chatterId)
+      
+      if(playersInChannel[username].state !== PlayerState.ACTIVE){
+        await updatePlayerState(currentPlayer.id, PlayerState.ACTIVE)
+      }
+
+      if (!(username in state.activePlayers)) {
+        state.activePlayers.push(username)
+      }
+
       // todo: command doesn't necessarily have an `!` infront?..
       const detectedCommand = message.match(/^!([\w]+)($|\s.*)/)
       if (detectedCommand) {
@@ -131,180 +98,128 @@ async function main() {
         const args = detectedCommand[2].split(/\s+/)
         const argUsers = args
           .map((arg: any) => {
-            const username = searchUser(arg)
+            const username = searchUser(arg, playersInChannel)
             return username
           })
           .filter((user: any) => user != undefined) as string[]
-          
-        // pay the price for the command;
-        let payed = false
-        if (command == 'bonk') {
-          // db-todo: currency is fish. get fish amount from db, save new fish amount to db
-          if (users[username].xp >= 60) {
-            users[username].xp -= 60
-            payed = true
+
+        let pointsSpent = false
+        if (command == BONK_COMMAND) {
+          if (currentPlayer.points >= BONK_PRICE) {
+            await deductPointsFromPlayer(currentPlayer.points, BONK_PRICE, currentPlayer.id)
+            pointsSpent = true
           }
-        } else if (command == 'hug') {
-          if (users[username].xp >= 30) {
-            users[username].xp -= 30
-            payed = true
+        } else if (command == HUG_COMMAND) {
+          if (currentPlayer.points >= HUG_PRICE) {
+            await deductPointsFromPlayer(currentPlayer.points, HUG_PRICE, currentPlayer.id)
+            pointsSpent = true
           }
         } else {
-          // pass through the unknown commands
-          payed = true
+          pointsSpent = true
         }
-        // Pass all the unknown commands (starting with ! ) to the frontend
-        // in hopes that it knows what to do with them.
-        if (!users[username].unhandledCommands && payed) {
-          users[username].unhandledCommands = [
-            {
-              command: command,
-              args: args,
-              argUsers: argUsers,
-            },
-          ]
-        } else if (payed) {
-          users[username].unhandledCommands.push({
+        // Pass commands to frontend
+        if(pointsSpent) {
+          currentPlayer.unhandled_commands.push({
             command: command,
             args: args,
             argUsers: argUsers,
           })
+          await db.update('cv.players', { unhandled_commands: currentPlayer.unhandled_commands })
         }
-      } else {
-        // no command detected
-        // db-todo: increment 1 fish for a message to specific player
-        users[username].xp += 15
+      } else { // No command detected -> Pass messages and emotes to frontend
+        await addPointsToPlayer(currentPlayer.points, IDLE_GAIN, currentPlayer.id)
         if (!tags.emotes) {
-          // NOT A COMMAND
-          if (newMessages[username]) {
-            newMessages[username].push(message)
+          if (state.allNewMessages[currentChannelUsername][username]) {
+            state.allNewMessages[currentChannelUsername].push({
+              name: username,
+              text: message,
+              channel: currentChannelUsername,
+            } as Message)
           } else {
-            newMessages[username] = [message]
+            state.allNewMessages[currentChannelUsername] = [{
+              name: username,
+              text: message,
+              channel: currentChannelUsername,
+            } as Message]
           }
         } else {
           for (const [emote, charPositions] of Object.entries(tags.emotes)) {
             for (let i = 0; i < charPositions.length; i++) {
-              newEmotes.push({
+              state.newEmotes.push({
                 name: username,
                 id: emote,
+                channel: currentChannelUsername,
               })
             }
           }
         }
       }
-      // save that as a json file then
-      // db-todo: player full update goes here?
-      saveUser(username)
     }
   })
-  
-  
-  // COMMUNICATION WITH THE FRONTEND
-  const express = require('express')
-  const app = express()
-  const port = 2501
-  // frontend
-  app.use(express.static('../frontend/dist'))
-  
-  // localhost:2501
-  
-  // dbg page
-  app.get('/dbg', (_req: any, res: any) => {
-    const filteredUsers: any = {}
-    for (const name of activeUsers) {
-      filteredUsers[name] = users[name]
-    }
-    res.send(
-      JSON.stringify({
-        users: users,
-        active: activeUsers,
-        filtered: filteredUsers,
-      }),
-    )
-  })
-  
-  // send over the info inside the users variable
-  app.get('/users/:channel', (req: any, res: any) => {
 
-    const currentChannel = req.params.channel.match(/^#([\w]+)($|\s.*)/)[1]
+  const webserver = new Webserver()
+  webserver.init(db, state)
 
-    // need to keep the ServerUser interface in frontend synced with this right here
-    const currentPlayers = async (): Promise<string[]> => {
-      const rows = await db.getMany('cv.players', { channel_username: currentChannel })
-      return rows 
-      //.map(row => row.chatter_displayname)
-    }
+  // ============= functions ================
 
-    const filteredUsers: any = {}
-    for (const name of activeUsers) {
-      filteredUsers[name] = users[name]
-    }
-    res.send({
-      users: currentPlayers,
-      emotes: newEmotes,
-      messages: newMessages,
-    })
-    for (const user of activeUsers) {
-      users[user].unhandledCommands = []
-    }
-    newEmotes = []
-    newMessages = {}
-  })
-  
-  // (:
-  app.listen(port, () => {
-    console.log(`Web-Avatars listening on http://localhost:${port}`)
-  })
-
-
-  async function loadPlayers(): Promise<Players> {
-    const players: Players = {}
-    
-    const dbPlayers = await db._getMany(`
-    select
-      cv.chatters.username as username,
-      cv.chatters.displayname as displayname,
-      cv.chatters.color as color,
-      cv.players.points as points
-    from
-      cv.players
-      inner join cv.chatters on cv.chatters.id = cv.players.chatter_id
-      inner join cv.channels on cv.channels.id = cv.players.channel_id
-    where
-      cv.channels.bot_active = 1
-    `)
-    for (const player of dbPlayers) {
-      const user = JSON.parse(player) as Player // is json parse needed here?
-      players[user.username] = user
-    }
-    return players
+  async function getChatterId(username: string): Promise<number> {
+    return await db._get(`
+      select
+        cv.chatters.id
+      from
+        cv.chatters
+      where
+        cv.chatters.username = ${username}
+      `)   
   }
-  
-  function saveUser(username: string) {
-    fs.writeFileSync(userFile(username), JSON.stringify(users[username]))
+
+  async function getPlayer(channelId: number, chatterId: number): Promise<Player> {
+    return await db._get(`
+      select
+        cv.players
+      where
+        cv.players.channel_id = ${channelId}
+        and cv.players.chatter_id = ${chatterId}
+      `)
   }
-  
-  function putUserIntoObject(_object: any, tags: any) {
-    // WHAT's IN THE USER?
-    return {
-      name: tags.username,
-      displayName: tags['display-name'],
-      messageCount: 0,
-      color: tags.color,
-      xp: 0,
-    }
+
+  async function createNewChatter(username: string, displayName: string, color: string): Promise<void> {
+    await db.insert('cv.chatters', {
+      username: username,
+      displayname: displayName,
+      color: color,
+    })    
   }
-  
-  // db-todo: search through chatter-player join table instead
-  function searchUser(query: string): string | undefined {
+
+  async function createNewPlayer(chatterId: number, currentChannelId: number): Promise<void> {
+    await db.insert('cv.players', {
+      chatter_id: chatterId,
+      channel_id: currentChannelId,
+      state: 'active',
+    })  
+  }
+
+  async function updatePlayerState(playerId: number, state: PlayerState): Promise<void> {
+    db.update('cv.players', { state: state }, { id: playerId })    
+  }
+
+  async function addPointsToPlayer(currentPoints: number, pointsToAdd: number, playerId: number): Promise<void> {
+    await db.update('cv.players', { points: currentPoints + pointsToAdd }, { id: playerId })
+  }
+
+  async function deductPointsFromPlayer(currentPoints: number, pointsToDeduct: number, playerId: number): Promise<void> {
+    await db.update('cv.players', { points: currentPoints - pointsToDeduct }, { id: playerId })
+  }
+
+  function searchUser(query: string, players: Players): string | undefined {
     if (query.startsWith('@')) {
       query = query.replace('@', '')
     }
-    const player = users
+    const _player = players[query]
 
     // const user = users[query]
-    if (!user) {
-      for (const [username, userTags] of Object.entries(users)) {
+    if (!_player) {
+      for (const [username, userTags] of Object.entries(players)) {
         if (userTags.displayName == query) {
           return username
         }

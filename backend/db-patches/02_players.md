@@ -1,6 +1,4 @@
--- players need:
--- state
--- channel_username?
---
--- channels need:
--- bot_active (active only when stream on, OR when broadcaster/mod so decides - but then switch to off when next stream ends or when br/mod disables bot)
+ALTER TABLE cv.players ADD state text NOT NULL DEFAULT 'offline';
+ALTER TABLE cv.players ADD unhandled_commands json NOT NULL DEFAULT {};
+
+ALTER TABLE cv.channels ADD bot_active INTEGER NOT NULL DEFAULT 1;
