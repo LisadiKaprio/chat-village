@@ -1,4 +1,4 @@
-const tmi = require('tmi.js')
+import tmi from 'tmi.js'
 import Db from './Db'
 import { getChannelId } from './functions'
 import State, { getPlayersInChannel } from './State'
@@ -64,30 +64,38 @@ async function main() {
     const { username } = tags
     const displayName = tags['display-name']
 
-    const currentChannelUsername = channel.match(/^#([\w]+)($|\s.*)/)[1]
+    const currentChannelUsername = channel.startsWith('#') ? channel.substr(1) : channel
     const currentChannelId = await getChannelId(db, currentChannelUsername)
+    if (!currentChannelId) {
+      console.log(`Channel with id ${currentChannelId} not found in db!`)
+      return
+    }
     const playersInChannel = await getPlayersInChannel(db, currentChannelUsername)
 
     if (IS_BOT_ACTIVE) {
       if(!(username in state.chatters)) {
-        console.log(`${username} not found among chatters: creating new chatter...`)
+        console.log(`${username} not found among chatters: creating chatter...`)
         await createNewChatter(username, displayName, tags.color)
+        console.log(`Chatter ${username} created!`)
       }
 
       const chatterId = await getChatterId(username)
+      if (!chatterId) return
 
       if (!(username in playersInChannel)) {
-        console.log(`${username} not found among ${currentChannelUsername} players: creating new player...`)
+        console.log(`${username} not found among ${currentChannelUsername} players: creating player...`)
         await createNewPlayer(chatterId, currentChannelId)
+        console.log(`Player ${username} created!`)
       }
 
-      const currentPlayer = await getPlayer(currentChannelId, chatterId)
+      const currentPlayer = await getPlayer(currentChannelId ?? 0, chatterId ?? 0)
+      if(!currentPlayer) return
       
       if(playersInChannel[username].state !== PlayerState.ACTIVE){
         await updatePlayerState(currentPlayer.id, PlayerState.ACTIVE)
       }
 
-      if (!(username in state.activePlayers)) {
+      if (!state.activePlayers.includes(username)) {
         state.activePlayers.push(username)
       }
 
@@ -117,14 +125,13 @@ async function main() {
         } else {
           pointsSpent = true
         }
-        // Pass commands to frontend
-        if(pointsSpent) {
+        if(pointsSpent) { // Pass (paid) commands to frontend
           currentPlayer.unhandled_commands.push({
             command: command,
             args: args,
             argUsers: argUsers,
           })
-          await db.update('cv.players', { unhandled_commands: currentPlayer.unhandled_commands })
+          await db.update('cv.players', { unhandled_commands: JSON.stringify(currentPlayer.unhandled_commands) }, { id: currentPlayer.id })
         }
       } else { // No command detected -> Pass messages and emotes to frontend
         await addPointsToPlayer(currentPlayer.points, IDLE_GAIN, currentPlayer.id)
@@ -143,7 +150,7 @@ async function main() {
             } as Message]
           }
         } else {
-          for (const [emote, charPositions] of Object.entries(tags.emotes)) {
+          for (const [emote, charPositions] of Object.entries(tags.emotes) as [string, any]) {
             for (let i = 0; i < charPositions.length; i++) {
               state.newEmotes.push({
                 name: username,
@@ -162,31 +169,42 @@ async function main() {
 
   // ============= functions ================
 
-  async function getChatterId(username: string): Promise<number> {
-    return await db._get(`
+  async function getChatterId(username: string): Promise<number|null> {
+    const row = await db._get(`
       select
         cv.chatters.id
       from
         cv.chatters
       where
-        cv.chatters.username = ${username}
-      `)   
+        cv.chatters.username = $1
+      `, [username]) 
+    return row.id  
   }
 
-  async function getPlayer(channelId: number, chatterId: number): Promise<Player> {
+  async function getPlayer(channelId: number, chatterId: number): Promise<Player|null> {
     return await db._get(`
       select
-        cv.players
+        c.username,
+        c.displayName,
+        c.color,
+        p.id as id,
+        p.chatter_id,
+        p.channel_id,
+        p.points,
+        p.state,
+        p.unhandled_commands
+      from cv.chatters c
+      inner join cv.players p on p.chatter_id = c.id
       where
-        cv.players.channel_id = ${channelId}
-        and cv.players.chatter_id = ${chatterId}
-      `)
+        p.channel_id = $1
+        and p.chatter_id = $2
+      `, [channelId, chatterId])
   }
 
   async function createNewChatter(username: string, displayName: string, color: string): Promise<void> {
     await db.insert('cv.chatters', {
       username: username,
-      displayname: displayName,
+      displayName: displayName,
       color: color,
     })    
   }
@@ -195,12 +213,12 @@ async function main() {
     await db.insert('cv.players', {
       chatter_id: chatterId,
       channel_id: currentChannelId,
-      state: 'active',
+      state: PlayerState.ACTIVE,
     })  
   }
 
   async function updatePlayerState(playerId: number, state: PlayerState): Promise<void> {
-    db.update('cv.players', { state: state }, { id: playerId })    
+    await db.update('cv.players', { state: state }, { id: playerId })    
   }
 
   async function addPointsToPlayer(currentPoints: number, pointsToAdd: number, playerId: number): Promise<void> {

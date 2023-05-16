@@ -3,14 +3,14 @@ CREATE SCHEMA cv;
 CREATE TABLE cv.channels (
   id SERIAL PRIMARY KEY,
   channel_username TEXT NOT NULL UNIQUE,
-  channel_displayname TEXT NOT NULL,
+  channel_displayName TEXT NOT NULL,
   created TIMESTAMP NOT NULL
 );
 
 CREATE TABLE cv.chatters (
   id SERIAL PRIMARY KEY,
   username TEXT NOT NULL UNIQUE,
-  displayname TEXT NOT NULL,
+  displayName TEXT NOT NULL,
   color TEXT
 );
 

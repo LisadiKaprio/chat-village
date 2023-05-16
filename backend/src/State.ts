@@ -1,5 +1,5 @@
 import Db from './Db'
-import { Emote, Chatters, Player, Players, MessagesToChannel } from './Types'
+import { Emote, Chatters, Player, Players, MessagesToChannel, Chatter } from './Types'
 
 async function loadChatters(
   db: Db,
@@ -9,14 +9,14 @@ async function loadChatters(
   const dbChatters = await db._getMany(`
   select
     cv.chatters.id as chatter_id,
-    cv.chatters.username as username,
-    cv.chatters.displayname as displayName,
-    cv.chatters.color as color
+    cv.chatters.username,
+    cv.chatters.displayName,
+    cv.chatters.color
   from
     cv.chatters
   `)
   for (const chatter of dbChatters) {
-    const user = JSON.parse(chatter) as Player // is json parse needed here?
+    const user = chatter as Chatter
     chatters[user.username] = user
   }
   return chatters
@@ -29,18 +29,22 @@ async function loadPlayers(
 
   const dbPlayers = await db._getMany(`
   select
-    cv.chatters.id as chatter_id,
-    cv.chatters.username as username,
-    cv.chatters.displayname as displayname,
-    cv.chatters.color as color,
-    cv.players.points as points
+    c.username,
+    c.displayName,
+    c.color,
+    p.id as id,
+    p.chatter_id,
+    p.channel_id,
+    p.points,
+    p.state,
+    p.unhandled_commands
   from
-    cv.players
-    inner join cv.chatters on cv.chatters.id = cv.players.chatter_id
-    inner join cv.channels on cv.channels.id = cv.players.channel_id
+    cv.players p
+    inner join cv.chatters c on c.id = p.chatter_id
+    inner join cv.channels on cv.channels.id = p.channel_id
   `)
   for (const player of dbPlayers) {
-    const user = JSON.parse(player) as Player // is json parse needed here?
+    const user = player as Player
     players[user.username] = user
   }
   return players
@@ -54,19 +58,24 @@ export async function getPlayersInChannel(
 
   const dbPlayers = await db._getMany(`
   select
-    cv.chatters.username as username,
-    cv.chatters.displayname as displayname,
-    cv.chatters.color as color,
-    cv.players.points as points
+    c.username,
+    c.displayName,
+    c.color,
+    p.id as id,
+    p.chatter_id,
+    p.channel_id,
+    p.points,
+    p.state,
+    p.unhandled_commands
   from
-    cv.players
-    inner join cv.chatters on cv.chatters.id = cv.players.chatter_id
-    inner join cv.channels on cv.channels.id = cv.players.channel_id
+    cv.players p
+    inner join cv.chatters c on c.id = p.chatter_id
+    inner join cv.channels on cv.channels.id = p.channel_id
   where
-    cv.channels.username = ${channelUsername}
-  `)
+    cv.channels.username = $1
+  `, [channelUsername])
   for (const player of dbPlayers) {
-    const user = JSON.parse(player) as Player // is json parse needed here?
+    const user = player as Player
     players[user.username] = user
   }
   return players

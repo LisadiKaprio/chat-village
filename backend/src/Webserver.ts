@@ -55,7 +55,13 @@ export default class Webserver {
         emotes: filteredEmotes,
         messages: state.allNewMessages[req.params.channel],
       })
-      state.clearFrontendRelevantData(db, req.params.channel, await getChannelId(db, req.params.channel))
+      
+      const channelId = await getChannelId(db, req.params.channel)
+      if(channelId){
+        state.clearFrontendRelevantData(db, req.params.channel, channelId)
+      } else {
+        console.log('No channel id found! State could not be clear frontend data! D:')
+      }
     })
 
     // (:
