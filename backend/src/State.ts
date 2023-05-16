@@ -1,5 +1,5 @@
 import Db from './Db'
-import { Emote, Chatters, Player, Players, MessagesToChannel, Chatter } from './Types'
+import { Emote, Chatters, Player, Players, MessagesToChannel } from './Types'
 
 async function loadChatters(
   db: Db,
