@@ -289,9 +289,9 @@ class World {
       const target = this.userAvatars[name];
       if (target) {
         this.chat.push({
-          text: `${origin.displayName} uses ${actionPrice(
+          text: `${origin.display_name} uses ${actionPrice(
             action
-          )}xp to ${action} ${target.displayName}`,
+          )}xp to ${action} ${target.display_name}`,
           color: origin.color,
         });
         behaviours.push(new Behaviour(behaviourName, [{ type: action, who: target }]));
@@ -313,7 +313,7 @@ function createNewUserAvatar(
 ) {
   let avatar = new Avatar(world, {
     name: user.name,
-    displayName: user.displayName,
+    display_name: user.display_name,
     color: user.color,
     x: x,
     y: 850,

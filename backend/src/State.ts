@@ -10,7 +10,7 @@ async function loadChatters(
   select
     cv.chatters.id as chatter_id,
     cv.chatters.username,
-    cv.chatters.displayName,
+    cv.chatters.display_name,
     cv.chatters.color
   from
     cv.chatters
@@ -30,7 +30,7 @@ async function loadPlayers(
   const dbPlayers = await db._getMany(`
   select
     c.username,
-    c.displayName,
+    c.display_name,
     c.color,
     p.id as id,
     p.chatter_id,
@@ -59,7 +59,7 @@ export async function getPlayersInChannel(
   const dbPlayers = await db._getMany(`
   select
     c.username,
-    c.displayName,
+    c.display_name,
     c.color,
     p.id as id,
     p.chatter_id,
@@ -72,7 +72,7 @@ export async function getPlayersInChannel(
     inner join cv.chatters c on c.id = p.chatter_id
     inner join cv.channels on cv.channels.id = p.channel_id
   where
-    cv.channels.username = $1
+    cv.channels.channel_username = $1
   `, [channelUsername])
   for (const player of dbPlayers) {
     const user = player as Player

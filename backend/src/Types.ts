@@ -23,7 +23,7 @@ export type UnhandledCommand = {
 export type Chatter = {
   chatter_id: number;
   username: string;
-  displayName: string;
+  display_name: string;
   color: string;
 }
 export type Chatters = {

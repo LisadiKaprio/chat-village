@@ -7,7 +7,7 @@ export async function getChannelId(db: Db, channelUsername: string): Promise<num
     from
         cv.channels
     where
-        cv.channels.username = $1
+        cv.channels.channel_username = $1
     `, [channelUsername])
     return row.id
 }

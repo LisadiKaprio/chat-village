@@ -65,7 +65,7 @@ type Command = {
 export interface ServerUser {
   unhandledCommands: Command[];
   name: string;
-  displayName: string;
+  display_name: string;
   messageCount: number;
   color: string;
   xp: number;

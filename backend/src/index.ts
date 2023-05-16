@@ -2,7 +2,7 @@ import tmi from 'tmi.js'
 import Db from './Db'
 import { getChannelId } from './functions'
 import State, { getPlayersInChannel } from './State'
-import { Message, Player, Players, PlayerState } from './Types'
+import { Message, Player, Players, PlayerState, UnhandledCommand } from './Types'
 import Webserver from './Webserver'
 
 require('dotenv').config()
@@ -62,7 +62,7 @@ async function main() {
 
   client.on('message', async (channel: any, tags: any, message: any) => {
     const { username } = tags
-    const displayName = tags['display-name']
+    const display_name = tags['display-name']
 
     const currentChannelUsername = channel.startsWith('#') ? channel.substr(1) : channel
     const currentChannelId = await getChannelId(db, currentChannelUsername)
@@ -75,7 +75,7 @@ async function main() {
     if (IS_BOT_ACTIVE) {
       if(!(username in state.chatters)) {
         console.log(`${username} not found among chatters: creating chatter...`)
-        await createNewChatter(username, displayName, tags.color)
+        await createNewChatter(username, display_name, tags.color)
         console.log(`Chatter ${username} created!`)
       }
 
@@ -90,8 +90,8 @@ async function main() {
 
       const currentPlayer = await getPlayer(currentChannelId ?? 0, chatterId ?? 0)
       if(!currentPlayer) return
-      
-      if(playersInChannel[username].state !== PlayerState.ACTIVE){
+
+      if(currentPlayer.state !== PlayerState.ACTIVE){
         await updatePlayerState(currentPlayer.id, PlayerState.ACTIVE)
       }
 
@@ -116,27 +116,29 @@ async function main() {
           if (currentPlayer.points >= BONK_PRICE) {
             await deductPointsFromPlayer(currentPlayer.points, BONK_PRICE, currentPlayer.id)
             pointsSpent = true
+            console.log(`@${username} bonked someone, spending ${BONK_PRICE}! What a shame! >:c`)
           }
         } else if (command == HUG_COMMAND) {
           if (currentPlayer.points >= HUG_PRICE) {
             await deductPointsFromPlayer(currentPlayer.points, HUG_PRICE, currentPlayer.id)
             pointsSpent = true
+            console.log(`@${username} hugged someone, spending ${HUG_PRICE}! What a deal! :)`)
           }
         } else {
           pointsSpent = true
         }
         if(pointsSpent) { // Pass (paid) commands to frontend
-          currentPlayer.unhandled_commands.push({
+          await db.update('cv.players', { unhandled_commands: JSON.stringify({
             command: command,
             args: args,
             argUsers: argUsers,
-          })
-          await db.update('cv.players', { unhandled_commands: JSON.stringify(currentPlayer.unhandled_commands) }, { id: currentPlayer.id })
+          }) }, { id: currentPlayer.id })
         }
       } else { // No command detected -> Pass messages and emotes to frontend
         await addPointsToPlayer(currentPlayer.points, IDLE_GAIN, currentPlayer.id)
+        console.log(`${username} gets ${IDLE_GAIN} fish(es) for chatting idly!`)
         if (!tags.emotes) {
-          if (state.allNewMessages[currentChannelUsername][username]) {
+          if (state.allNewMessages[currentChannelUsername] && state.allNewMessages[currentChannelUsername][username]) {
             state.allNewMessages[currentChannelUsername].push({
               name: username,
               text: message,
@@ -162,6 +164,7 @@ async function main() {
         }
       }
     }
+    state.refresh(db)
   })
 
   const webserver = new Webserver()
@@ -185,7 +188,7 @@ async function main() {
     return await db._get(`
       select
         c.username,
-        c.displayName,
+        c.display_name,
         c.color,
         p.id as id,
         p.chatter_id,
@@ -201,10 +204,10 @@ async function main() {
       `, [channelId, chatterId])
   }
 
-  async function createNewChatter(username: string, displayName: string, color: string): Promise<void> {
+  async function createNewChatter(username: string, display_name: string, color: string): Promise<void> {
     await db.insert('cv.chatters', {
       username: username,
-      displayName: displayName,
+      display_name: display_name,
       color: color,
     })    
   }
@@ -238,7 +241,7 @@ async function main() {
     // const user = users[query]
     if (!_player) {
       for (const [username, userTags] of Object.entries(players)) {
-        if (userTags.displayName == query) {
+        if (userTags.display_name == query) {
           return username
         }
       }

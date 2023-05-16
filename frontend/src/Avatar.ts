@@ -9,7 +9,7 @@ class Avatar {
   constructor(world: World, config: any) {
     // username
     this.name = config.name ?? "NoName";
-    this.displayName = config.displayName ?? "NoName";
+    this.display_name = config.display_name ?? "NoName";
     this.world = world;
     // define and pass in position, or else default to 0
     this.x = config.x || 0;
@@ -92,7 +92,7 @@ class Avatar {
     this.sprite.draw(ctx);
     ctx.fillStyle = this.color;
     ctx.fillText(
-      this.displayName,
+      this.display_name,
       this.x + this.sprite.displaySize / 2,
       this.y + this.sprite.displaySize + 3
     );
@@ -344,7 +344,7 @@ const BEHAVIOURS = {
 
 interface Avatar {
   name: string;
-  displayName: string;
+  display_name: string;
   world: World;
   x: number;
   y: number;
