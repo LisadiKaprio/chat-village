@@ -8,8 +8,6 @@ import emojiDetect from '@zutatensuppe/emoji-detect'
 import {
   UPDATE_PERIOD,
   ServerMessages,
-  ServerUsers,
-  ServerUser,
   ServerEmote,
 } from "./index.js";
 import {
@@ -23,6 +21,7 @@ import {
 import { Bubble, BubbleType } from "./Bubble.js";
 import { Emote } from "./Emote.js";
 import { assertExists } from "./Helpers.js";
+import { Player, Players } from '../../common/src/Types';
 
 const MESSAGES_ALL_OVER_THE_PLACE: boolean = false;
 const CHAT: Chat = {
@@ -60,7 +59,7 @@ class World {
   }
 
   feedNewData(
-    users: ServerUsers,
+    users: Players,
     emotes: ServerEmote[],
     messages: ServerMessages
   ) {
@@ -145,8 +144,8 @@ class World {
     this.renderedEmotes.push(...createNewEmotes(emotes, this.userAvatars));
   }
 
-  handleCommands(user: ServerUser) {
-    const commands = user.unhandledCommands;
+  handleCommands(user: Player) {
+    const commands = user.unhandled_Commands;
     if (commands) {
       for (const { command, args, argUsers } of commands) {
         if (command == ActionType.HUG) {
@@ -155,19 +154,19 @@ class World {
           this.actionBetweenUsers(BehaviourName.BONK, ActionType.BONK, user, argUsers);
         } else if (command == "whoami") {
           this.chat.push({
-            text: `you are ${user.name}`,
+            text: `you are ${user.username}`,
             color: "blue",
           });
         } else if (command == "stats") {
           this.chat.push({
-            text: `${user.name} stats: ${user.xp} xp.`,
+            text: `${user.username} stats: ${user.points} xp.`,
             color: "blue",
           });
         } else if (command == "dbg") {
           console.log(user);
-          const userAvatar = this.userAvatars[user.name];
+          const userAvatar = this.userAvatars[user.username];
           this.chat.push({
-            text: `${user.name
+            text: `${user.username
               }'s behaviour: ${userAvatar.currentBehaviour.dbg()}, after that: ${JSON.stringify(
                 userAvatar.motivation.map((motivation) => motivation.name)
               )}`,
@@ -275,17 +274,17 @@ class World {
   actionBetweenUsers(
     behaviourName: BehaviourName,
     action: ActionType,
-    origin: ServerUser,
+    origin: Player,
     potentialTargets: string[]
   ) {
     const targets =
       potentialTargets.length > 0
         ? potentialTargets
-        : [this.randomAvatarName(origin.name)];
-    const userAvatar = this.userAvatars[origin.name];
+        : [this.randomAvatarName(origin.username)];
+    const userAvatar = this.userAvatars[origin.username];
     let behaviours = [];
     for (const name of targets) {
-      if (name == origin.name) continue;
+      if (name == origin.username) continue;
       const target = this.userAvatars[name];
       if (target) {
         this.chat.push({
@@ -307,12 +306,12 @@ class World {
 
 function createNewUserAvatar(
   world: World,
-  user: ServerUser,
+  user: Player,
   x: number,
   time: number
 ) {
   let avatar = new Avatar(world, {
-    name: user.name,
+    name: user.username,
     display_name: user.display_name,
     color: user.color,
     x: x,
@@ -368,7 +367,7 @@ function createAdvancedBubble(config: any) {
 function createNewEmojis(messages: string[], x: number, y: number) {
 	const emotes: Emote[] = [];
 	for (let message of messages) {
-		emojiDetect.detectStrings(message).map(emoji => {
+		emojiDetect.detectStrings(message).map((emoji: string) => {
 			const emote = new Emote({
 		      x: x,
 		      y: y,

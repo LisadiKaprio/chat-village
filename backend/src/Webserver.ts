@@ -1,7 +1,7 @@
+import { Players } from '../../common/src/Types'
 import Db from './Db'
 import { getChannelId } from './functions'
 import State from './State'
-import { Players } from './Types'
 
 const express = require('express')
 

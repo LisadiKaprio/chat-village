@@ -1,14 +1,42 @@
 {
   "compilerOptions": {
-    "outDir": "./built",
-    "allowJs": true,
-    "target": "esnext",
-    "strict": true,
+    // typescript options here
+      "target": "esnext",
+      "jsx": "preserve",
+      "importHelpers": true,
+      "moduleResolution": "node",
+      "experimentalDecorators": true,
+      "skipLibCheck": true,
+      "resolveJsonModule": true,
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
+      "sourceMap": true,
   },
   "include": [
-    "./src/**/*"
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "tests/**/*.ts", "src/**/*.d.ts",
+    "tests/**/*.tsx"
   ],
+  "paths": {
+    "@/*": [
+      "./*"
+    ]
+  },
+  "files": [],
   "references": [
-    { "path": "../common" }
+    {
+      "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.vitest.json"
+    },
+    {
+      "path": "../common"
+    }
   ]
 }

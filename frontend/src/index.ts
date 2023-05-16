@@ -1,6 +1,8 @@
 import { World } from "./World.js";
 import { assertExists } from "./Helpers.js";
+import { Players } from '../../common/src/Types'
 export { UPDATE_PERIOD };
+
 const UPDATE_PERIOD: number = 1000;
 let world: World;
 
@@ -47,13 +49,9 @@ async function main() {
 main();
 
 export interface ServerResponse {
-  users: ServerUsers;
+  users: Players[];
   emotes: ServerEmote[];
   messages: ServerMessages;
-}
-
-export interface ServerUsers {
-  [nickname: string]: ServerUser;
 }
 
 type Command = {
@@ -61,15 +59,6 @@ type Command = {
   args: string;
   argUsers: string[];
 };
-
-export interface ServerUser {
-  unhandledCommands: Command[];
-  name: string;
-  display_name: string;
-  messageCount: number;
-  color: string;
-  xp: number;
-}
 
 export interface ServerMessages {
   [nickname: string]: string[];

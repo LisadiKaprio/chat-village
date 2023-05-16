@@ -12,21 +12,21 @@ export type UnhandledCommand = {
     argUsers: string[];
   };
 export type Chatter = {
-chatter_id: number;
-username: string;
-display_name: string;
-color: string;
+    chatter_id: number;
+    username: string;
+    display_name: string;
+    color: string;
 }
 export type Chatters = {
-[name: string]: Chatter;
+    [name: string]: Chatter;
 }
 export type Player = Chatter & {
-id: number;
-channel_id: number;
-points: number;
-state: PlayerState;
-unhandled_commands: UnhandledCommand[];
+    id: number;
+    channel_id: number;
+    points: number;
+    state: PlayerState;
+    unhandled_commands: UnhandledCommand[];
 };
 export type Players = {
-[name: string]: Player;
+    [name: string]: Player;
 };
