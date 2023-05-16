@@ -13,8 +13,9 @@ export default class Webserver {
     // COMMUNICATION WITH THE FRONTEND
     const app = express()
     const port = 2501
+    
     // frontend
-    app.use(express.static('../frontend/dist'))
+    //app.use(express.static('../frontend/dist'))
 
     // localhost:2501
 

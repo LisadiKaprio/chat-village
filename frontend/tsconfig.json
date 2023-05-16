@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     // typescript options here
+      "composite": true,
       "target": "esnext",
       "jsx": "preserve",
       "importHelpers": true,
