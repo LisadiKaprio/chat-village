@@ -30,3 +30,16 @@ export type Player = Chatter & {
 export type Players = {
     [name: string]: Player;
 };
+export type Emote = {
+  name: string;
+  id: string;
+  channel: string;
+};
+export type MessagesToChannel = {
+  [channel: string]: Message[];
+}
+export type Message = {
+  name: string;
+  text: string;
+  channel: string;
+}

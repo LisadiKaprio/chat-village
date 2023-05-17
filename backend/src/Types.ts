@@ -9,17 +9,3 @@ export const enum COMMANDS {
   deleteEveryUser = 'deleteEveryUser',
   messageCount = 'messages',
 }
-
-export type Emote = {
-  name: string;
-  id: string;
-  channel: string;
-};
-export type MessagesToChannel = {
-  [channel: string]: Message[];
-}
-export type Message = {
-  name: string;
-  text: string;
-  channel: string;
-}

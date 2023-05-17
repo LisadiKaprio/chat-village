@@ -1,9 +1,8 @@
 import tmi from 'tmi.js'
-import { Player, Players, PlayerState } from '../../common/src/Types'
+import { Player, Players, PlayerState, Message } from '../../common/src/Types'
 import Db from './Db'
 import { getChannelId } from './functions'
 import State, { getPlayersInChannel } from './State'
-import { Message } from './Types'
 import Webserver from './Webserver'
 
 require('dotenv').config()
