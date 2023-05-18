@@ -1,314 +1,252 @@
-const tmi = require("tmi.js");
-const fs = require("fs");
-import Db from "./Db";
-require("dotenv").config();
+import tmi from 'tmi.js'
+import { Player, Players, PlayerState, Message } from '../../common/src/Types'
+import Db from './Db'
+import { getChannelId } from './functions'
+import State, { getPlayersInChannel } from './State'
+import Webserver from './Webserver'
 
-//= = = my own variables = = =
-// CHANNEL NAME
-const channelName = "LisadiKaprio";
-// is bot active?
-let botActive = true;
+require('dotenv').config()
 
-const COMMANDS = {
-  //start bot
-  botStart: "start",
-  //end bot
-  botEnd: "exit",
-  //clear users in this session
-  clearUsers: "clearUsers",
-  deleteUser: "deleteUser",
-  deleteEveryUser: "deleteEveryUser",
-  messageCount: "messages",
-};
+async function main() {
+  // COMMUNICATION WITH THE DATABASE
+  let dbConnectStr = ''
+  let dbPatchesDir = ''
 
-// = = = construction: users database in data/users = = =
-const USER_ALLOW_LIST = [];
-const DATA_DIR = "./data";
-const USER_DATA_DIR = DATA_DIR + "/users";
-
-const users = loadUsers();
-let activeUsers = [];
-let newEmotes = [];
-let newMessages = {};
-
-function loadUsers() {
-  const users = {};
-  const files = fs.readdirSync(USER_DATA_DIR);
-  for (const file of files) {
-    const user = JSON.parse(fs.readFileSync(`${USER_DATA_DIR}/${file}`));
-    if (USER_ALLOW_LIST.length === 0 || USER_ALLOW_LIST.includes(user.name)) {
-      users[user.name] = user;
-    }
-  }
-  return users;
-}
-
-function userFile(username) {
-  return `${USER_DATA_DIR}/${username}.json`;
-}
-
-function deleteUser(username) {
-  delete users[username];
-  fs.rmSync(userFile(username));
-}
-
-function deleteEveryUser() {
-  const usernames = Object.keys(users);
-  for (const username of usernames) {
-    deleteUser(username);
-  }
-}
-
-
-function saveUser(username) {
-  fs.writeFileSync(userFile(username), JSON.stringify(users[username]));
-}
-
-function putUserIntoObject(_object, tags) {
-  // WHAT's IN THE USER?
-  return {
-    name: tags.username,
-    displayName: tags["display-name"],
-    messageCount: 0,
-    color: tags.color,
-    xp: 0,
-  };
-}
-
-function searchUser(query) {
-  if (query.startsWith("@")) {
-    query = query.replace("@", "");
-  }
-  let user = users[query];
-  if (!user) {
-    for (const [username, userTags] of Object.entries(users)) {
-      if (userTags.displayName == query) {
-        return username;
-      }
-    }
+  if(process.env.DB_CONNECT_STR && process.env.DB_PATCHES_DIR) {
+    dbConnectStr = process.env.DB_CONNECT_STR
+    dbPatchesDir = process.env.DB_PATCHES_DIR
   } else {
-    return query;
-  }
-}
-
-// = = = tmi = = =
-// tmi client options
-const options = {
-  options: {
-    debug: true,
-  },
-  connection: {
-    cluster: "aws",
-    reconnect: true,
-  },
-  channels: [channelName],
-};
-
-// insert options to client
-const client = new tmi.client(options);
-
-// connect the client to the chat
-client.connect();
-
-// when client is connected to chat
-client.on("connected", (address, port) => {
-  console.log("Connected to chat!" + address + port);
-});
-
-// when client recieves a normal chat message
-client.on("message", (_channel, tags, message) => {
-  // extract the username out of the tags?? T_T
-  // i don't undewstand how this wowks but ok
-  // so like const username = tags.username? or what?
-
-  // kirino's explanation:
-  // it extracts what's in {} out of what's on the right
-  const { username } = tags;
-  const displayName = tags["display-name"];
-
-  if (USER_ALLOW_LIST.length > 0 && !USER_ALLOW_LIST.includes(username)) {
-    return;
+    console.log('Warning: define the database path in an env file to be able to connect!')
   }
 
-  if (botActive) {
-    // detect user chatting as a participator of the game
-    // first, save the user in the db if they weren't yet
-    if (!(username in users)) {
-      users[username] = putUserIntoObject(users, tags);
+  const db = new Db(dbConnectStr, dbPatchesDir)
+  await db.connect()
+  await db.patch()
+  console.log('Connected to database.')
+
+  const state = new State()
+  await state.init(db)
+
+  const IS_BOT_ACTIVE = true
+  const BONK_COMMAND = 'bonk'
+  const HUG_COMMAND = 'hug'
+  const BONK_PRICE = 10
+  const HUG_PRICE = 5
+  const IDLE_GAIN = 1
+
+  // = = = tmi = = =
+  // tmi client options
+
+  const channelUsernames = async (): Promise<string[]> => {
+    const rows = await db.getMany('cv.channels')
+    return rows.map(row => row.channel_username)
+  }
+
+  const options = {
+    options: {
+      debug: true,
+    },
+    connection: {
+      cluster: 'aws',
+      reconnect: true,
+    },
+    channels: await channelUsernames(),
+  }
+
+  const client = new tmi.client(options)
+  client.connect()
+
+  client.on('connected', (address: any, port: number) => {
+    console.log('Connected to chat!' + address + port)
+  })
+
+  client.on('message', async (channel: any, tags: any, message: any) => {
+    const { username } = tags
+    const display_name = tags['display-name']
+
+    const currentChannelUsername = channel.startsWith('#') ? channel.substr(1) : channel
+    const currentChannelId = await getChannelId(db, currentChannelUsername)
+    if (!currentChannelId) {
+      console.log(`Channel with id ${currentChannelId} not found in db!`)
+      return
     }
-    users[username].displayName = displayName;
+    const playersInChannel = await getPlayersInChannel(db, currentChannelUsername)
 
-    // same, but for new users in current session aka current stream
-    if (!(username in activeUsers)) {
-      activeUsers.push(username);
-    }
-
-    const detectedCommand = message.match(/^!([\w]+)($|\s.*)/);
-    if (detectedCommand) {
-      const command = detectedCommand[1];
-      const args = detectedCommand[2].split(/\s+/);
-      const argUsers = args
-        .map((arg) => {
-          const username = searchUser(arg);
-          return username;
-        })
-        .filter((user) => user != undefined);
-
-      let handled = true;
-      if (tags.mod || tags.badges?.broadcaster) {
-        // MOD/BROADCASTER COMMANDS
-        if (command === COMMANDS.clearUsers) {
-          activeUsers = [username];
-          handled = false;
-        } else if (command === COMMANDS.botStart) {
-          botActive = true;
-        } else if (command === COMMANDS.botEnd) {
-          botActive = false;
-        } else if (command === COMMANDS.deleteUser) {
-          for (const username of argUsers) {
-            deleteUser(username);
-          }
-        } else if (
-          command === COMMANDS.deleteEveryUser &&
-          displayName === channelName
-        ) {
-          deleteEveryUser();
-        } else if (command === COMMANDS.messageCount) {
-          for (const username of argUsers) {
-            console.log(
-              `${users[username].displayName} has written ${users[username].messageCount} messages`
-            );
-          }
-        } else {
-          handled = false;
-        }
-      } else {
-        handled = false;
+    if (IS_BOT_ACTIVE) {
+      if(!(username in state.chatters)) {
+        console.log(`${username} not found among chatters: creating chatter...`)
+        await createNewChatter(username, display_name, tags.color)
+        console.log(`Chatter ${username} created!`)
       }
 
-      // not handled command
-      if (!handled) {
-        // pay the price for the command;
-        let payed = false;
-        if (command == "bonk") {
-          if (users[username].xp >= 60) {
-            users[username].xp -= 60;
-            payed = true;
+      const chatterId = await getChatterId(username)
+      if (!chatterId) return
+
+      let currentPlayer = await getPlayer(currentChannelId ?? 0, chatterId ?? 0)
+      if(!currentPlayer) {
+        console.log(`${username} not found among ${currentChannelUsername} players: creating player...`)
+        await createNewPlayer(chatterId, currentChannelId)
+        console.log(`Player ${username} created!`)
+        currentPlayer = await getPlayer(currentChannelId ?? 0, chatterId ?? 0)
+        if(!currentPlayer) {
+          console.log(`Player ${username} on ${currentChannelUsername} channel could not be found or created!`)
+          return
+        }
+      }
+
+      if(currentPlayer.state !== PlayerState.ACTIVE){
+        await updatePlayerState(currentPlayer.id, PlayerState.ACTIVE)
+      }
+
+      if (!state.activePlayers.includes(currentPlayer.id)) {
+        state.activePlayers.push(currentPlayer.id)
+      }
+
+      // todo: command doesn't necessarily have an `!` infront?..
+      const detectedCommand = message.match(/^!([\w]+)($|\s.*)/)
+      if (detectedCommand) {
+        const command = detectedCommand[1]
+        const args = detectedCommand[2].split(/\s+/)
+        const argUsers = args
+          .map((arg: any) => {
+            const username = searchUser(arg, playersInChannel)
+            return username
+          })
+          .filter((user: any) => user != undefined) as string[]
+
+        let pointsSpent = false
+        if (command == BONK_COMMAND) {
+          if (currentPlayer.points >= BONK_PRICE) {
+            await deductPointsFromPlayer(currentPlayer.points, BONK_PRICE, currentPlayer.id)
+            pointsSpent = true
+            console.log(`@${username} bonked someone, spending ${BONK_PRICE}! What a shame! >:c`)
           }
-        } else if (command == "hug") {
-          if (users[username].xp >= 30) {
-            users[username].xp -= 30;
-            payed = true;
+        } else if (command == HUG_COMMAND) {
+          if (currentPlayer.points >= HUG_PRICE) {
+            await deductPointsFromPlayer(currentPlayer.points, HUG_PRICE, currentPlayer.id)
+            pointsSpent = true
+            console.log(`@${username} hugged someone, spending ${HUG_PRICE}! What a deal! :)`)
           }
         } else {
-          // pass through the unknown commands
-          payed = true;
+          pointsSpent = true
         }
-        // Pass all the unknown commands (starting with ! ) to the frontend
-        // in hopes that it knows what to do with them.
-        if (!users[username].unhandledCommands && payed) {
-          users[username].unhandledCommands = [
-            {
-              command: command,
-              args: args,
-              argUsers: argUsers,
-            },
-          ];
-        } else if (payed) {
-          users[username].unhandledCommands.push({
+        if(pointsSpent) { // Pass (paid) commands to frontend
+          currentPlayer.unhandled_commands.push({
             command: command,
             args: args,
             argUsers: argUsers,
-          });
+          })
+          await db.update('cv.players', { 
+            unhandled_commands: JSON.stringify(currentPlayer.unhandled_commands),
+          }, { id: currentPlayer.id })
         }
-      }
-    } else {
-      // no command detected
-      // counts messages written by the user and gives xp
-      users[username].messageCount += 1;
-      users[username].xp += 15;
-      if (!tags.emotes) {
-        // NOT A COMMAND
-        if (newMessages[username]) {
-          newMessages[username].push(message);
-        } else {
-          newMessages[username] = [message];
-        }
-      } else {
-        for (const [emote, charPositions] of Object.entries(tags.emotes)) {
-          for (let i = 0; i < charPositions.length; i++) {
-            newEmotes.push({
+      } else { // No command detected -> Pass messages and emotes to frontend
+        await addPointsToPlayer(currentPlayer.points, IDLE_GAIN, currentPlayer.id)
+        console.log(`${username} gets ${IDLE_GAIN} fish(es) for chatting idly!`)
+        if (!tags.emotes) {
+          if (state.allNewMessages[currentChannelUsername] && state.allNewMessages[currentChannelUsername][username]) {
+            state.allNewMessages[currentChannelUsername].push({
               name: username,
-              id: emote,
-            });
+              text: message,
+              channel: currentChannelUsername,
+            } as Message)
+          } else {
+            state.allNewMessages[currentChannelUsername] = [{
+              name: username,
+              text: message,
+              channel: currentChannelUsername,
+            } as Message]
+          }
+        } else {
+          for (const [emote, charPositions] of Object.entries(tags.emotes) as [string, any]) {
+            for (let i = 0; i < charPositions.length; i++) {
+              state.newEmotes.push({
+                name: username,
+                id: emote,
+                channel: currentChannelUsername,
+              })
+            }
           }
         }
-        // for each emote in message
-        // emote[1] = { who: kirinokirino, id: 65}
-        // emote[2] = { who: kirinokirino, id: 65}
-        // emote[3] = { who: kirinokirino, id: 46636}
       }
     }
-    // save that as a json file then
-    saveUser(username);
-  }
-});
+    state.refresh(db)
+  })
 
-// COMMUNICATION WITH THE DATABASE
-async function communicateWithDatabase() {
-  const db = new Db(process.env.DB_CONNECT_STR, process.env.DB_PATCHES_DIR);
-  await db.connect();
-  await db.patch();
-  console.log("Connected to database.");
+  const webserver = new Webserver()
+  webserver.init(db, state)
+
+  // ============= functions ================
+
+  async function getChatterId(username: string): Promise<number|null> {
+    const row = await db._get(`
+      select
+        cv.chatters.id
+      from
+        cv.chatters
+      where
+        cv.chatters.username = $1
+      `, [username]) 
+    return row.id  
+  }
+
+  async function getPlayer(channelId: number, chatterId: number): Promise<Player|null> {
+    return await db._get(`
+      select
+        c.username,
+        c.display_name,
+        c.color,
+        p.id as id,
+        p.chatter_id,
+        p.channel_id,
+        p.points,
+        p.state,
+        p.unhandled_commands
+      from cv.chatters c
+      inner join cv.players p on p.chatter_id = c.id
+      where
+        p.channel_id = $1
+        and p.chatter_id = $2
+      `, [channelId, chatterId])
+  }
+
+  async function createNewChatter(username: string, display_name: string, color: string): Promise<void> {
+    await db.insert('cv.chatters', {
+      username: username,
+      display_name: display_name,
+      color: color,
+    })    
+  }
+
+  async function createNewPlayer(chatterId: number, currentChannelId: number): Promise<void> {
+    await db.insert('cv.players', {
+      chatter_id: chatterId,
+      channel_id: currentChannelId,
+      state: PlayerState.ACTIVE,
+    })  
+  }
+
+  async function updatePlayerState(playerId: number, state: PlayerState): Promise<void> {
+    await db.update('cv.players', { state: state }, { id: playerId })    
+  }
+
+  async function addPointsToPlayer(currentPoints: number, pointsToAdd: number, playerId: number): Promise<void> {
+    await db.update('cv.players', { points: currentPoints + pointsToAdd }, { id: playerId })
+  }
+
+  async function deductPointsFromPlayer(currentPoints: number, pointsToDeduct: number, playerId: number): Promise<void> {
+    await db.update('cv.players', { points: currentPoints - pointsToDeduct }, { id: playerId })
+  }
+
+  function searchUser(query: string, players: Players): string | undefined {
+    if (query.startsWith('@')) {
+      query = query.replace('@', '')
+    }
+    for (const [username, userTags] of Object.entries(players)) {
+      if (userTags.username === query || userTags.display_name === query){
+        return username
+      }
+    }
+  }
 }
-communicateWithDatabase();
-
-// COMMUNICATION WITH THE FRONTEND
-const express = require("express");
-//const { URLSearchParams } = require("url");
-const app = express();
-
-// what port do we run on?
-const port = 2501;
-
-// what folder will express start up?
-// where is our frontend
-app.use(express.static("../frontend/dist"));
-
-// what's displayed in localhost:2501
-app.get("/dbg", (_req, res) => {
-  let filteredUsers = {};
-  for (const name of activeUsers) {
-    filteredUsers[name] = users[name];
-  }
-  res.send(
-    JSON.stringify({
-      users: users,
-      active: activeUsers,
-      filtered: filteredUsers
-    })
-  );
-});
-
-// send over the info inside the users variable
-app.get("/users", (_req, res) => {
-  let filteredUsers = {};
-  for (const name of activeUsers) {
-    filteredUsers[name] = users[name];
-  }
-  res.send({
-    users: filteredUsers,
-    emotes: newEmotes,
-    messages: newMessages,
-  });
-  for (const user of activeUsers) {
-    users[user].unhandledCommands = [];
-  }
-  newEmotes = [];
-  newMessages = {};
-});
-
-// (:
-app.listen(port, () => {
-  console.log(`Web-Avatars listening on http://localhost:${port}`);
-});
+main()

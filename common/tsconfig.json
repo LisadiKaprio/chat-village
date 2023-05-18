@@ -28,26 +28,11 @@
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
         "sourceMap": true,
-        "rootDirs": [
-          "src",
-          "../common/src"
-        ]
+        "composite": true,
     },
-    "include": [
-      "src/**/*.ts",
-      "src/**/*.tsx",
-      "src/**/*.vue",
-      "tests/**/*.ts",
-      "tests/**/*.tsx",
-      "./**/*.ts", 
-      "./**/*.d.ts"
-    ],
     "paths": {
       "@/*": [
         "src/*"
       ]
-    },
-    "references": [
-      { "path": "../common" }
-    ]
+    }
   }

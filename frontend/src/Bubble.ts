@@ -1,19 +1,19 @@
-export { Bubble };
+export { Bubble }
 
-import { Sprite, Animation, Animations } from "./Sprite.js";
+import { Sprite, Animation, Animations } from './Sprite.js'
 
 class Bubble {
   constructor(config: IconBubbleConfig | TextBubbleConfig) {
     // username the bubble (can be) attached to, setting it will make the bubble move along
-    this.attachedTo = config.attachedTo;
-    this.toRemove = false;
-    this.x = config.x || 0;
-    this.y = config.y || 950;
-    this.color = config.color || "black";
+    this.attachedTo = config.attachedTo
+    this.toRemove = false
+    this.x = config.x || 0
+    this.y = config.y || 950
+    this.color = config.color || 'black'
 
     // type is either "text" or "icon",
     // config would provide either text or sprite depending on the type
-    this.type = config.type;
+    this.type = config.type
     if (config.type == BubbleType.ICON) {
       this.sprite = new Sprite({
         gameObject: this,
@@ -31,91 +31,91 @@ class Bubble {
             doesLoop: true,
           }),
         },
-      });
+      })
     } else if (config.type == BubbleType.TEXT) {
-      this.text = config.text;
+      this.text = config.text
     }
 
     // Behaviours
     this.behaviours = {
       idle: [
-        { type: "oscilate", time: 50 },
-        { type: "dissolve", time: 30 },
+        { type: 'oscilate', time: 50 },
+        { type: 'dissolve', time: 30 },
       ],
-    };
-    this.behaviourLoop = config.behaviourLoop || this.behaviours["idle"];
-    this.behaviourLoopIndex = 0;
-    this.actionTime = this.behaviourLoop[this.behaviourLoopIndex].time;
+    }
+    this.behaviourLoop = config.behaviourLoop || this.behaviours['idle']
+    this.behaviourLoopIndex = 0
+    this.actionTime = this.behaviourLoop[this.behaviourLoopIndex].time
 
     // Customization
-    this.speed = config.speed || 2.0;
-    this.opacity = 1.0;
+    this.speed = config.speed || 2.0
+    this.opacity = 1.0
   }
 
   advanceBehaviour() {
-    this.behaviourLoopIndex += 1;
+    this.behaviourLoopIndex += 1
     if (this.behaviourLoopIndex >= this.behaviourLoop.length) {
-      this.behaviourLoopIndex -= 1;
-      this.actionTime = 1;
-      this.toRemove = true;
-      return;
+      this.behaviourLoopIndex -= 1
+      this.actionTime = 1
+      this.toRemove = true
+      return
     }
 
-    let action = this.behaviourLoop[this.behaviourLoopIndex];
-    this.actionTime = action.time;
+    const action = this.behaviourLoop[this.behaviourLoopIndex]
+    this.actionTime = action.time
   }
 
   update() {
-    this.actionTime -= 1;
+    this.actionTime -= 1
     if (this.actionTime <= 0) {
-      this.advanceBehaviour();
+      this.advanceBehaviour()
     }
-    const action = this.behaviourLoop[this.behaviourLoopIndex];
-    if (action.type == "ascend") {
-      this.y -= this.speed;
-    } else if (action.type == "oscilate") {
-      const numberOfCycles = 1.0;
+    const action = this.behaviourLoop[this.behaviourLoopIndex]
+    if (action.type == 'ascend') {
+      this.y -= this.speed
+    } else if (action.type == 'oscilate') {
+      const numberOfCycles = 1.0
       // if numberOfCycles = 0.5, then
       // will always play the second half, so we need to offset the progress back half a cycle
-      const cycleOffset = 0;
-      const fullCycleSteps = action.time / numberOfCycles;
-      const thisCycleStep = ((this.actionTime - 1) % fullCycleSteps) + 1;
+      const cycleOffset = 0
+      const fullCycleSteps = action.time / numberOfCycles
+      const thisCycleStep = ((this.actionTime - 1) % fullCycleSteps) + 1
       // precent completion
       const cycleProgress =
-        (fullCycleSteps - thisCycleStep) / fullCycleSteps - cycleOffset;
-      const oscillation = Math.sin(cycleProgress * Math.PI * 2);
-      this.y -= oscillation * this.speed;
-    } else if (action.type == "dissolve") {
-      this.opacity = this.actionTime / action.time;
+        (fullCycleSteps - thisCycleStep) / fullCycleSteps - cycleOffset
+      const oscillation = Math.sin(cycleProgress * Math.PI * 2)
+      this.y -= oscillation * this.speed
+    } else if (action.type == 'dissolve') {
+      this.opacity = this.actionTime / action.time
       //this.y -= this.speed;
       // TODO: disappear
     }
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    let xOffset = 0;
+    let xOffset = 0
     // If its attached to something, move the text to the updated position of the entity its attached to.
     if (this.attachedTo) {
       xOffset =
-        -this.x + this.attachedTo.x + this.attachedTo.sprite.displaySize / 2;
+        -this.x + this.attachedTo.x + this.attachedTo.sprite.displaySize / 2
     }
-    ctx.globalAlpha = this.opacity;
-    if (this.type == "text") {
-      ctx.fillStyle = this.color;
-      ctx.fillText(this.text!, this.x + xOffset, this.y);
-    } else if (this.type == "icon") {
-      this.sprite!.draw(ctx, xOffset);
+    ctx.globalAlpha = this.opacity
+    if (this.type == 'text') {
+      ctx.fillStyle = this.color
+      ctx.fillText(this.text!, this.x + xOffset, this.y)
+    } else if (this.type == 'icon') {
+      this.sprite!.draw(ctx, xOffset)
     } else {
-      console.error("Unhandled bubble type");
-      console.error(this);
+      console.error('Unhandled bubble type')
+      console.error(this)
     }
-    ctx.globalAlpha = 1.0;
+    ctx.globalAlpha = 1.0
   }
 }
 
 export enum BubbleType {
-  ICON = "icon",
-  TEXT = "text",
+  ICON = 'icon',
+  TEXT = 'text',
 }
 
 interface BubbleConfig {

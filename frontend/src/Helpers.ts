@@ -4,21 +4,21 @@
 // for AssertionError messages in browsers.
 
 export class AssertionError extends Error {
-  override name = "AssertionError";
+  override name = 'AssertionError'
   constructor(message: string) {
-    super(message);
+    super(message)
   }
 }
 
 /** * Make an assertion that actual is not null or undefined. * If not then throw. */
 export function assertExists<T>(
   actual: T,
-  msg?: string
+  msg?: string,
 ): asserts actual is NonNullable<T> {
   if (actual === undefined || actual === null) {
     if (!msg) {
-      msg = `actual: "${actual}" expected to not be null or undefined`;
+      msg = `actual: "${actual}" expected to not be null or undefined`
     }
-    throw new AssertionError(msg);
+    throw new AssertionError(msg)
   }
 }
