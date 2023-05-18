@@ -89,7 +89,7 @@ class Sprite {
     const x = this.gameObject.x + xOffset
     const y = this.gameObject.y + yOffset
 
-    // if (!this.frame) debugger
+    // if (!this.frame) 
     const [frameX, frameY] = this.frame
 
     // if(this.drawable){

@@ -12,6 +12,7 @@ export default class Webserver {
   ) {
     // COMMUNICATION WITH THE FRONTEND
     const app = express()
+    const apiRouter = express.Router()
     const port = 2501
     
     // frontend
@@ -20,7 +21,7 @@ export default class Webserver {
     // localhost:2501
 
     // dbg page
-    app.get('/dbg', (_req: any, res: any) => {
+    apiRouter.get('/dbg', (_req: any, res: any) => {
       const filteredUsers: any = {}
       for (const name of state.activePlayers) {
         filteredUsers[name] = state.players[name]
@@ -35,12 +36,19 @@ export default class Webserver {
     })
 
     // send over the info inside the users variable
-    app.get('/users/:channel', async (req: any, res: any) => {
+    apiRouter.get('/users/:channel', async (req: any, res: any) => {
       // need to keep the ServerUser interface in frontend synced with this right here
+      
+      const channelId = await getChannelId(db, req.params.channel)
+      if(!channelId) {
+        console.log('No channel id found! Fetching not possible.')
+        return
+      }
       const filteredPlayers: Players = {}
-      for (const name of state.activePlayers) {
-        if (state.players[name].channel_id === req.params.channel) {
-          filteredPlayers[name] = state.players[name]
+      for (const id of state.activePlayers) {
+        if (state.players[id].channel_id === channelId) {
+          console.log(`Fetching player ${state.players[id].username} (${state.players[id].id})`)
+          filteredPlayers[id] = state.players[id]
         }
       }
 
@@ -56,18 +64,15 @@ export default class Webserver {
         emotes: filteredEmotes,
         messages: state.allNewMessages[req.params.channel],
       })
-      
-      const channelId = await getChannelId(db, req.params.channel)
-      if(channelId){
-        state.clearFrontendRelevantData(db, req.params.channel, channelId)
-      } else {
-        console.log('No channel id found! State could not be clear frontend data! D:')
-      }
+
+      state.clearFrontendRelevantData(db, req.params.channel, channelId)
     })
 
     // (:
     app.listen(port, () => {
       console.log(`Web-Avatars listening on http://localhost:${port}`)
     })
+
+    app.use('/api', apiRouter)
   }
 }

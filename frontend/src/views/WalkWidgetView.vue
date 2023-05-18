@@ -29,15 +29,13 @@ export default class WalkWidget extends Vue {
     // this.interval = setInterval(() => {
     // }, UPDATE_PERIOD);
     await this.fetchUsers()
-    console.log('users fetched')
     requestAnimationFrame(this.step)
-    console.log('animation frame requested')
   }
 
   public async fetchUsers(): Promise<void> {
     // fetch the users, emotes and messages from the server.
     try {
-      const resp = await fetch(`http://localhost:2501/users/${this.channel}`)
+      const resp = await fetch(`/api/users/${this.channel}`)
       // const a = await resp.text()
       const { users, emotes, messages } = (await resp.json()) as ServerResponse
 
@@ -54,6 +52,7 @@ export default class WalkWidget extends Vue {
         throw error
       }
     }
+    console.log('users fetched')
 
     // queue the next server request
     setTimeout(this.fetchUsers, UPDATE_PERIOD)
@@ -61,17 +60,39 @@ export default class WalkWidget extends Vue {
 
   public step(timestep: number) {
     this.world.update(timestep)
+    console.log('animation frame requested')
     requestAnimationFrame(this.step)
   }
 }
 </script>
 
 <style>
-@media (min-width: 1024px) {
-  .about {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-  }
+@font-face {
+  font-family: 'VictorMono-Medium';
+  src: url('../../fonts/VictorMono-Medium.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+
+body{
+  padding: 0;
+  margin: 0;
+  /* prevents unwanted scrolling */
+  overflow: hidden;
+}
+
+.game-container{
+  font-family: 'VictorMono-Medium';
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  padding: 0;
+  margin: 0 auto;
+  /* ideally, i want the game to snap 
+  to the bottom of the page
+  it doesn't do it yet, 
+  the body snaps to top and limits height 
+  to the height of the canvas... */
+  margin-top: 20px;
 }
 </style>

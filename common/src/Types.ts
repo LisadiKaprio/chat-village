@@ -28,11 +28,11 @@ export type Player = Chatter & {
     unhandled_commands: UnhandledCommand[];
 };
 export type Players = {
-    [name: string]: Player;
+    [id: number]: Player;
 };
-export type Emote = {
+export type EmoteReceived = {
   name: string;
-  id: string;
+  id: number;
   channel: string;
 };
 export type MessagesToChannel = {

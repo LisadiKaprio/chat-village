@@ -95,8 +95,8 @@ async function main() {
         await updatePlayerState(currentPlayer.id, PlayerState.ACTIVE)
       }
 
-      if (!state.activePlayers.includes(username)) {
-        state.activePlayers.push(username)
+      if (!state.activePlayers.includes(currentPlayer.id)) {
+        state.activePlayers.push(currentPlayer.id)
       }
 
       // todo: command doesn't necessarily have an `!` infront?..
@@ -236,17 +236,10 @@ async function main() {
     if (query.startsWith('@')) {
       query = query.replace('@', '')
     }
-    const _player = players[query]
-
-    // const user = users[query]
-    if (!_player) {
-      for (const [username, userTags] of Object.entries(players)) {
-        if (userTags.display_name == query) {
-          return username
-        }
+    for (const [username, userTags] of Object.entries(players)) {
+      if (userTags.username === query || userTags.display_name === query){
+        return username
       }
-    } else {
-      return query
     }
   }
 }

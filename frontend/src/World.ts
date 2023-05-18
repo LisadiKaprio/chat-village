@@ -5,7 +5,7 @@ import bunnyMask from './images/chars/bunny-mask.png'
 import xpImage from './images/bubble/xp.png'
 import emojiDetect from '@zutatensuppe/emoji-detect'
 
-import { UPDATE_PERIOD } from './types/Types'
+import { PlayerMessages, UPDATE_PERIOD } from './types/Types'
 import {
   actionPrice,
   ActionType,
@@ -16,11 +16,11 @@ import {
 } from './Avatar.js'
 import { Bubble, BubbleType } from './Bubble.js'
 import { Emote } from './Emote.js'
-// import { assertExists } from './Helpers.js'
-import { Player, Players } from '../../common/src/Types'
-import { ServerEmote, ServerMessages } from './types/Types.js'
+import { assertExists } from './Helpers.js'
+import { Player, Players, EmoteReceived, Message } from '../../common/src/Types'
+// import { ServerMessages } from './types/Types.js'
 
-const MESSAGES_ALL_OVER_THE_PLACE: boolean = false
+const MESSAGES_ALL_OVER_THE_PLACE: boolean = true
 const CHAT: Chat = {
   x: 20,
   y: 20,
@@ -37,9 +37,9 @@ const INACTIVE_TIME: number = 1000 * 60 * 20
 class World {
   constructor(gameContainer: HTMLElement, canvas: HTMLCanvasElement) {
     this.element = gameContainer
-    // this.canvas = canvas
+    this.canvas = canvas
     const context = canvas.getContext('2d')
-    // assertExists(context)
+    assertExists(context)
     this.ctx = context
 
     this.userAvatars = {}
@@ -53,19 +53,36 @@ class World {
 
   feedNewData(
     users: Players,
-    emotes: ServerEmote[],
-    messages: ServerMessages,
+    emotes: EmoteReceived[],
+    messages: Message[],
   ) {
+    console.log(JSON.stringify(users))
+    console.log(JSON.stringify(emotes))
+    console.log(JSON.stringify(messages))
+
+    const filteredMessages: PlayerMessages = {}
+    if(messages){
+      for (const message of messages) {
+        if (filteredMessages[message.name]) {
+          filteredMessages[message.name].push(message)
+        } else {
+          filteredMessages[message.name] = [message]
+        }
+      }
+    }
+
     this.time += UPDATE_PERIOD
 
     // difference between value and keys:
     // value = {name: 'kirinokirino', messageCount: 2, ... }
     // key = kirinokirino
     // key is like 1 in array[1]
-    for (const [name, user] of Object.entries(users)) {
+    for (const [_id, user] of Object.entries(users)) {
+      console.log(name)
+      console.log(JSON.stringify(user))
       // create a new user avatar.
-      if (!this.userAvatars[name]) {
-        this.userAvatars[name] = createNewUserAvatar(
+      if (!this.userAvatars[user.username]) {
+        this.userAvatars[user.username] = createNewUserAvatar(
           this,
           user,
           Math.random() * this.canvas.width,
@@ -80,19 +97,19 @@ class World {
       // handle user commands
       this.handleCommands(user)
 
-      if (messages[name]) {
-        const avatar = this.userAvatars[name]
-		this.renderedEmotes.push(...createNewEmojis(messages[name], avatar.x, avatar.y))
+      if (filteredMessages[user.username]) {
+        const avatar = this.userAvatars[user.username]
+        this.renderedEmotes.push(...createNewEmojis(filteredMessages[user.username].map(m => m.text), avatar.x, avatar.y))
       }
 
       // handle user messages
-      if (messages[name] || emotes.some((emote) => emote.name == name)) {
-        const avatar = this.userAvatars[name]
+      if (filteredMessages[user.username] || emotes.some((emote) => emote.name == user.username)) {
+        const avatar = this.userAvatars[user.username]
         avatar.changeBehaviour(BEHAVIOURS.idle)
         avatar.pushMotivation(BEHAVIOURS.talk)
         if (!avatar.isActive) {
           this.chat.push({
-            text: `Welcome back ${name}!`,
+            text: `Welcome back ${user.username}!`,
             color: avatar.color,
           })
         }
@@ -113,9 +130,9 @@ class World {
         )
 
         // log the message in chat and add a message bubble
-        if (MESSAGES_ALL_OVER_THE_PLACE && messages[name]) {
-          for (const message of messages[name]) {
-            this.chat.push({ text: message, color: avatar.color })
+        if (MESSAGES_ALL_OVER_THE_PLACE && filteredMessages[user.username]) {
+          for (const message of filteredMessages[user.username]) {
+            this.chat.push({ text: message.text, color: avatar.color })
             this.renderedBubbles.push(
               createAdvancedBubble({
                 type: 'text',
@@ -140,6 +157,7 @@ class World {
   handleCommands(user: Player) {
     const commands = user.unhandled_commands
     if (commands) {
+      console.log('commands is: ' + JSON.stringify(commands))
       for (const { command, args, argUsers } of commands) {
         if (command == ActionType.HUG) {
           this.actionBetweenUsers(BehaviourName.HUG, ActionType.HUG, user, argUsers)
@@ -389,7 +407,7 @@ function createNewEmote(emoteId: number, x: number, y: number) {
   return emote
 }
 
-function createNewEmotes(emotes: ServerEmote[], avatars: Avatars) {
+function createNewEmotes(emotes: EmoteReceived[], avatars: Avatars) {
   const newEmotes = []
   for (let i = 0; i < emotes.length; i++) {
     const avatar = avatars[emotes[i].name]

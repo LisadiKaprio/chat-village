@@ -1,5 +1,5 @@
 import Db from './Db'
-import { Emote,  MessagesToChannel, Chatter, Chatters, Player, Players } from '../../common/src/Types'
+import { EmoteReceived,  MessagesToChannel, Chatter, Chatters, Player, Players } from '../../common/src/Types'
 
 async function loadChatters(
   db: Db,
@@ -45,7 +45,7 @@ async function loadPlayers(
   `)
   for (const player of dbPlayers) {
     const user = player as Player
-    players[user.username] = user
+    players[user.id] = user
   }
   return players
 }
@@ -76,7 +76,7 @@ export async function getPlayersInChannel(
   `, [channelUsername])
   for (const player of dbPlayers) {
     const user = player as Player
-    players[user.username] = user
+    players[user.id] = user
   }
   return players
 }
@@ -91,8 +91,8 @@ export async function clearUnhandledCommands(
 export default class State {
   public chatters: Chatters = {}
   public players: Players = {}
-  public activePlayers: string[] = []
-  public newEmotes: Emote[] = []
+  public activePlayers: number[] = []
+  public newEmotes: EmoteReceived[] = []
   public allNewMessages: MessagesToChannel = {}
 
   async init (
@@ -115,6 +115,7 @@ export default class State {
   async refresh (
     db: Db,
   ) {
+    console.log(this.activePlayers)
     this.chatters = await loadChatters(db)
     this.players = await loadPlayers(db)
   }

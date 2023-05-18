@@ -1,11 +1,11 @@
-import { Players } from '../../../common/src/Types'
+import { EmoteReceived, Message, Players } from '../../../common/src/Types'
 
 export const UPDATE_PERIOD = 1000
 
 export interface ServerResponse {
     users: Players;
-    emotes: ServerEmote[];
-    messages: ServerMessages;
+    emotes: EmoteReceived[];
+    messages: Message[];
   }
   
 export type Command = {
@@ -14,8 +14,8 @@ export type Command = {
     argUsers: string[];
 };
 
-export interface ServerMessages {
-    [nickname: string]: string[];
+export interface PlayerMessages {
+    [username: string]: Message[];
 }
 
 export type ServerEmote = {
