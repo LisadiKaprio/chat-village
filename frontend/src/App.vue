@@ -7,7 +7,10 @@ import { RouterView } from 'vue-router'
 </template>
 
 <style scoped>
-header {
+#app {
+  padding: 0px 0px !important;
+}
+/* header {
   line-height: 1.5;
   max-height: 100vh;
 }
@@ -67,5 +70,5 @@ nav a:first-of-type {
     padding: 1rem 0;
     margin-top: 1rem;
   }
-}
+} */
 </style>

@@ -82,14 +82,17 @@ async function main() {
       const chatterId = await getChatterId(username)
       if (!chatterId) return
 
-      if (!(username in playersInChannel)) {
+      let currentPlayer = await getPlayer(currentChannelId ?? 0, chatterId ?? 0)
+      if(!currentPlayer) {
         console.log(`${username} not found among ${currentChannelUsername} players: creating player...`)
         await createNewPlayer(chatterId, currentChannelId)
         console.log(`Player ${username} created!`)
+        currentPlayer = await getPlayer(currentChannelId ?? 0, chatterId ?? 0)
+        if(!currentPlayer) {
+          console.log(`Player ${username} on ${currentChannelUsername} channel could not be found or created!`)
+          return
+        }
       }
-
-      const currentPlayer = await getPlayer(currentChannelId ?? 0, chatterId ?? 0)
-      if(!currentPlayer) return
 
       if(currentPlayer.state !== PlayerState.ACTIVE){
         await updatePlayerState(currentPlayer.id, PlayerState.ACTIVE)
@@ -128,11 +131,14 @@ async function main() {
           pointsSpent = true
         }
         if(pointsSpent) { // Pass (paid) commands to frontend
-          await db.update('cv.players', { unhandled_commands: JSON.stringify({
+          currentPlayer.unhandled_commands.push({
             command: command,
             args: args,
             argUsers: argUsers,
-          }) }, { id: currentPlayer.id })
+          })
+          await db.update('cv.players', { 
+            unhandled_commands: JSON.stringify(currentPlayer.unhandled_commands),
+          }, { id: currentPlayer.id })
         }
       } else { // No command detected -> Pass messages and emotes to frontend
         await addPointsToPlayer(currentPlayer.points, IDLE_GAIN, currentPlayer.id)

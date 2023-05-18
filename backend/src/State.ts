@@ -85,7 +85,7 @@ export async function clearUnhandledCommands(
   db: Db,
   channelId: number,
 ): Promise<void> {
-  db.update('cv.players', { unhandled_commands: {} }, {channel_id: channelId})
+  db.update('cv.players', { unhandled_commands: JSON.stringify([]) }, {channel_id: channelId})
 }
 
 export default class State {
@@ -115,7 +115,6 @@ export default class State {
   async refresh (
     db: Db,
   ) {
-    console.log(this.activePlayers)
     this.chatters = await loadChatters(db)
     this.players = await loadPlayers(db)
   }

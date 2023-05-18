@@ -20,7 +20,8 @@ import { assertExists } from './Helpers.js'
 import { Player, Players, EmoteReceived, Message } from '../../common/src/Types'
 // import { ServerMessages } from './types/Types.js'
 
-const MESSAGES_ALL_OVER_THE_PLACE: boolean = true
+const MESSAGES_ALL_OVER_THE_PLACE: boolean = false
+const CHAT_RENDERING: boolean = false
 const CHAT: Chat = {
   x: 20,
   y: 20,
@@ -56,10 +57,6 @@ class World {
     emotes: EmoteReceived[],
     messages: Message[],
   ) {
-    console.log(JSON.stringify(users))
-    console.log(JSON.stringify(emotes))
-    console.log(JSON.stringify(messages))
-
     const filteredMessages: PlayerMessages = {}
     if(messages){
       for (const message of messages) {
@@ -78,18 +75,17 @@ class World {
     // key = kirinokirino
     // key is like 1 in array[1]
     for (const [_id, user] of Object.entries(users)) {
-      console.log(name)
-      console.log(JSON.stringify(user))
       // create a new user avatar.
       if (!this.userAvatars[user.username]) {
         this.userAvatars[user.username] = createNewUserAvatar(
           this,
           user,
           Math.random() * this.canvas.width,
+          this.canvas.height - 125,
           this.time,
         )
         this.chat.push({
-          text: `Hello ${name}, thanks for chatting!`,
+          text: `Hello ${user.username}, thanks for chatting!`,
           color: user.color,
         })
       }
@@ -157,7 +153,6 @@ class World {
   handleCommands(user: Player) {
     const commands = user.unhandled_commands
     if (commands) {
-      console.log('commands is: ' + JSON.stringify(commands))
       for (const { command, args, argUsers } of commands) {
         if (command == ActionType.HUG) {
           this.actionBetweenUsers(BehaviourName.HUG, ActionType.HUG, user, argUsers)
@@ -198,7 +193,7 @@ class World {
     this.updateAvatars()
     this.updateEmotes()
     this.updateBubbles()
-    this.updateChat()
+    if (CHAT_RENDERING) this.updateChat()
   }
 
   updateAvatars() {
@@ -319,6 +314,7 @@ function createNewUserAvatar(
   world: World,
   user: Player,
   x: number,
+  y: number,
   time: number,
 ) {
   const avatar = new Avatar(world, {
@@ -326,7 +322,7 @@ function createNewUserAvatar(
     display_name: user.display_name,
     color: user.color,
     x: x,
-    y: 850,
+    y: y,
     src: bunny,
     mask: bunnyMask, 
     time: time,

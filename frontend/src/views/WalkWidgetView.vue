@@ -1,6 +1,6 @@
 <template>
   <div class="game-container" ref="gameContainer">
-    <canvas class="game-canvas" ref="gameCanvas" width="1920" height="1080"> </canvas>
+    <canvas class="game-canvas" ref="gameCanvas" :height="windowHeight" :width="windowWidth"></canvas>
   </div>
 </template>
 
@@ -29,7 +29,16 @@ export default class WalkWidget extends Vue {
     // this.interval = setInterval(() => {
     // }, UPDATE_PERIOD);
     await this.fetchUsers()
+    // this.resizeCanvasToDisplaySize()
     requestAnimationFrame(this.step)
+  }
+
+  public get windowWidth(): number {
+    return window.innerWidth
+  }
+
+  public get windowHeight(): number {
+    return window.innerHeight
   }
 
   public async fetchUsers(): Promise<void> {
@@ -52,7 +61,6 @@ export default class WalkWidget extends Vue {
         throw error
       }
     }
-    console.log('users fetched')
 
     // queue the next server request
     setTimeout(this.fetchUsers, UPDATE_PERIOD)
@@ -60,7 +68,6 @@ export default class WalkWidget extends Vue {
 
   public step(timestep: number) {
     this.world.update(timestep)
-    console.log('animation frame requested')
     requestAnimationFrame(this.step)
   }
 }
@@ -69,10 +76,14 @@ export default class WalkWidget extends Vue {
 <style>
 @font-face {
   font-family: 'VictorMono-Medium';
-  src: url('../../fonts/VictorMono-Medium.woff2') format('woff2');
+  src: url('../fonts/VictorMono-Medium.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
 }
+/* canvas{
+  width: 500px;
+  height: 500px;
+} */
 
 body{
   padding: 0;
@@ -84,8 +95,6 @@ body{
 .game-container{
   font-family: 'VictorMono-Medium';
   position: relative;
-  width: 1920px;
-  height: 1080px;
   padding: 0;
   margin: 0 auto;
   /* ideally, i want the game to snap 
@@ -93,6 +102,6 @@ body{
   it doesn't do it yet, 
   the body snaps to top and limits height 
   to the height of the canvas... */
-  margin-top: 20px;
+  /* margin-top: 20px; */
 }
 </style>

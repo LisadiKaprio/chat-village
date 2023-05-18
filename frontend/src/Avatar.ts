@@ -13,7 +13,7 @@ class Avatar {
     this.world = world
     // define and pass in position, or else default to 0
     this.x = config.x || 0
-    this.y = config.y || 950
+    this.y = config.y || 150
     this.toRemove = false
     this.color = config.color || 'black'
     // define sprite
@@ -61,7 +61,7 @@ class Avatar {
     }
     const action = this.currentBehaviour.actions[this.behaviourLoopIndex]
     if (action.type == ActionType.WALK) {
-      if (this.x >= 1920 - 150) {
+      if (this.x >= this.world.canvas.height - 150) {
         this.direction = 'left'
       }
       if (this.x <= 0) {

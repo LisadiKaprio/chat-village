@@ -47,7 +47,6 @@ export default class Webserver {
       const filteredPlayers: Players = {}
       for (const id of state.activePlayers) {
         if (state.players[id].channel_id === channelId) {
-          console.log(`Fetching player ${state.players[id].username} (${state.players[id].id})`)
           filteredPlayers[id] = state.players[id]
         }
       }
