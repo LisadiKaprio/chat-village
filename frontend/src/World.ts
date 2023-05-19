@@ -17,7 +17,7 @@ import {
 import { Bubble, BubbleType } from './Bubble.js'
 import { Emote } from './Emote.js'
 import { assertExists } from './Helpers.js'
-import { Player, Players, EmoteReceived, Message } from '../../common/src/Types'
+import { Player, Players, EmoteReceived, Message, PlayerState } from '../../common/src/Types'
 // import { ServerMessages } from './types/Types.js'
 
 const MESSAGES_ALL_OVER_THE_PLACE: boolean = false
@@ -90,6 +90,10 @@ class World {
         })
       }
 
+      if (user.state === PlayerState.OFFLINE){
+        this.userAvatars[user.username].isActive = false
+      }
+
       // handle user commands
       this.handleCommands(user)
 
@@ -146,47 +150,52 @@ class World {
       }
     }
 
+    for (const [_name, avatar] of Object.entries(this.userAvatars)){
+      if (!users[avatar.id]){
+        avatar.isActive = false
+      }
+    }
+
     // spawn new emotes since last data pull
     this.renderedEmotes.push(...createNewEmotes(emotes, this.userAvatars))
   }
 
   handleCommands(user: Player) {
     const commands = user.unhandled_commands
-    if (commands) {
-      for (const { command, args, argUsers } of commands) {
-        if (command == ActionType.HUG) {
-          this.actionBetweenUsers(BehaviourName.HUG, ActionType.HUG, user, argUsers)
-        } else if (command == ActionType.BONK) {
-          this.actionBetweenUsers(BehaviourName.BONK, ActionType.BONK, user, argUsers)
-        } else if (command == 'whoami') {
-          this.chat.push({
-            text: `you are ${user.username}`,
-            color: 'blue',
-          })
-        } else if (command == 'stats') {
-          this.chat.push({
-            text: `${user.username} stats: ${user.points} xp.`,
-            color: 'blue',
-          })
-        } else if (command == 'dbg') {
-          console.log(user)
-          const userAvatar = this.userAvatars[user.username]
-          this.chat.push({
-            text: `${user.username
-              }'s behaviour: ${userAvatar.currentBehaviour.dbg()}, after that: ${JSON.stringify(
-                userAvatar.motivation.map((motivation) => motivation.name),
-              )}`,
-          })
-        } else if (command == 'clearUsers') {
-          this.userAvatars = {}
-        } else {
-          // Ignore unhandled commands.
-        }
+    for (const { command, args, argUsers } of commands) {
+      if (command === ActionType.HUG) {
+        this.actionBetweenUsers(BehaviourName.HUG, ActionType.HUG, user, argUsers)
+      } else if (command == ActionType.BONK) {
+        this.actionBetweenUsers(BehaviourName.BONK, ActionType.BONK, user, argUsers)
+      } else if (command === 'whoami') {
+        this.chat.push({
+          text: `you are ${user.username}`,
+          color: 'blue',
+        })
+      } else if (command === 'stats') {
+        this.chat.push({
+          text: `${user.username} stats: ${user.points} xp.`,
+          color: 'blue',
+        })
+      } else if (command === 'dbg') {
+        console.log(user)
+        const userAvatar = this.userAvatars[user.username]
+        this.chat.push({
+          text: `${user.username
+            }'s behaviour: ${userAvatar.currentBehaviour.dbg()}, after that: ${JSON.stringify(
+              userAvatar.motivation.map((motivation) => motivation.name),
+            )}`,
+        })
+      } else if (command === 'volcano') {
+        this.userAvatars = {}
+        console.log(this.userAvatars)
+      } else {
+        // Ignore unhandled commands.
       }
     }
   }
 
-  update(_timestep: number) {
+  update(_timestep?: number) {
     // clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
@@ -201,6 +210,7 @@ class World {
     this.ctx.textAlign = 'center'
     this.ctx.font = 'bold 16px VictorMono-Medium'
     for (const userAvatar of Object.values(this.userAvatars)) {
+      // todo: state change should be done in backend instead!
       if (
         userAvatar.isActive &&
         this.time - userAvatar.lastChatTime >= INACTIVE_TIME
@@ -211,8 +221,10 @@ class World {
           color: 'grey',
         })
       }
-      userAvatar.update()
-      userAvatar.draw(this.ctx)
+      if (userAvatar.isActive) {
+        userAvatar.update()
+        userAvatar.draw(this.ctx)
+      }
     }
   }
 
@@ -318,6 +330,7 @@ function createNewUserAvatar(
   time: number,
 ) {
   const avatar = new Avatar(world, {
+    id: user.id,
     name: user.username,
     display_name: user.display_name,
     color: user.color,

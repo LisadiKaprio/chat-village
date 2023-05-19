@@ -110,6 +110,7 @@ export default class State {
     await clearUnhandledCommands(db, channelId)
     this.newEmotes = this.newEmotes.filter(emote => emote.channel !== channelUsername)
     this.allNewMessages[channelUsername] = []
+    await this.refresh(db)
   }
 
   async refresh (

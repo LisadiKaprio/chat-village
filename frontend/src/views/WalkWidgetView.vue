@@ -10,7 +10,7 @@ import { Component, Prop, Vue, Ref } from 'vue-facing-decorator'
 import { useRoute } from 'vue-router'
 import { assertExists } from '../Helpers'
 import { World } from '../World'
-import { ServerResponse, UPDATE_PERIOD } from '../types/Types'
+import { FRAMERATE, SECOND, ServerResponse, UPDATE_PERIOD } from '../types/Types'
 
 @Component
 export default class WalkWidget extends Vue {
@@ -21,6 +21,8 @@ export default class WalkWidget extends Vue {
   private route = useRoute()
   // public gameContainer = document.querySelector('.game-container')
   public world: World
+  private then: number
+  private fpsInterval = (SECOND / FRAMERATE)
 
   public async mounted (): Promise<void> {
     assertExists(this.gameContainer)
@@ -30,7 +32,7 @@ export default class WalkWidget extends Vue {
     // }, UPDATE_PERIOD);
     await this.fetchUsers()
     // this.resizeCanvasToDisplaySize()
-    requestAnimationFrame(this.step)
+    this.startDrawing()
   }
 
   public get windowWidth(): number {
@@ -47,8 +49,6 @@ export default class WalkWidget extends Vue {
       const resp = await fetch(`/api/users/${this.channel}`)
       // const a = await resp.text()
       const { users, emotes, messages } = (await resp.json()) as ServerResponse
-
-      // update the world with the data from the server.
       this.world.feedNewData(users, emotes, messages)
     } catch (error: unknown) {
       if (
@@ -66,10 +66,28 @@ export default class WalkWidget extends Vue {
     setTimeout(this.fetchUsers, UPDATE_PERIOD)
   }
 
-  public step(timestep: number) {
-    this.world.update(timestep)
-    requestAnimationFrame(this.step)
+  public startDrawing() {
+    this.then = window.performance.now()
+    this.drawAtFramerate()
   }
+
+  public drawAtFramerate() {
+    requestAnimationFrame(this.drawAtFramerate)
+    const now = window.performance.now()
+    const elapsed = now - this.then
+    if (elapsed > this.fpsInterval) {
+      this.then = now - (elapsed % this.fpsInterval)
+        this.world.update()
+        requestAnimationFrame(this.drawAtFramerate)
+    }
+
+
+  }
+
+  // public step(timestep: number) {
+  //   this.world.update(timestep)
+  //   requestAnimationFrame(this.step)
+  // }
 }
 </script>
 

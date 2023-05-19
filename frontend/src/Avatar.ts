@@ -8,6 +8,7 @@ class Avatar {
   // TODO
   constructor(world: World, config: any) {
     // username
+    this.id = config.id
     this.name = config.name ?? 'NoName'
     this.display_name = config.display_name ?? 'NoName'
     this.world = world
@@ -343,6 +344,7 @@ const BEHAVIOURS = {
 }
 
 interface Avatar {
+  id?: number;
   name: string;
   display_name: string;
   world: World;

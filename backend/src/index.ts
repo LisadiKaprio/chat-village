@@ -56,6 +56,8 @@ async function main() {
   const client = new tmi.client(options)
   client.connect()
 
+  await initActivePlayers()
+
   client.on('connected', (address: any, port: number) => {
     console.log('Connected to chat!' + address + port)
   })
@@ -114,23 +116,34 @@ async function main() {
           })
           .filter((user: any) => user != undefined) as string[]
 
-        let pointsSpent = false
-        if (command == BONK_COMMAND) {
+        let passCommandToFrontend = false
+
+        if (tags.mod || tags.badges?.broadcaster) { // mod commands
+          if (command === 'volcano'){
+            await setAllChannelPlayersInactive(currentChannelId)
+            return
+          }
+        }
+        if (command == BONK_COMMAND) { // player commands
           if (currentPlayer.points >= BONK_PRICE) {
             await deductPointsFromPlayer(currentPlayer.points, BONK_PRICE, currentPlayer.id)
-            pointsSpent = true
+            passCommandToFrontend = true
             console.log(`@${username} bonked someone, spending ${BONK_PRICE}! What a shame! >:c`)
+          } else {
+            console.log(`@${username} failed to bonk! :) Get more fish first, silly.`)
           }
         } else if (command == HUG_COMMAND) {
           if (currentPlayer.points >= HUG_PRICE) {
             await deductPointsFromPlayer(currentPlayer.points, HUG_PRICE, currentPlayer.id)
-            pointsSpent = true
+            passCommandToFrontend = true
             console.log(`@${username} hugged someone, spending ${HUG_PRICE}! What a deal! :)`)
+          } else {
+            console.log(`@${username} failed to hug! :( Get more fish first, silly.`)
           }
         } else {
-          pointsSpent = true
+          passCommandToFrontend = true
         }
-        if(pointsSpent) { // Pass (paid) commands to frontend
+        if(passCommandToFrontend) { // Pass (paid) commands to frontend
           currentPlayer.unhandled_commands.push({
             command: command,
             args: args,
@@ -177,6 +190,20 @@ async function main() {
   webserver.init(db, state)
 
   // ============= functions ================
+
+  async function initActivePlayers(): Promise<void> {
+    const rows = await db._getMany(`
+      select
+        cv.players.id
+      from
+        cv.players
+      where
+        cv.players.state = $1
+    `, [PlayerState.ACTIVE])
+    for(const row of rows){
+      state.activePlayers.push(row.id)
+    }
+  }
 
   async function getChatterId(username: string): Promise<number|null> {
     const row = await db._get(`
@@ -236,6 +263,11 @@ async function main() {
 
   async function deductPointsFromPlayer(currentPoints: number, pointsToDeduct: number, playerId: number): Promise<void> {
     await db.update('cv.players', { points: currentPoints - pointsToDeduct }, { id: playerId })
+  }
+
+  async function setAllChannelPlayersInactive(channelId: number): Promise<void> {
+    await db.update('cv.players', { state: PlayerState.OFFLINE }, {channel_id: channelId})
+    state.activePlayers = []
   }
 
   function searchUser(query: string, players: Players): string | undefined {
