@@ -72,14 +72,13 @@ export default class WalkWidget extends Vue {
   }
 
   public drawAtFramerate() {
-    requestAnimationFrame(this.drawAtFramerate)
     const now = window.performance.now()
     const elapsed = now - this.then
     if (elapsed > this.fpsInterval) {
       this.then = now - (elapsed % this.fpsInterval)
-        this.world.update()
-        requestAnimationFrame(this.drawAtFramerate)
+      this.world.update()
     }
+    requestAnimationFrame(this.drawAtFramerate)
 
 
   }
