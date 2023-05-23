@@ -1,5 +1,5 @@
 import Db from './Db'
-import { EmoteReceived,  MessagesToChannel, Chatter, Chatters, Player, Players } from '../../common/src/Types'
+import { EmoteReceived,  MessagesToChannel, Chatter, Chatters, Player, Players, PlayerState, OFFLINE_MINUTES, MINUTE } from '../../common/src/Types'
 
 async function loadChatters(
   db: Db,
@@ -22,8 +22,9 @@ async function loadChatters(
   return chatters
 }
 
-async function loadPlayers(
+async function loadAndProcessPlayers(
   db: Db,
+  state: State,
 ): Promise<Players> {
   const players: Players = {}
 
@@ -37,7 +38,8 @@ async function loadPlayers(
     p.channel_id,
     p.points,
     p.state,
-    p.unhandled_commands
+    p.unhandled_commands,
+    p.last_chatted
   from
     cv.players p
     inner join cv.chatters c on c.id = p.chatter_id
@@ -46,6 +48,12 @@ async function loadPlayers(
   for (const player of dbPlayers) {
     const user = player as Player
     players[user.id] = user
+
+    const currentTime = new Date().getTime()
+    const created = new Date(user.last_chatted).getTime()
+    if ((currentTime - created > OFFLINE_MINUTES * MINUTE) && user.state === PlayerState.ACTIVE) {
+      state.setPlayerOffline(db, user.id, user.username)
+    }
   }
   return players
 }
@@ -66,7 +74,8 @@ export async function getPlayersInChannel(
     p.channel_id,
     p.points,
     p.state,
-    p.unhandled_commands
+    p.unhandled_commands,
+    p.last_chatted
   from
     cv.players p
     inner join cv.chatters c on c.id = p.chatter_id
@@ -98,8 +107,7 @@ export default class State {
   async init (
     db: Db,
   ) {
-    this.chatters = await loadChatters(db)
-    this.players = await loadPlayers(db)
+    this.refresh(db)
   }
 
   async clearFrontendRelevantData (
@@ -115,8 +123,19 @@ export default class State {
 
   async refresh (
     db: Db,
-  ) {
+  ): Promise<void> {
     this.chatters = await loadChatters(db)
-    this.players = await loadPlayers(db)
+    this.players = await loadAndProcessPlayers(db, this)
+  }
+  
+  async setPlayerOffline(
+    db: Db,
+    playerId: number,
+    playerUsername: string,
+  ): Promise<void> {
+    console.log(`setting player offline: ${playerId}`)
+    await db.update('cv.players', { state: PlayerState.OFFLINE }, { id: playerId })
+    this.activePlayers = this.activePlayers.filter(pl => pl !== playerId)
+    this.newEmotes = this.newEmotes.filter(em => em.name !== playerUsername)
   }
 }

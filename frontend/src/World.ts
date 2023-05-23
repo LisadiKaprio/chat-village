@@ -210,17 +210,6 @@ class World {
     this.ctx.textAlign = 'center'
     this.ctx.font = 'bold 16px VictorMono-Medium'
     for (const userAvatar of Object.values(this.userAvatars)) {
-      // todo: state change should be done in backend instead!
-      if (
-        userAvatar.isActive &&
-        this.time - userAvatar.lastChatTime >= INACTIVE_TIME
-      ) {
-        userAvatar.isActive = false
-        this.chat.push({
-          text: `${userAvatar.name} hasn't written much in chat for a while now... Seems like they fell asleep!`,
-          color: 'grey',
-        })
-      }
       if (userAvatar.isActive) {
         userAvatar.update()
         userAvatar.draw(this.ctx)

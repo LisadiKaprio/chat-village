@@ -6,6 +6,9 @@ export enum PlayerState {
     RACING = 'racing',
   }
 
+export const MINUTE = 60_000 
+export const OFFLINE_MINUTES = 10
+
 export type UnhandledCommand = {
     command: string;
     args: string[];
@@ -26,6 +29,7 @@ export type Player = Chatter & {
     points: number;
     state: PlayerState;
     unhandled_commands: UnhandledCommand[];
+    last_chatted: string; // json date
 };
 export type Players = {
     [id: number]: Player;

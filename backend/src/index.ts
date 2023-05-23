@@ -95,6 +95,7 @@ async function main() {
           return
         }
       }
+      await setTimeLastChatted(currentPlayer.id)
 
       if(currentPlayer.state !== PlayerState.ACTIVE){
         await updatePlayerState(currentPlayer.id, PlayerState.ACTIVE)
@@ -120,7 +121,7 @@ async function main() {
 
         if (tags.mod || tags.badges?.broadcaster) { // mod commands
           if (command === 'volcano'){
-            await setAllChannelPlayersInactive(currentChannelId)
+            await setAllChannelPlayersOffline(currentChannelId)
             return
           }
         }
@@ -254,6 +255,7 @@ async function main() {
   }
 
   async function updatePlayerState(playerId: number, state: PlayerState): Promise<void> {
+    console.log(`setting player ${state}: ${playerId}`)
     await db.update('cv.players', { state: state }, { id: playerId })    
   }
 
@@ -265,9 +267,14 @@ async function main() {
     await db.update('cv.players', { points: currentPoints - pointsToDeduct }, { id: playerId })
   }
 
-  async function setAllChannelPlayersInactive(channelId: number): Promise<void> {
-    await db.update('cv.players', { state: PlayerState.OFFLINE }, {channel_id: channelId})
+  async function setAllChannelPlayersOffline(channelId: number): Promise<void> {
+    await db.update('cv.players', { state: PlayerState.OFFLINE }, { channel_id: channelId })
     state.activePlayers = []
+    state.newEmotes = []
+  }
+
+  async function setTimeLastChatted(playerId: number): Promise<void> {
+    await db.update('cv.players', { last_chatted: JSON.stringify(new Date()) }, { id: playerId })
   }
 
   function searchUser(query: string, players: Players): string | undefined {
