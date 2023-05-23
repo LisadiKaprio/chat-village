@@ -25,8 +25,8 @@ class Bubble {
         animations: config.animations || {
           idle: new Animation({
             frames: [
-              [0, 0],
-              [1, 0],
+              [1, 1],
+              [2, 1],
             ],
             doesLoop: true,
           }),
@@ -39,8 +39,8 @@ class Bubble {
     // Behaviours
     this.behaviours = {
       idle: [
-        { type: 'oscilate', time: 50 },
-        { type: 'dissolve', time: 30 },
+        { type: 'oscilate', time: 75 },
+        { type: 'dissolve', time: 50 },
       ],
     }
     this.behaviourLoop = config.behaviourLoop || this.behaviours['idle']

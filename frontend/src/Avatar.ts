@@ -2,7 +2,7 @@ export { BEHAVIOURS, Avatar, Behaviour, actionPrice }
 import { assertExists } from './Helpers.js'
 import { ANIMATIONS, Sprite } from './Sprite.js'
 import { createAdvancedBubble, World } from './World.js'
-import actionItemsImage from './images/bubble/action-items.png'
+import heartParticles from './images/bubble/heartParticles.png'
 
 class Avatar {
   // TODO
@@ -26,9 +26,8 @@ class Avatar {
       displaySize: config.displaySize || 150,
       animations: config.animations || {
         idle: ANIMATIONS.idle,
+        walk: ANIMATIONS.walk,
         talk: ANIMATIONS.talk,
-        gain: ANIMATIONS.gain,
-        consume: ANIMATIONS.consume,
         hug: ANIMATIONS.hug,
         bonk: ANIMATIONS.bonk,
         bonked: ANIMATIONS.bonked,
@@ -95,7 +94,7 @@ class Avatar {
     ctx.fillText(
       this.display_name,
       this.x + this.sprite.displaySize / 2,
-      this.y + this.sprite.displaySize + 3,
+      this.y + this.sprite.displaySize + 10,
     )
   }
 
@@ -162,9 +161,11 @@ class Avatar {
     const action = this.currentBehaviour.actions[this.behaviourLoopIndex]
     this.sprite.setAnimation('idle')
     if (action.type == ActionType.WALK) {
+      this.sprite.setAnimation('walk')
       this.actionTime = Math.random() * this.walkingTime
       const direction = action.direction ?? 'left'
       this.direction = direction
+      this.sprite.mirrored = this.direction !== 'left' ?? false
     } else if (action.type == ActionType.STAND) {
       this.actionTime = Math.random() * this.standTime
     } else if (action.type == ActionType.TALK) {
@@ -217,7 +218,7 @@ class Avatar {
         }
       }
     } else if (action.type == ActionType.BONKED) {
-      this.sprite.mirrored = action.mirrored ?? false
+      this.sprite.mirrored = !action.mirrored ?? false
       this.sprite.setAnimation('bonked')
       this.actionTime = 300
     } else if (action.type == ActionType.GO) {
@@ -243,6 +244,8 @@ class Avatar {
     if (Math.abs(distance) > padding + 10) {
       // need to go closer to who we want to hug.
       // TODO: if too close maybe need to step away a little bit.
+      this.sprite.setAnimation('walk')
+      this.sprite.mirrored = this.direction !== 'left' ?? false
       this.actionTime = 100
       this.currentBehaviour.insert(this.behaviourLoopIndex, {
         type: ActionType.GO,
@@ -256,16 +259,16 @@ class Avatar {
   }
 
   showIcon(x: number) {
-    const iconSize = 100
+    const iconSize = 50
     const iconSprite = {
-      src: actionItemsImage,
+      src: heartParticles,
       cutSize: 100,
       displaySize: iconSize,
     }
     this.world.renderedBubbles.push(
       createAdvancedBubble({
         type: 'icon',
-        x: x,
+        x: x + ((this.sprite.displaySize / 2) - (iconSprite.displaySize / 2)),
         y: this.y - 20,
         spriteInfo: iconSprite,
       }),

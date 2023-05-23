@@ -1,8 +1,7 @@
 export { World, createAdvancedBubble }
 
-import bunny from './images/chars/bunny.png'
-import bunnyMask from './images/chars/bunny-mask.png'
-import xpImage from './images/bubble/xp.png'
+import template from './images/chars/template.png'
+import messageParticles from './images/bubble/messageParticles.png'
 import emojiDetect from '@zutatensuppe/emoji-detect'
 
 import { PlayerMessages, UPDATE_PERIOD } from './types/Types'
@@ -116,14 +115,14 @@ class World {
         avatar.isActive = true
         avatar.lastChatTime = this.time
         const xpSprite = {
-          src: xpImage,
-          cutSize: 150,
-          displaySize: 100,
+          src: messageParticles,
+          cutSize: 100,
+          displaySize: 50,
         }
         this.renderedBubbles.push(
           createAdvancedBubble({
             type: 'icon',
-            x: avatar.x,
+            x: avatar.x + ((avatar.sprite.displaySize / 2) - (xpSprite.displaySize / 2)),
             y: avatar.y,
             spriteInfo: xpSprite,
           }),
@@ -325,8 +324,7 @@ function createNewUserAvatar(
     color: user.color,
     x: x,
     y: y,
-    src: bunny,
-    mask: bunnyMask, 
+    src: template,
     time: time,
     displaySize: 100,
   })
