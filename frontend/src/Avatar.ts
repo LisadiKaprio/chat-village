@@ -16,7 +16,7 @@ class Avatar {
     this.x = config.x || 0
     this.y = config.y || 150
     this.toRemove = false
-    this.color = config.color || 'black'
+    this.color = config.color || 'purple'
     // define sprite
     this.sprite = new Sprite({
       gameObject: this,

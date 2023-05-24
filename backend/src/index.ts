@@ -126,10 +126,10 @@ async function main() {
             const playerId = searchUser(arg, playersInChannel)
             return playerId
           }).filter((user: any) => user != undefined) as string[]
-        let argUsername: string|undefined
-        if(argUsers[0]){
-          argUsername = state.players[+argUsers[0]].username
-        }
+        // let argUsername: string|undefined
+        // if(argUsers[0]){
+        //   argUsername = state.players[+argUsers[0]].username
+        // }
 
         let passCommandToFrontend = false
 
@@ -143,21 +143,21 @@ async function main() {
         if (command === INVENTORY_COMMAND || command === INV_SHORT_COMMAND) {
           client.say(channel, BotMessageInventory(username, currentPlayer.points))
         }
-        if (command == BONK_COMMAND && argUsername) { // player commands
+        if (command == BONK_COMMAND && argUsers[0]) { // player commands
           if (currentPlayer.points >= BONK_PRICE) {
             await deductPointsFromPlayer(currentPlayer.points, BONK_PRICE, currentPlayer.id)
             passCommandToFrontend = true
-            client.say(channel, BotMessageBonk(username, argUsername))
+            client.say(channel, BotMessageBonk(username, argUsers[0]))
           } else {
-            client.say(channel, BotMessageFailedBonk(username, argUsername))
+            client.say(channel, BotMessageFailedBonk(username, argUsers[0]))
           }
-        } else if (command == HUG_COMMAND && argUsername) {
+        } else if (command == HUG_COMMAND && argUsers[0]) {
           if (currentPlayer.points >= HUG_PRICE) {
             await deductPointsFromPlayer(currentPlayer.points, HUG_PRICE, currentPlayer.id)
             passCommandToFrontend = true
-            client.say(channel, BotMessageHug(username, argUsername))
+            client.say(channel, BotMessageHug(username, argUsers[0]))
           } else {
-            client.say(channel, BotMessageFailedHug(username, argUsername))
+            client.say(channel, BotMessageFailedHug(username, argUsers[0]))
           }
         } else {
           passCommandToFrontend = true
@@ -299,9 +299,9 @@ async function main() {
     if (query.startsWith('@')) {
       query = query.replace('@', '')
     }
-    for (const [playerId, userTags] of Object.entries(players)) {
+    for (const [_playerId, userTags] of Object.entries(players)) {
       if (userTags.username === query || userTags.display_name === query){
-        return playerId
+        return userTags.username
       }
     }
   }
