@@ -1,3 +1,6 @@
+
+export type NonEmptyArray<T> = [T, ...T[]]
+
 export enum PlayerState {
     OFFLINE = 'offline',
     LURKING = 'lurking',

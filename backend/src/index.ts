@@ -1,5 +1,6 @@
 import tmi from 'tmi.js'
 import { Player, Players, PlayerState, Message } from '../../common/src/Types'
+import { SimpleBotMessages, BotMessageHug, BotMessageBonk, BotMessageFailedBonk, BotMessageFailedHug, BotMessageInventory } from '../../common/src/Messages'
 import Db from './Db'
 import { getChannelId } from './functions'
 import State, { getPlayersInChannel } from './State'
@@ -30,6 +31,8 @@ async function main() {
   const IS_BOT_ACTIVE = true
   const BONK_COMMAND = 'bonk'
   const HUG_COMMAND = 'hug'
+  const INVENTORY_COMMAND = 'inventory'
+  const INV_SHORT_COMMAND = 'inv'
   const BONK_PRICE = 10
   const HUG_PRICE = 5
   const IDLE_GAIN = 1
@@ -50,6 +53,10 @@ async function main() {
       cluster: 'aws',
       reconnect: true,
     },
+    identity: {
+      username: process.env.TWITCH_BOT_USERNAME,
+      password: process.env.TWITCH_OAUTH_TOKEN,
+    },
     channels: await channelUsernames(),
   }
 
@@ -65,6 +72,11 @@ async function main() {
   client.on('message', async (channel: any, tags: any, message: any) => {
     const { username } = tags
     const display_name = tags['display-name']
+
+    // don't do anything if message comes from ChatVillageBot
+    if(process.env.TWITCH_BOT_USERNAME && username.toLowerCase() === process.env.TWITCH_BOT_USERNAME.toLowerCase()) {
+      return
+    }
 
     const currentChannelUsername = channel.startsWith('#') ? channel.substr(1) : channel
     const currentChannelId = await getChannelId(db, currentChannelUsername)
@@ -110,36 +122,42 @@ async function main() {
       if (detectedCommand) {
         const command = detectedCommand[1]
         const args = detectedCommand[2].split(/\s+/)
-        const argUsers = args
-          .map((arg: any) => {
-            const username = searchUser(arg, playersInChannel)
-            return username
-          })
-          .filter((user: any) => user != undefined) as string[]
+        const argUsers = args.map((arg: any) => {
+            const playerId = searchUser(arg, playersInChannel)
+            return playerId
+          }).filter((user: any) => user != undefined) as string[]
+        let argUsername: string|undefined
+        if(argUsers[0]){
+          argUsername = state.players[+argUsers[0]].username
+        }
 
         let passCommandToFrontend = false
 
         if (tags.mod || tags.badges?.broadcaster) { // mod commands
           if (command === 'volcano'){
+            client.say(channel, SimpleBotMessages.VOLCANO)
             await setAllChannelPlayersOffline(currentChannelId)
             return
           }
         }
-        if (command == BONK_COMMAND) { // player commands
+        if (command === INVENTORY_COMMAND || command === INV_SHORT_COMMAND) {
+          client.say(channel, BotMessageInventory(username, currentPlayer.points))
+        }
+        if (command == BONK_COMMAND && argUsername) { // player commands
           if (currentPlayer.points >= BONK_PRICE) {
             await deductPointsFromPlayer(currentPlayer.points, BONK_PRICE, currentPlayer.id)
             passCommandToFrontend = true
-            console.log(`@${username} bonked someone, spending ${BONK_PRICE}! What a shame! >:c`)
+            client.say(channel, BotMessageBonk(username, argUsername))
           } else {
-            console.log(`@${username} failed to bonk! :) Get more fish first, silly.`)
+            client.say(channel, BotMessageFailedBonk(username, argUsername))
           }
-        } else if (command == HUG_COMMAND) {
+        } else if (command == HUG_COMMAND && argUsername) {
           if (currentPlayer.points >= HUG_PRICE) {
             await deductPointsFromPlayer(currentPlayer.points, HUG_PRICE, currentPlayer.id)
             passCommandToFrontend = true
-            console.log(`@${username} hugged someone, spending ${HUG_PRICE}! What a deal! :)`)
+            client.say(channel, BotMessageHug(username, argUsername))
           } else {
-            console.log(`@${username} failed to hug! :( Get more fish first, silly.`)
+            client.say(channel, BotMessageFailedHug(username, argUsername))
           }
         } else {
           passCommandToFrontend = true
@@ -281,9 +299,9 @@ async function main() {
     if (query.startsWith('@')) {
       query = query.replace('@', '')
     }
-    for (const [username, userTags] of Object.entries(players)) {
+    for (const [playerId, userTags] of Object.entries(players)) {
       if (userTags.username === query || userTags.display_name === query){
-        return username
+        return playerId
       }
     }
   }
