@@ -107,7 +107,7 @@ export default class State {
   async init (
     db: Db,
   ) {
-    this.refresh(db)
+    await this.refresh(db)
   }
 
   async clearFrontendRelevantData (

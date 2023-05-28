@@ -1,10 +1,11 @@
 import tmi from 'tmi.js'
 import { Player, Players, PlayerState, Message } from '../../common/src/Types'
-import { SimpleBotMessages, BotMessageHug, BotMessageBonk, BotMessageFailedBonk, BotMessageFailedHug, BotMessageInventory } from '../../common/src/Messages'
+import { SimpleMessages, MessageHug, MessageBonk, MessageFailedBonk, MessageFailedHug, MessageInventory } from '../../common/src/Messages'
 import Db from './Db'
 import { getChannelId } from './functions'
 import State, { getPlayersInChannel } from './State'
 import Webserver from './Webserver'
+import Race from './Race'
 
 require('dotenv').config()
 
@@ -28,7 +29,11 @@ async function main() {
   const state = new State()
   await state.init(db)
 
-  const IS_BOT_ACTIVE = true
+  const race = new Race()
+
+  let IS_BOT_ACTIVE = true
+
+  const BET_COMMAND = 'bet'
   const BONK_COMMAND = 'bonk'
   const HUG_COMMAND = 'hug'
   const INVENTORY_COMMAND = 'inventory'
@@ -71,7 +76,7 @@ async function main() {
 
   client.on('message', async (channel: any, tags: any, message: any) => {
     const { username } = tags
-    const display_name = tags['display-name']
+    const displayName = tags['display-name']
 
     // don't do anything if message comes from ChatVillageBot
     if(process.env.TWITCH_BOT_USERNAME && username.toLowerCase() === process.env.TWITCH_BOT_USERNAME.toLowerCase()) {
@@ -86,10 +91,16 @@ async function main() {
     }
     const playersInChannel = await getPlayersInChannel(db, currentChannelUsername)
 
+    if (!IS_BOT_ACTIVE && message === `!${process.env.BOT_STATUS_COMMAND}` && (tags.mod || tags.badges?.broadcaster)) {
+      IS_BOT_ACTIVE = !IS_BOT_ACTIVE
+      client.say(channel, `Ok, bot is now set to ${IS_BOT_ACTIVE}.`)
+      return
+    }
+
     if (IS_BOT_ACTIVE) {
       if(!(username in state.chatters)) {
         console.log(`${username} not found among chatters: creating chatter...`)
-        await createNewChatter(username, display_name, tags.color)
+        await createNewChatter(username, displayName, tags.color)
         console.log(`Chatter ${username} created!`)
       }
 
@@ -135,31 +146,41 @@ async function main() {
 
         if (tags.mod || tags.badges?.broadcaster) { // mod commands
           if (command === 'volcano'){
-            client.say(channel, SimpleBotMessages.VOLCANO)
+            client.say(channel, SimpleMessages.VOLCANO)
             await setAllChannelPlayersOffline(currentChannelId)
             return
+          } else if (command === process.env.BOT_STATUS_COMMAND){
+            IS_BOT_ACTIVE = !IS_BOT_ACTIVE
+            client.say(channel, `Ok, bot is now set to ${IS_BOT_ACTIVE}.`)
           }
         }
         if (command === INVENTORY_COMMAND || command === INV_SHORT_COMMAND) {
-          client.say(channel, BotMessageInventory(username, currentPlayer.points))
+          client.say(channel, MessageInventory(displayName, currentPlayer.points))
         }
         if (command == BONK_COMMAND && argUsers[0]) { // player commands
           if (currentPlayer.points >= BONK_PRICE) {
             await deductPointsFromPlayer(currentPlayer.points, BONK_PRICE, currentPlayer.id)
             passCommandToFrontend = true
-            client.say(channel, BotMessageBonk(username, argUsers[0]))
+            client.say(channel, MessageBonk(displayName, argUsers[0], BONK_PRICE))
           } else {
-            client.say(channel, BotMessageFailedBonk(username, argUsers[0]))
+            client.say(channel, MessageFailedBonk(displayName, argUsers[0]))
           }
         } else if (command == HUG_COMMAND && argUsers[0]) {
           if (currentPlayer.points >= HUG_PRICE) {
             await deductPointsFromPlayer(currentPlayer.points, HUG_PRICE, currentPlayer.id)
             passCommandToFrontend = true
-            client.say(channel, BotMessageHug(username, argUsers[0]))
+            client.say(channel, MessageHug(displayName, argUsers[0], HUG_PRICE))
           } else {
-            client.say(channel, BotMessageFailedHug(username, argUsers[0]))
+            client.say(channel, MessageFailedHug(displayName, argUsers[0]))
           }
-        } else {
+        } else if (command === BET_COMMAND) {
+          if (currentPlayer.points < race.baseBet) {
+            client.say(channel, MessageFailedHug(displayName, argUsers[0]))
+          }
+          race.participants[currentPlayer.id] = currentPlayer
+          race.participants[currentPlayer.id].bet = race.baseBet
+        }
+        else {
           passCommandToFrontend = true
         }
         if(passCommandToFrontend) { // Pass (paid) commands to frontend
