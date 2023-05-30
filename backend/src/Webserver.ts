@@ -1,6 +1,7 @@
-import { Players } from '../../common/src/Types'
+import { Players, RaceParticipants } from '../../common/src/Types'
 import Db from './Db'
 import { getChannelId } from './functions'
+import RaceConstructor from './Race'
 import State from './State'
 
 const express = require('express')
@@ -9,6 +10,7 @@ export default class Webserver {
   init(
     db: Db,
     state: State,
+    raceConstructor: RaceConstructor,
   ) {
     // COMMUNICATION WITH THE FRONTEND
     const app = express()
@@ -20,7 +22,6 @@ export default class Webserver {
 
     // localhost:2501
 
-    // dbg page
     apiRouter.get('/dbg', (_req: any, res: any) => {
       const filteredUsers: any = {}
       for (const name of state.activePlayers) {
@@ -35,10 +36,7 @@ export default class Webserver {
       )
     })
 
-    // send over the info inside the users variable
     apiRouter.get('/users/:channel', async (req: any, res: any) => {
-      // need to keep the ServerUser interface in frontend synced with this right here
-      
       const channelId = await getChannelId(db, req.params.channel)
       if(!channelId) {
         console.log('No channel id found! Fetching not possible.')
@@ -65,6 +63,17 @@ export default class Webserver {
       })
 
       state.clearFrontendRelevantData(db, req.params.channel, channelId)
+    })
+
+    apiRouter.get('/race/:channel', async (req: any, res: any) => {
+      if(!raceConstructor.races[req.params.channel]) {
+        res.status(400).send({ error: 'no race' })
+        return
+      }
+
+      res.send({
+        participants: raceConstructor.races[req.params.channel].participants,
+      })
     })
 
     // (:

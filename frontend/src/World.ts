@@ -20,19 +20,6 @@ import { Player, Players, EmoteReceived, Message, PlayerState } from '../../comm
 // import { ServerMessages } from './types/Types.js'
 
 const MESSAGES_ALL_OVER_THE_PLACE: boolean = false
-const CHAT_RENDERING: boolean = false
-const CHAT: Chat = {
-  x: 20,
-  y: 20,
-  width: 600,
-  fontSize: 22,
-  lineHeight: 42,
-  containerColor: '#22222210',
-  maxLines: 3,
-  outlineWidth: 0.4,
-  outlineColor: 'black',
-}
-const INACTIVE_TIME: number = 1000 * 60 * 20
 
 class World {
   constructor(gameContainer: HTMLElement, canvas: HTMLCanvasElement) {
@@ -45,8 +32,6 @@ class World {
     this.userAvatars = {}
     this.renderedEmotes = []
     this.renderedBubbles = []
-
-    this.chat = [{ text: 'Have a good day!', color: 'red' }]
 
     this.time = 0
   }
@@ -68,11 +53,6 @@ class World {
     }
 
     this.time += UPDATE_PERIOD
-
-    // difference between value and keys:
-    // value = {name: 'kirinokirino', messageCount: 2, ... }
-    // key = kirinokirino
-    // key is like 1 in array[1]
     for (const [_id, user] of Object.entries(users)) {
       // create a new user avatar.
       if (!this.userAvatars[user.username]) {
@@ -83,10 +63,6 @@ class World {
           this.canvas.height - 125,
           this.time,
         )
-        this.chat.push({
-          text: `Hello ${user.username}, thanks for chatting!`,
-          color: user.color,
-        })
       }
 
       if (user.state === PlayerState.OFFLINE){
@@ -106,13 +82,6 @@ class World {
         const avatar = this.userAvatars[user.username]
         avatar.changeBehaviour(BEHAVIOURS.idle)
         avatar.pushMotivation(BEHAVIOURS.talk)
-        if (!avatar.isActive) {
-          this.chat.push({
-            text: `Welcome back ${user.username}!`,
-            color: avatar.color,
-          })
-        }
-        avatar.isActive = true
         avatar.lastChatTime = this.time
         const xpSprite = {
           src: messageParticles,
@@ -131,7 +100,6 @@ class World {
         // log the message in chat and add a message bubble
         if (MESSAGES_ALL_OVER_THE_PLACE && filteredMessages[user.username]) {
           for (const message of filteredMessages[user.username]) {
-            this.chat.push({ text: message.text, color: avatar.color })
             this.renderedBubbles.push(
               createAdvancedBubble({
                 type: 'text',
@@ -162,30 +130,11 @@ class World {
   handleCommands(user: Player) {
     const commands = user.unhandled_commands
     for (const { command, args, argUsers } of commands) {
-      if (command === ActionType.HUG) {
+      if (command === '!hug') {
         this.actionBetweenUsers(BehaviourName.HUG, ActionType.HUG, user, argUsers)
-      } else if (command == ActionType.BONK) {
+      } else if (command == '!bonk') {
         this.actionBetweenUsers(BehaviourName.BONK, ActionType.BONK, user, argUsers)
-      } else if (command === 'whoami') {
-        this.chat.push({
-          text: `you are ${user.username}`,
-          color: 'blue',
-        })
-      } else if (command === 'stats') {
-        this.chat.push({
-          text: `${user.username} stats: ${user.points} xp.`,
-          color: 'blue',
-        })
-      } else if (command === 'dbg') {
-        console.log(user)
-        const userAvatar = this.userAvatars[user.username]
-        this.chat.push({
-          text: `${user.username
-            }'s behaviour: ${userAvatar.currentBehaviour.dbg()}, after that: ${JSON.stringify(
-              userAvatar.motivation.map((motivation) => motivation.name),
-            )}`,
-        })
-      } else if (command === 'volcano') {
+      } else if (command === '!volcano') {
         this.userAvatars = {}
         console.log(this.userAvatars)
       } else {
@@ -201,7 +150,6 @@ class World {
     this.updateAvatars()
     this.updateEmotes()
     this.updateBubbles()
-    if (CHAT_RENDERING) this.updateChat()
   }
 
   updateAvatars() {
@@ -238,35 +186,6 @@ class World {
     }
   }
 
-  updateChat() {
-    // remove the lines that wouldn't fit in the chat
-    while (this.chat.length > CHAT.maxLines) {
-      this.chat.shift()
-    }
-    // styles applicable to all lines
-    this.ctx.textAlign = 'start'
-    this.ctx.font = 'bold ' + CHAT.fontSize + 'px VictorMono-Medium'
-    this.ctx.lineWidth = CHAT.outlineWidth
-    this.ctx.strokeStyle = CHAT.outlineColor
-
-    for (let i = 0; i < this.chat.length; i++) {
-      const logLine = this.chat[i]
-      const ratio = this.ctx.measureText(logLine.text).width / CHAT.width
-      let textCutTo = logLine.text.length
-      if (ratio > 1) {
-        textCutTo = Math.floor(logLine.text.length / ratio)
-      }
-      const text = logLine.text.substring(0, textCutTo)
-      const y = CHAT.y + (i + 1) * CHAT.lineHeight
-      const containerPadding = 12
-      const containerHeight = CHAT.lineHeight - containerPadding
-      this.ctx.fillStyle = CHAT.containerColor
-      this.ctx.fillRect(CHAT.x, y - containerHeight + containerPadding / 2, CHAT.width, containerHeight)
-      this.ctx.fillStyle = logLine.color ? logLine.color : 'grey'
-      this.ctx.fillText(text, CHAT.x + 4, y, CHAT.width - 4)
-      this.ctx.strokeText(text, CHAT.x + 4, y, CHAT.width - 4)
-    }
-  }
   randomAvatarName(besides?: string): string {
     let names: string[] = Object.keys(this.userAvatars)
     if (besides) {
@@ -290,15 +209,10 @@ class World {
     const userAvatar = this.userAvatars[origin.username]
     const behaviours = []
     for (const name of targets) {
+      console.log('going through targets')
       if (name == origin.username) continue
       const target = this.userAvatars[name]
       if (target) {
-        this.chat.push({
-          text: `${origin.display_name} uses ${actionPrice(
-            action,
-          )}xp to ${action} ${target.display_name}`,
-          color: origin.color,
-        })
         behaviours.push(new Behaviour(behaviourName, [{ type: action, who: target }]))
       }
     }
@@ -434,18 +348,6 @@ interface World {
   renderedBubbles: any[];
   chat: ChatMessage[];
   time: number;
-}
-
-interface Chat {
-  x: number;
-  y: number;
-  width: number;
-  fontSize: number;
-  containerColor: string;
-  lineHeight: number;
-  maxLines: number;
-  outlineWidth: number;
-  outlineColor: string; //"black",
 }
 
 interface ChatMessage {

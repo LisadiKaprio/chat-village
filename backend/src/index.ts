@@ -1,11 +1,13 @@
 import tmi from 'tmi.js'
-import { Player, Players, PlayerState, Message } from '../../common/src/Types'
-import { SimpleMessages, MessageHug, MessageBonk, MessageFailedBonk, MessageFailedHug, MessageInventory } from '../../common/src/Messages'
+import { Player, Players, PlayerState, Message, CommandTrigger, NonEmptyArray } from '../../common/src/Types'
+import { SimpleMessages, MessageHug, MessageBonk, MessageFailedBonk, MessageFailedHug, MessageInventory, MessageFailedInitBet, MessageFailedRaiseBet, MessageInitBet, MessageRaiseBet, MessageFailedRaceJoin, MessageRandomBonk, MessageEmptyBonk } from '../../common/src/Messages'
 import Db from './Db'
-import { getChannelId } from './functions'
+import { getChannelId, updatePlayerState } from './functions'
 import State, { getPlayersInChannel } from './State'
 import Webserver from './Webserver'
-import Race from './Race'
+import RaceConstructor from './Race'
+import { CommandParser } from './CommandParser'
+import { getRandom } from '../../common/src/Util'
 
 require('dotenv').config()
 
@@ -29,15 +31,11 @@ async function main() {
   const state = new State()
   await state.init(db)
 
-  const race = new Race()
+  const raceConstructor = new RaceConstructor()
+  const commandParser = new CommandParser()
 
   let IS_BOT_ACTIVE = true
 
-  const BET_COMMAND = 'bet'
-  const BONK_COMMAND = 'bonk'
-  const HUG_COMMAND = 'hug'
-  const INVENTORY_COMMAND = 'inventory'
-  const INV_SHORT_COMMAND = 'inv'
   const BONK_PRICE = 10
   const HUG_PRICE = 5
   const IDLE_GAIN = 1
@@ -121,7 +119,7 @@ async function main() {
       await setTimeLastChatted(currentPlayer.id)
 
       if(currentPlayer.state !== PlayerState.ACTIVE){
-        await updatePlayerState(currentPlayer.id, PlayerState.ACTIVE)
+        await updatePlayerState(db, currentPlayer.id, PlayerState.ACTIVE)
       }
 
       if (!state.activePlayers.includes(currentPlayer.id)) {
@@ -129,14 +127,11 @@ async function main() {
       }
 
       // todo: command doesn't necessarily have an `!` infront?..
-      const detectedCommand = message.match(/^!([\w]+)($|\s.*)/)
+      const detectedCommand = commandParser.parse(message, playersInChannel)
       if (detectedCommand) {
-        const command = detectedCommand[1]
-        const args = detectedCommand[2].split(/\s+/)
-        const argUsers = args.map((arg: any) => {
-            const playerId = searchUser(arg, playersInChannel)
-            return playerId
-          }).filter((user: any) => user != undefined) as string[]
+        const command = detectedCommand.command
+        const args = detectedCommand.args
+        const argUsers = detectedCommand.argPlayerUsernames
         // let argUsername: string|undefined
         // if(argUsers[0]){
         //   argUsername = state.players[+argUsers[0]].username
@@ -145,7 +140,7 @@ async function main() {
         let passCommandToFrontend = false
 
         if (tags.mod || tags.badges?.broadcaster) { // mod commands
-          if (command === 'volcano'){
+          if (command === CommandTrigger.VOLCANO){
             client.say(channel, SimpleMessages.VOLCANO)
             await setAllChannelPlayersOffline(currentChannelId)
             return
@@ -154,18 +149,33 @@ async function main() {
             client.say(channel, `Ok, bot is now set to ${IS_BOT_ACTIVE}.`)
           }
         }
-        if (command === INVENTORY_COMMAND || command === INV_SHORT_COMMAND) {
+        if (command === CommandTrigger.INVENTORY || command === CommandTrigger.INV_SHORT) {
           client.say(channel, MessageInventory(displayName, currentPlayer.points))
         }
-        if (command == BONK_COMMAND && argUsers[0]) { // player commands
+        if (command == CommandTrigger.BONK) { // player commands
+          
           if (currentPlayer.points >= BONK_PRICE) {
             await deductPointsFromPlayer(currentPlayer.points, BONK_PRICE, currentPlayer.id)
             passCommandToFrontend = true
-            client.say(channel, MessageBonk(displayName, argUsers[0], BONK_PRICE))
+            console.log('state.activePlayers.length > 1 is' + (state.activePlayers.length > 1))
+            if (state.activePlayers.length > 1){
+              const targetPlayerUsername = argUsers[0] ?? playersInChannel[getRandom([...state.activePlayers.filter(i => i !== currentPlayer?.id)] as NonEmptyArray<number>)].username
+              console.log('argUsers[0] is' + argUsers[0])
+              console.log('targetPlayerUsername is' + targetPlayerUsername)
+              if (!argUsers[0]){
+                argUsers.push(targetPlayerUsername)
+                client.say(channel, MessageRandomBonk(displayName, targetPlayerUsername, BONK_PRICE))
+              } else {
+                client.say(channel, MessageBonk(displayName, targetPlayerUsername, BONK_PRICE))
+              }
+            } else {
+              client.say(channel, MessageEmptyBonk(displayName))
+            }
           } else {
-            client.say(channel, MessageFailedBonk(displayName, argUsers[0]))
+            client.say(channel, MessageFailedBonk(displayName))
           }
-        } else if (command == HUG_COMMAND && argUsers[0]) {
+
+        } else if (command == CommandTrigger.HUG && argUsers[0]) {
           if (currentPlayer.points >= HUG_PRICE) {
             await deductPointsFromPlayer(currentPlayer.points, HUG_PRICE, currentPlayer.id)
             passCommandToFrontend = true
@@ -173,12 +183,41 @@ async function main() {
           } else {
             client.say(channel, MessageFailedHug(displayName, argUsers[0]))
           }
-        } else if (command === BET_COMMAND) {
-          if (currentPlayer.points < race.baseBet) {
-            client.say(channel, MessageFailedHug(displayName, argUsers[0]))
+        } else if (command === CommandTrigger.BET) {
+          let currentBet = raceConstructor.BASE_BET
+          if(+args[0] >= raceConstructor.BASE_BET) currentBet = +args[0]
+          if (!raceConstructor.races[channel]) {
+            raceConstructor.createRace(channel, currentBet)
           }
-          race.participants[currentPlayer.id] = currentPlayer
-          race.participants[currentPlayer.id].bet = race.baseBet
+          const currentRace = raceConstructor.races[channel]
+
+          if (Object.keys(currentRace.participants).length < raceConstructor.MIN_PARTICIPANTS 
+          && Object.keys(currentRace.participants).length !== 0) {
+            currentRace.minutesToWait += raceConstructor.WAIT_MINUTES_FEW_PLAYERS // add x minutes to waittime
+          }
+          
+          if (!currentRace.participants[currentPlayer.id]) { // is initial race entry
+            if (currentPlayer.points < currentBet) {
+              client.say(channel, MessageFailedInitBet(displayName, currentBet))
+            } else {
+              client.say(channel, MessageInitBet(displayName, currentBet, 0))
+              currentRace.participants[currentPlayer.id] = {
+                ...currentPlayer,
+                speed: 0,
+              }
+            }
+          } else {
+            if (Object.keys(currentRace.participants).length !== 1) {
+              client.say(channel, MessageFailedRaceJoin(displayName))
+            } else { // add more to bet
+              if (currentPlayer.points < currentBet) {
+                client.say(channel, MessageFailedRaiseBet(displayName, currentBet))
+              } else {
+                currentRace.currentBet += currentBet
+                client.say(channel, MessageRaiseBet(displayName, currentBet, currentRace.currentBet))
+              }
+            }
+          }
         }
         else {
           passCommandToFrontend = true
@@ -223,11 +262,15 @@ async function main() {
         }
       }
     }
-    state.refresh(db)
   })
 
   const webserver = new Webserver()
-  webserver.init(db, state)
+  webserver.init(db, state, raceConstructor)
+
+  setInterval(async () => {
+    await state.refresh(db)
+    raceConstructor.update(db)
+  }, 2 * 1000) // check every two seconds
 
   // ============= functions ================
 
@@ -293,11 +336,6 @@ async function main() {
     })  
   }
 
-  async function updatePlayerState(playerId: number, state: PlayerState): Promise<void> {
-    console.log(`setting player ${state}: ${playerId}`)
-    await db.update('cv.players', { state: state }, { id: playerId })    
-  }
-
   async function addPointsToPlayer(currentPoints: number, pointsToAdd: number, playerId: number): Promise<void> {
     await db.update('cv.players', { points: currentPoints + pointsToAdd }, { id: playerId })
   }
@@ -314,17 +352,6 @@ async function main() {
 
   async function setTimeLastChatted(playerId: number): Promise<void> {
     await db.update('cv.players', { last_chatted: JSON.stringify(new Date()) }, { id: playerId })
-  }
-
-  function searchUser(query: string, players: Players): string | undefined {
-    if (query.startsWith('@')) {
-      query = query.replace('@', '')
-    }
-    for (const [_playerId, userTags] of Object.entries(players)) {
-      if (userTags.username === query || userTags.display_name === query){
-        return userTags.username
-      }
-    }
   }
 }
 main()

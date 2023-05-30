@@ -9,6 +9,15 @@ export enum PlayerState {
     RACING = 'racing',
   }
 
+export enum CommandTrigger {
+  VOLCANO = '!volcano',
+  BONK = '!bonk',
+  HUG = '!hug',
+  INVENTORY = '!inventory',
+  INV_SHORT = '!inv',
+  BET = '!join'
+}
+
 export const MINUTE = 60_000 
 export const OFFLINE_MINUTES = 10
 
@@ -38,11 +47,21 @@ export type Players = {
   [id: number]: Player;
 };
 export type RaceParticipant = Player & {
-  speed?: number;
-  bet?: number;
+  speed: number;
+  // bet: number;
 }
 export type RaceParticipants = {
   [id: number]: RaceParticipant;
+};
+export type Race = {
+  participants: RaceParticipants
+  currentBet: number
+  warningOccurred: boolean
+  dateInit: number
+  minutesToWait: number
+};
+export type Races = {
+  [channel: string]: Race;
 };
 export type EmoteReceived = {
   name: string;
@@ -56,4 +75,9 @@ export type Message = {
   name: string;
   text: string;
   channel: string;
+}
+export type Command = {
+  command: CommandTrigger;
+  args: string[];
+  argPlayerUsernames: string[]; 
 }
