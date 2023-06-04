@@ -25,7 +25,7 @@ class Sprite {
       util.asDrawable(config.src).then(loaded)
     }
 
-    this.cutSize = config.cutSize || 300
+    this.cutSize = config.cutSize || 200
     this.displaySize = config.displaySize || 150
 
     // configure animation and initial state
