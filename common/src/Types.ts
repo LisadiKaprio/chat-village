@@ -1,5 +1,17 @@
-
 export type NonEmptyArray<T> = [T, ...T[]]
+
+export enum SkinId {
+  BUNNY = 'bunny',
+  CAT = 'cat',
+  DOG = 'dog',
+  BEAR = 'bear',
+  PANDA = 'panda'
+}
+
+export interface Skin {
+  id: string,
+  source: any
+}
 
 export enum PlayerState {
     OFFLINE = 'offline',
@@ -38,6 +50,7 @@ export type Chatter = {
   username: string;
   display_name: string;
   color: string;
+  skin: SkinId;
 }
 export type Chatters = {
   [name: string]: Chatter;

@@ -2,8 +2,6 @@ import { RaceParticipant, RaceParticipants, RaceStatus } from '../../common/src/
 import { BoatAvatar } from './BoatAvatar.js'
 import { assertExists } from './Helpers.js'
 
-import template from './images/chars/template.png'
-
 export const PLAYER_SPACE_VERTICAL = 150
 export const PLAYER_MARGIN_TOP = 15
 export const PLAYER_MARGIN_BOTTOM = 135

@@ -1,8 +1,10 @@
 export { World, createAdvancedBubble }
 
-import template from './images/chars/template.png'
 import messageParticles from './images/bubble/messageParticles.png'
 import emojiDetect from '@zutatensuppe/emoji-detect'
+
+import bunny from './images/chars/bunny.png'
+import cat from './images/chars/cat.png'
 
 import { PlayerMessages, UPDATE_PERIOD } from './types/Types'
 import {
@@ -15,10 +17,33 @@ import {
 import { Bubble, BubbleType } from './Bubble.js'
 import { Emote } from './Emote.js'
 import { assertExists } from './Helpers.js'
-import { Player, Players, EmoteReceived, Message, PlayerState } from '../../common/src/Types'
+import { Player, Players, EmoteReceived, Message, PlayerState, SkinId, NonEmptyArray, Skin } from '../../common/src/Types'
 // import { ServerMessages } from './types/Types.js'
 
 const MESSAGES_ALL_OVER_THE_PLACE: boolean = false
+
+const SKINS: NonEmptyArray<Skin> = [
+  {
+    id: SkinId.BUNNY,
+    source: bunny
+  },
+  {
+    id: SkinId.CAT,
+    source: cat
+  },
+  {
+    id: SkinId.DOG,
+    source: bunny
+  },
+  {
+    id: SkinId.BEAR,
+    source: bunny
+  },
+  {
+    id: SkinId.PANDA,
+    source: bunny
+  },
+]
 
 class World {
   constructor(gameContainer: HTMLElement, canvas: HTMLCanvasElement) {
@@ -60,12 +85,11 @@ class World {
           user,
           Math.random() * this.canvas.width,
           this.canvas.height - 125,
+          user.skin
         )
       }
 
-      if (user.state === PlayerState.OFFLINE){
-        this.userAvatars[user.username].isActive = false
-      }
+      this.userAvatars[user.username].isActive = (user.state === PlayerState.ACTIVE)
 
       // handle user commands
       this.handleCommands(user)
@@ -127,14 +151,16 @@ class World {
 
   handleCommands(user: Player) {
     const commands = user.unhandled_commands
+    console.log('commands is ' + JSON.stringify(commands))
     for (const { command, args, argUsers } of commands) {
       if (command === '!hug') {
+        console.log('hug -> argUsers is ' + argUsers)
         this.actionBetweenUsers(BehaviourName.HUG, ActionType.HUG, user, argUsers[0])
       } else if (command == '!bonk') {
+        console.log('bonk -> argUsers is ' + argUsers)
         this.actionBetweenUsers(BehaviourName.BONK, ActionType.BONK, user, argUsers[0])
       } else if (command === '!volcano') {
         this.userAvatars = {}
-        console.log(this.userAvatars)
       } else {
         // Ignore unhandled commands.
       }
@@ -203,6 +229,7 @@ class World {
     const userAvatar = this.userAvatars[origin.username]
     const behaviours = []
     const targetAvatar = this.userAvatars[target]
+    console.log(targetAvatar)
     if (targetAvatar) {
       behaviours.push(new Behaviour(behaviourName, [{ type: action, who: targetAvatar }]))
     }
@@ -219,7 +246,9 @@ function createNewUserAvatar(
   user: Player,
   x: number,
   y: number,
+  skin: SkinId
 ) {
+  const skinSrc = SKINS.find(s => s.id === skin).source
   const avatar = new Avatar(world, {
     id: user.id,
     name: user.username,
@@ -227,7 +256,7 @@ function createNewUserAvatar(
     color: user.color,
     x: x,
     y: y,
-    src: template,
+    src: skinSrc,
     displaySize: 100,
   })
   return avatar

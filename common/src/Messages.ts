@@ -28,8 +28,8 @@ export const MessageRandomHug = (huggerName: string, huggeeName: string, price: 
 
 export const MessageBonk = (bonkerName: string, bonkeeName: string, price: number): string => {
     return getRandom([
-        `${bonkerName} delivers a powerful bonk to ${bonkeeName}! 💥 The impact echoes through the air as ${bonkeeName} sacrifices ${price} seastars for the strike Jebaited`,
-        `With a resounding bonk, ${bonkerName} unleashes their might upon ${bonkeeName}! 💥 The crowd gasps in awe as ${bonkeeName} pays a hefty price of ${price} seastars for this epic attack NotLikeThis`,
+        `${bonkerName} delivers a powerful bonk to ${bonkeeName}! 💥 The impact echoes through the air as ${bonkerName} sacrifices ${price} seastars for the strike Jebaited`,
+        `With a resounding bonk, ${bonkerName} unleashes their might upon ${bonkeeName}! 💥 The crowd gasps in awe as ${bonkerName} pays a hefty price of ${price} seastars for this epic attack NotLikeThis`,
         `In a surprising turn of events, ${bonkerName} bonks ${bonkeeName} with great force! 💥 The sound of impact resonates as ${bonkerName} willingly spends ${price} seastars for this daring move BOP`,
         `The atmosphere crackles with anticipation as ${bonkerName} lands a solid bonk on ${bonkeeName}! 💥 The crowd erupts in excitement, witnessing ${bonkerName}'s sacrifice of ${price} seastars for this memorable strike. Poooound`,
         `With a mighty swing, ${bonkerName} delivers a bonk upon ${bonkeeName} that echoes through the realm! 💥 The sight of ${bonkerName} spending ${price} seastars for this decisive strike leaves everyone in awe WholeWheat`

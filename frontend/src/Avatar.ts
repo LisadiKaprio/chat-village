@@ -3,6 +3,7 @@ import { assertExists } from './Helpers.js'
 import { ANIMATIONS, Sprite } from './Sprite.js'
 import { createAdvancedBubble, World } from './World.js'
 import heartParticles from './images/bubble/heartParticles.png'
+import { SkinId } from '../../common/src/Types.js'
 
 
 export enum BehaviourName {
@@ -73,6 +74,7 @@ interface Avatar {
   world: World;
   x: number;
   y: number;
+  skin: SkinId;
   toRemove: boolean;
   color: string;
   sprite: Sprite;
@@ -274,7 +276,7 @@ class Avatar {
         if (action.who!.canSwapBehaviour()) {
           // close enough for a hug, change animation of this and the other
           this.sprite.setAnimation('hug')
-          this.actionTime = 100
+          this.actionTime = 500
           this.sprite.mirrored = this.x < action.who!.x
           // sets sprite mirrored here, doesn't reset it
           action.who!.changeBehaviour(

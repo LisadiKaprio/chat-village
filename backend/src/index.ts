@@ -89,7 +89,7 @@ async function main() {
     }
     const playersInChannel = await getPlayersInChannel(db, currentChannelUsername)
 
-    if (!IS_BOT_ACTIVE && message === `!${process.env.BOT_STATUS_COMMAND}` && (tags.mod || tags.badges?.broadcaster)) {
+    if (message === `${process.env.BOT_STATUS_COMMAND}` && (tags.mod || tags.badges?.broadcaster)) {
       IS_BOT_ACTIVE = !IS_BOT_ACTIVE
       client.say(channel, `Ok, bot is now set to ${IS_BOT_ACTIVE}.`)
       return
@@ -153,15 +153,16 @@ async function main() {
           client.say(channel, MessageInventory(displayName, currentPlayer.points))
         }
         if (command == CommandTrigger.BONK) { // player commands
-          
           if (currentPlayer.points >= BONK_PRICE) {
             await deductPointsFromPlayer(currentPlayer.points, BONK_PRICE, currentPlayer.id)
             passCommandToFrontend = true
-            console.log('state.activePlayers.length > 1 is' + (state.activePlayers.length > 1))
-            if (state.activePlayers.length > 1){
-              const targetPlayerUsername = argUsers[0] ?? playersInChannel[getRandom([...state.activePlayers.filter(i => i !== currentPlayer?.id)] as NonEmptyArray<number>)].username
-              console.log('argUsers[0] is' + argUsers[0])
-              console.log('targetPlayerUsername is' + targetPlayerUsername)
+            const potentialTargets = Object.values(state.players).filter(p => p.state === PlayerState.ACTIVE && p.channel_id === currentChannelId && p.username !== username)
+            if (potentialTargets.length > 0){
+              let targetPlayerUsername = argUsers[0]
+              if (!targetPlayerUsername) {
+                  targetPlayerUsername = getRandom([...potentialTargets] as NonEmptyArray<Player>).username
+              }
+              console.log('targetPlayerUsername is ' + targetPlayerUsername)
               if (!argUsers[0]){
                 argUsers.push(targetPlayerUsername)
                 client.say(channel, MessageRandomBonk(displayName, targetPlayerUsername, BONK_PRICE))
@@ -306,6 +307,7 @@ async function main() {
         c.username,
         c.display_name,
         c.color,
+        c.skin,
         p.id as id,
         p.chatter_id,
         p.channel_id,

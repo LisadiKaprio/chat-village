@@ -1,0 +1,1 @@
+ALTER TABLE cv.chatters ADD skin text DEFAULT 'bunny';

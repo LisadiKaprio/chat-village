@@ -11,7 +11,8 @@ async function loadChatters(
     cv.chatters.id as chatter_id,
     cv.chatters.username,
     cv.chatters.display_name,
-    cv.chatters.color
+    cv.chatters.color,
+    cv.chatters.skin
   from
     cv.chatters
   `)
@@ -33,6 +34,7 @@ async function loadAndProcessPlayers(
     c.username,
     c.display_name,
     c.color,
+    c.skin,
     p.id as id,
     p.chatter_id,
     p.channel_id,
@@ -69,6 +71,7 @@ export async function getPlayersInChannel(
     c.username,
     c.display_name,
     c.color,
+    c.skin,
     p.id as id,
     p.chatter_id,
     p.channel_id,
