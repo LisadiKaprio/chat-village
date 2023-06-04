@@ -295,7 +295,7 @@ class Avatar {
     } else if (action.type == ActionType.HUGGED) {
       this.sprite.mirrored = action.mirrored ?? false
       this.sprite.setAnimation('hug')
-      this.actionTime = 100
+      this.actionTime = 500
     } else if (action.type == ActionType.BONK) {
       if (!this.getCloser(action.who!)) {
         if (action.who!.canSwapBehaviour()) {

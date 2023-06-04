@@ -54,7 +54,7 @@ async function loadAndProcessPlayers(
     const currentTime = new Date().getTime()
     const created = new Date(user.last_chatted).getTime()
     if ((currentTime - created > OFFLINE_MINUTES * MINUTE) && user.state === PlayerState.ACTIVE) {
-      state.setPlayerOffline(db, user.id, user.username)
+      await state.setPlayerOffline(db, user.id, user.username)
     }
   }
   return players
@@ -97,7 +97,7 @@ export async function clearUnhandledCommands(
   db: Db,
   channelId: number,
 ): Promise<void> {
-  db.update('cv.players', { unhandled_commands: JSON.stringify([]) }, {channel_id: channelId})
+  await db.update('cv.players', { unhandled_commands: JSON.stringify([]) }, {channel_id: channelId})
 }
 
 export default class State {

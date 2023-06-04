@@ -2,7 +2,7 @@ import { Players, RaceStatus } from '../../common/src/Types'
 import Db from './Db'
 import { getChannelId } from './functions'
 import RaceConstructor from './Race'
-import State from './State'
+import State, { getPlayersInChannel } from './State'
 import { WebSocketServer } from 'ws'
 const express = require('express')
 
@@ -48,10 +48,19 @@ export default class Webserver {
         console.log('No channel id found! Fetching not possible.')
         return
       }
+
+
+      // why doesn't this work??? T_T
+      
+      // const filteredPlayers = await getPlayersInChannel(db, req.params.channel)
+      // console.log('filteredPlayers is ' + JSON.stringify(filteredPlayers))
+
       const filteredPlayers: Players = {}
       for (const id of state.activePlayers) {
-        if (state.players[id].channel_id === channelId) {
-          filteredPlayers[id] = state.players[id]
+        if (state.players[id]) {
+          if (state.players[id].channel_id === channelId) {
+            filteredPlayers[id] = state.players[id]
+          }
         }
       }
 
@@ -67,8 +76,9 @@ export default class Webserver {
         emotes: filteredEmotes,
         messages: state.allNewMessages[req.params.channel],
       })
+      console.log('filteredPlayers is ' + JSON.stringify(filteredPlayers))
 
-      state.clearFrontendRelevantData(db, req.params.channel, channelId)
+      await state.clearFrontendRelevantData(db, req.params.channel, channelId)
     })
 
     apiRouter.get('/race/:channel', async (req: any, res: any) => {

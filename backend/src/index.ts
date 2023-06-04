@@ -224,13 +224,12 @@ async function main() {
           passCommandToFrontend = true
         }
         if(passCommandToFrontend) { // Pass (paid) commands to frontend
-          currentPlayer.unhandled_commands.push({
-            command: command,
-            args: args,
-            argUsers: argUsers,
-          })
           await db.update('cv.players', { 
-            unhandled_commands: JSON.stringify(currentPlayer.unhandled_commands),
+            unhandled_commands: JSON.stringify({
+              command: command,
+              args: args,
+              argUsers: argUsers,
+            }),
           }, { id: currentPlayer.id })
         }
       } else { // No command detected -> Pass messages and emotes to frontend

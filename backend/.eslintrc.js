@@ -7,36 +7,41 @@ module.exports = {
   },
   root: true,
   overrides: [],
-  plugins: ['@typescript-eslint'],
+  plugins: ["@typescript-eslint"],
   parserOptions: {
-    ecmaVersion: 'latest',
+    ecmaVersion: "latest",
     parser: {
-      ts: '@typescript-eslint/parser',
+      ts: "@typescript-eslint/parser",
     },
   },
-  extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended'],
+  extends: [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-requiring-type-checking",
+  ],
   rules: {
-    semi: ['error', 'never'],
+    semi: ["error", "never"],
     quotes: [
-      'error',
-      'single',
+      "error",
+      "single",
       {
         avoidEscape: true,
         allowTemplateLiterals: true,
       },
     ],
-    'comma-dangle': ['error', 'always-multiline'],
-    '@typescript-eslint/no-inferrable-types': 'off',
-    '@typescript-eslint/ban-ts-comment': 'off',
-    '@typescript-eslint/no-explicit-any': 'off',
-    '@typescript-eslint/no-var-requires': 'off',
-    '@typescript-eslint/no-unused-vars': [
-      'warn',
+    "comma-dangle": ["error", "always-multiline"],
+    "@typescript-eslint/no-inferrable-types": "off",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-var-requires": "off",
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
       {
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '(^log$|^_)',
-        caughtErrorsIgnorePattern: '^_',
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "(^log$|^_)",
+        caughtErrorsIgnorePattern: "^_",
       },
     ],
   },
-}
+};
