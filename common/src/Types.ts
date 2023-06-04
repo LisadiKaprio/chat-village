@@ -18,6 +18,13 @@ export enum CommandTrigger {
   BET = '!join'
 }
 
+export enum RaceStatus {
+  OFF = 'off',
+  STARTING = 'starting',
+  RACING = 'racing',
+  FINISHING = 'finishing',
+}
+
 export const MINUTE = 60_000 
 export const OFFLINE_MINUTES = 10
 
@@ -54,6 +61,7 @@ export type RaceParticipants = {
   [id: number]: RaceParticipant;
 };
 export type Race = {
+  status: RaceStatus
   participants: RaceParticipants
   currentBet: number
   warningOccurred: boolean

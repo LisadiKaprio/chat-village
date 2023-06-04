@@ -1,5 +1,11 @@
+import tmi from 'tmi.js'
 import Db from './Db'
 import { Players, PlayerState } from '../../common/src/Types'
+import { MessageWarningRaceStart } from '../../common/src/Messages'
+
+export function warnAboutRace(client: tmi.Client, channel: string, enoughPlayersToStart: boolean, minutes: number): void {
+  client.say(channel, MessageWarningRaceStart(enoughPlayersToStart, minutes))
+}
 
 export async function updatePlayerState(db: Db, playerId: number, state: PlayerState): Promise<void> {
   console.log(`setting player ${state}: ${playerId}`)

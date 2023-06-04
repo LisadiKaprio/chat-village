@@ -6,7 +6,6 @@ import emojiDetect from '@zutatensuppe/emoji-detect'
 
 import { PlayerMessages, UPDATE_PERIOD } from './types/Types'
 import {
-  actionPrice,
   ActionType,
   Avatar,
   Behaviour,
@@ -61,7 +60,6 @@ class World {
           user,
           Math.random() * this.canvas.width,
           this.canvas.height - 125,
-          this.time,
         )
       }
 
@@ -131,9 +129,9 @@ class World {
     const commands = user.unhandled_commands
     for (const { command, args, argUsers } of commands) {
       if (command === '!hug') {
-        this.actionBetweenUsers(BehaviourName.HUG, ActionType.HUG, user, argUsers)
+        this.actionBetweenUsers(BehaviourName.HUG, ActionType.HUG, user, argUsers[0])
       } else if (command == '!bonk') {
-        this.actionBetweenUsers(BehaviourName.BONK, ActionType.BONK, user, argUsers)
+        this.actionBetweenUsers(BehaviourName.BONK, ActionType.BONK, user, argUsers[0])
       } else if (command === '!volcano') {
         this.userAvatars = {}
         console.log(this.userAvatars)
@@ -200,21 +198,13 @@ class World {
     behaviourName: BehaviourName,
     action: ActionType,
     origin: Player,
-    potentialTargets: string[],
+    target: string,
   ) {
-    const targets =
-      potentialTargets.length > 0
-        ? potentialTargets
-        : [this.randomAvatarName(origin.username)]
     const userAvatar = this.userAvatars[origin.username]
     const behaviours = []
-    for (const name of targets) {
-      console.log('going through targets')
-      if (name == origin.username) continue
-      const target = this.userAvatars[name]
-      if (target) {
-        behaviours.push(new Behaviour(behaviourName, [{ type: action, who: target }]))
-      }
+    const targetAvatar = this.userAvatars[target]
+    if (targetAvatar) {
+      behaviours.push(new Behaviour(behaviourName, [{ type: action, who: targetAvatar }]))
     }
     if (behaviours.length > 0) {
       for (const behaviour of behaviours) {
@@ -229,7 +219,6 @@ function createNewUserAvatar(
   user: Player,
   x: number,
   y: number,
-  time: number,
 ) {
   const avatar = new Avatar(world, {
     id: user.id,
@@ -239,7 +228,6 @@ function createNewUserAvatar(
     x: x,
     y: y,
     src: template,
-    time: time,
     displaySize: 100,
   })
   return avatar

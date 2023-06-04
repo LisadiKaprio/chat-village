@@ -1,9 +1,9 @@
-import { Players, RaceParticipants } from '../../common/src/Types'
+import { Players, RaceStatus } from '../../common/src/Types'
 import Db from './Db'
 import { getChannelId } from './functions'
 import RaceConstructor from './Race'
 import State from './State'
-
+import { WebSocketServer } from 'ws'
 const express = require('express')
 
 export default class Webserver {
@@ -15,12 +15,18 @@ export default class Webserver {
     // COMMUNICATION WITH THE FRONTEND
     const app = express()
     const apiRouter = express.Router()
-    const port = 2501
-    
-    // frontend
-    //app.use(express.static('../frontend/dist'))
+    const portExpress = 2501
 
-    // localhost:2501
+    // const portWebsocket = 2502
+    // const server = new WebSocketServer({
+    //   host: 'localhost',
+    //   port: portWebsocket,
+    // })
+    // server.on('connection', (socket: any, _request: any) => {
+    //     setInterval(() => {
+    //         socket.send('hi')
+    //     }, 5000)
+    // })
 
     apiRouter.get('/dbg', (_req: any, res: any) => {
       const filteredUsers: any = {}
@@ -67,18 +73,21 @@ export default class Webserver {
 
     apiRouter.get('/race/:channel', async (req: any, res: any) => {
       if(!raceConstructor.races[req.params.channel]) {
-        res.status(400).send({ error: 'no race' })
-        return
+        console.log(raceConstructor.races)
+        res.send({
+          status: RaceStatus.OFF,
+          participants: {},
+        })
+      } else {
+        res.send({
+          status: raceConstructor.races[req.params.channel].status,
+          participants: raceConstructor.races[req.params.channel].participants,
+        })
       }
-
-      res.send({
-        participants: raceConstructor.races[req.params.channel].participants,
-      })
     })
 
-    // (:
-    app.listen(port, () => {
-      console.log(`Web-Avatars listening on http://localhost:${port}`)
+    app.listen(portExpress, () => {
+      console.log(`Web-Avatars listening on http://localhost:${portExpress}`)
     })
 
     app.use('/api', apiRouter)

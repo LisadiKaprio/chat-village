@@ -1,9 +1,107 @@
-export { BEHAVIOURS, Avatar, Behaviour, actionPrice }
+export { BEHAVIOURS, Avatar, Behaviour }
 import { assertExists } from './Helpers.js'
 import { ANIMATIONS, Sprite } from './Sprite.js'
 import { createAdvancedBubble, World } from './World.js'
 import heartParticles from './images/bubble/heartParticles.png'
 
+
+export enum BehaviourName {
+  BONK = 'bonk',
+  BONKED = 'bonked',
+  HUG = 'hug',
+  HUGGED = 'hugged',
+  IDLE = 'idle',
+  SLEEP = 'sleep',
+  TALK = 'talk',
+}
+
+export enum ActionType {
+  BONK = 'bonk',
+  BONKED = 'bonked',
+  GO = 'go',
+  HUG = 'hug',
+  HUGGED = 'hugged',
+  STAND = 'stand',
+  TALK = 'talk',
+  WALK = 'walk',
+}
+
+class Behaviour {
+  constructor(name: BehaviourName, actions: Action[]) {
+    this.name = name
+    this.actions = actions
+  }
+
+  shift() {
+    this.actions.shift()
+  }
+
+  unshift(action: Action) {
+    this.actions.unshift(action)
+  }
+
+  insert(place: number, action: Action) {
+    this.actions.splice(place, 0, action)
+  }
+
+  get length() {
+    return this.actions.length
+  }
+
+  dbg() {
+    return `${this.name} (${this.actions
+      .map((action) => action.type)
+      .join(', ')})`
+  }
+}
+
+const BEHAVIOURS = {
+  idle: new Behaviour(BehaviourName.IDLE, [
+    { type: ActionType.WALK, direction: 'left' },
+    { type: ActionType.STAND },
+    { type: ActionType.WALK, direction: 'right' },
+    { type: ActionType.STAND },
+  ]),
+  talk: new Behaviour(BehaviourName.TALK, [{ type: ActionType.TALK }]),
+  sleep: new Behaviour(BehaviourName.SLEEP, [{ type: ActionType.STAND }]),
+}
+
+interface Avatar {
+  id?: number;
+  name: string;
+  display_name: string;
+  world: World;
+  x: number;
+  y: number;
+  toRemove: boolean;
+  color: string;
+  sprite: Sprite;
+  actionTime: number;
+  speed: number;
+  walkingTime: number;
+  standTime: number;
+  direction: 'left' | 'right';
+  idleBehaviour: Behaviour;
+  motivation: Behaviour[];
+  currentBehaviour: Behaviour;
+  behaviourLoopIndex: number;
+  isActive: boolean;
+  lastChatTime: number;
+}
+
+interface Behaviour {
+  name: BehaviourName;
+  actions: Action[];
+}
+
+interface Action {
+  type: ActionType;
+  direction?: 'left' | 'right';
+  x?: number;
+  y?: number;
+  who?: Avatar;
+  mirrored?: boolean;
+}
 class Avatar {
   // TODO
   constructor(world: World, config: any) {
@@ -51,7 +149,6 @@ class Avatar {
     this.behaviourLoopIndex = 0
 
     this.isActive = true
-    this.lastChatTime = config.time
   }
 
   update() {
@@ -274,111 +371,4 @@ class Avatar {
       }),
     )
   }
-}
-
-export enum BehaviourName {
-  BONK = 'bonk',
-  BONKED = 'bonked',
-  HUG = 'hug',
-  HUGGED = 'hugged',
-  IDLE = 'idle',
-  SLEEP = 'sleep',
-  TALK = 'talk',
-}
-
-export enum ActionType {
-  BONK = 'bonk',
-  BONKED = 'bonked',
-  GO = 'go',
-  HUG = 'hug',
-  HUGGED = 'hugged',
-  STAND = 'stand',
-  TALK = 'talk',
-  WALK = 'walk',
-}
-
-function actionPrice(action: ActionType) {
-  if (action == ActionType.HUG) {
-    return 30
-  }
-  if (action == ActionType.BONK) {
-    return 60
-  }
-}
-
-class Behaviour {
-  constructor(name: BehaviourName, actions: Action[]) {
-    this.name = name
-    this.actions = actions
-  }
-
-  shift() {
-    this.actions.shift()
-  }
-
-  unshift(action: Action) {
-    this.actions.unshift(action)
-  }
-
-  insert(place: number, action: Action) {
-    this.actions.splice(place, 0, action)
-  }
-
-  get length() {
-    return this.actions.length
-  }
-
-  dbg() {
-    return `${this.name} (${this.actions
-      .map((action) => action.type)
-      .join(', ')})`
-  }
-}
-
-const BEHAVIOURS = {
-  idle: new Behaviour(BehaviourName.IDLE, [
-    { type: ActionType.WALK, direction: 'left' },
-    { type: ActionType.STAND },
-    { type: ActionType.WALK, direction: 'right' },
-    { type: ActionType.STAND },
-  ]),
-  talk: new Behaviour(BehaviourName.TALK, [{ type: ActionType.TALK }]),
-  sleep: new Behaviour(BehaviourName.SLEEP, [{ type: ActionType.STAND }]),
-}
-
-interface Avatar {
-  id?: number;
-  name: string;
-  display_name: string;
-  world: World;
-  x: number;
-  y: number;
-  toRemove: boolean;
-  color: string;
-  sprite: Sprite;
-  actionTime: number;
-  speed: number;
-  walkingTime: number;
-  standTime: number;
-  direction: 'left' | 'right';
-  idleBehaviour: Behaviour;
-  motivation: Behaviour[];
-  currentBehaviour: Behaviour;
-  behaviourLoopIndex: number;
-  isActive: boolean;
-  lastChatTime: number;
-}
-
-interface Behaviour {
-  name: BehaviourName;
-  actions: Action[];
-}
-
-interface Action {
-  type: ActionType;
-  direction?: 'left' | 'right';
-  x?: number;
-  y?: number;
-  who?: Avatar;
-  mirrored?: boolean;
 }

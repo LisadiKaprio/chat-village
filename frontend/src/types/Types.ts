@@ -2,6 +2,7 @@ import { EmoteReceived, Message, Players } from '../../../common/src/Types'
 
 export const SECOND = 1000
 export const UPDATE_PERIOD = 1000
+export const UPDATE_PERIOD_FAST = 1000
 export const FRAMERATE = 60
 
 export interface ServerResponse {

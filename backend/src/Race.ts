@@ -1,5 +1,5 @@
 import { Chance } from 'chance'
-import { MINUTE, PlayerState, Race, Races } from '../../common/src/Types'
+import { MINUTE, PlayerState, Race, Races, RaceStatus } from '../../common/src/Types'
 import Db from './Db'
 import { updateManyPlayerState } from './functions'
 
@@ -20,15 +20,16 @@ export default class RaceConstructor {
     public BASE_BET = 10
 
     // public DISTANCE = 100
-    public BASE_SPEED = 2 //race should last around 45 seconds
-    public MAX_SPEED_RANDOMIZER = 0.5 // maximum degree to which to change speed
-    public MIN_SPEED_RANDOMIZER = -0.5 // maximum degree to which to change speed
-    public SPEED_DECIMAL_DIGITS = 1
+    public BASE_SPEED = 0.05 //race should last around 45 seconds
+    public MAX_SPEED_RANDOMIZER = 0.01 // maximum degree to which to change speed
+    public MIN_SPEED_RANDOMIZER = -0.01 // maximum degree to which to change speed
+    public SPEED_DECIMAL_DIGITS = 5
     
     public races: Races = {}
 
     public createRace(channelUsername: string, bet?: number) {
         this.races[channelUsername] = {
+            status: RaceStatus.STARTING,
             participants: {},
             currentBet: bet ?? this.BASE_BET,
             warningOccurred: false,
@@ -56,6 +57,7 @@ export default class RaceConstructor {
     }
 
     startRace(db: Db, race: Race) {
+        race.status = RaceStatus.RACING
         race.dateInit = 0
         updateManyPlayerState(db, Object.values(race.participants).map(p => p.id), PlayerState.RACING)
         this.setBeginningSpeed(race)

@@ -24,12 +24,17 @@ export default class WalkWidget extends Vue {
   private then: number
   private fpsInterval = (SECOND / FRAMERATE)
 
+  // public ws = new WebSocket('ws://localhost:2502')
+
   public async mounted (): Promise<void> {
+    // if (this.ws) {
+    //   this.ws.onmessage = (ev: any) => {
+    //       console.log(ev)
+    //   }
+    // }
     assertExists(this.gameContainer)
     assertExists(this.gameCanvas)
     this.world = new World(this.gameContainer, this.gameCanvas)
-    // this.interval = setInterval(() => {
-    // }, UPDATE_PERIOD);
     await this.fetchUsers()
     // this.resizeCanvasToDisplaySize()
     this.startDrawing()
@@ -44,10 +49,8 @@ export default class WalkWidget extends Vue {
   }
 
   public async fetchUsers(): Promise<void> {
-    // fetch the users, emotes and messages from the server.
     try {
       const resp = await fetch(`/api/users/${this.channel}`)
-      // const a = await resp.text()
       const { users, emotes, messages } = (await resp.json()) as ServerResponse
       this.world.feedNewData(users, emotes, messages)
     } catch (error: unknown) {
@@ -79,8 +82,6 @@ export default class WalkWidget extends Vue {
       this.world.update()
     }
     requestAnimationFrame(this.drawAtFramerate)
-
-
   }
 
   // public step(timestep: number) {

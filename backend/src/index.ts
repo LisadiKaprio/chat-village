@@ -1,6 +1,6 @@
 import tmi from 'tmi.js'
-import { Player, Players, PlayerState, Message, CommandTrigger, NonEmptyArray } from '../../common/src/Types'
-import { SimpleMessages, MessageHug, MessageBonk, MessageFailedBonk, MessageFailedHug, MessageInventory, MessageFailedInitBet, MessageFailedRaiseBet, MessageInitBet, MessageRaiseBet, MessageFailedRaceJoin, MessageRandomBonk, MessageEmptyBonk } from '../../common/src/Messages'
+import { Player, Players, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE } from '../../common/src/Types'
+import { SimpleMessages, MessageHug, MessageBonk, MessageFailedBonk, MessageFailedHug, MessageInventory, MessageFailedInitBet, MessageFailedRaiseBet, MessageInitBet, MessageRaiseBet, MessageFailedRaceJoin, MessageRandomBonk, MessageEmptyBonk, MessageWarningRaceStart } from '../../common/src/Messages'
 import Db from './Db'
 import { getChannelId, updatePlayerState } from './functions'
 import State, { getPlayersInChannel } from './State'
@@ -186,14 +186,14 @@ async function main() {
         } else if (command === CommandTrigger.BET) {
           let currentBet = raceConstructor.BASE_BET
           if(+args[0] >= raceConstructor.BASE_BET) currentBet = +args[0]
-          if (!raceConstructor.races[channel]) {
-            raceConstructor.createRace(channel, currentBet)
+          if (!raceConstructor.races[currentChannelUsername]) {
+            raceConstructor.createRace(currentChannelUsername, currentBet)
           }
-          const currentRace = raceConstructor.races[channel]
+          const currentRace = raceConstructor.races[currentChannelUsername]
 
           if (Object.keys(currentRace.participants).length < raceConstructor.MIN_PARTICIPANTS 
           && Object.keys(currentRace.participants).length !== 0) {
-            currentRace.minutesToWait += raceConstructor.WAIT_MINUTES_FEW_PLAYERS // add x minutes to waittime
+            currentRace.minutesToWait = (((Date.now() - currentRace.dateInit) + (raceConstructor.WAIT_MINUTES_FEW_PLAYERS * MINUTE)) / MINUTE)
           }
           
           if (!currentRace.participants[currentPlayer.id]) { // is initial race entry
