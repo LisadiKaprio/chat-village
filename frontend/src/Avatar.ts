@@ -5,6 +5,7 @@ import { createAdvancedBubble, World } from './World.js'
 import heartParticles from './images/bubble/heartParticles.png'
 import { SkinId } from '../../common/src/Types.js'
 
+export const AVATAR_DISPLAY_SIZE = 150
 
 export enum BehaviourName {
   BONK = 'bonk',
@@ -123,7 +124,7 @@ class Avatar {
       src: config.src,
       mask: config.mask,
       color: this.color,
-      displaySize: config.displaySize || 150,
+      displaySize: config.displaySize || AVATAR_DISPLAY_SIZE,
       animations: config.animations || {
         idle: ANIMATIONS.idle,
         walk: ANIMATIONS.walk,
@@ -160,7 +161,7 @@ class Avatar {
     }
     const action = this.currentBehaviour.actions[this.behaviourLoopIndex]
     if (action.type == ActionType.WALK) {
-      if (this.x >= this.world.canvas.height - 150) {
+      if (this.x >= this.world.canvas.width - AVATAR_DISPLAY_SIZE) {
         this.direction = 'left'
       }
       if (this.x <= 0) {
@@ -168,18 +169,22 @@ class Avatar {
       }
       if (this.direction == 'left') {
         this.x -= this.speed
+        this.sprite.mirrored = false
       } else if (this.direction == 'right') {
         this.x += this.speed
+        this.sprite.mirrored = true
       }
     } else if (action.type == ActionType.GO) {
       const speedMultiplier = 2.0
       // TODO: only done for x.
       const x = action.x ?? 0
       const deltaX = x - this.x
-      if (deltaX > this.speed * speedMultiplier + 0.1) {
+      if (deltaX > this.speed * speedMultiplier + 0.1) { // running right
         this.x += this.speed * speedMultiplier
-      } else if (deltaX < -(this.speed * speedMultiplier + 0.1)) {
+        this.sprite.mirrored = true
+      } else if (deltaX < -(this.speed * speedMultiplier + 0.1)) { // running left
         this.x -= this.speed * speedMultiplier
+        this.sprite.mirrored = false
       } else {
         this.x = x
         this.actionTime = 1
@@ -270,7 +275,6 @@ class Avatar {
       this.actionTime = Math.random() * this.walkingTime
       const direction = action.direction ?? 'left'
       this.direction = direction
-      this.sprite.mirrored = this.direction !== 'left' ?? false
     } else if (action.type == ActionType.STAND) {
       this.actionTime = Math.random() * this.standTime
     } else if (action.type == ActionType.TALK) {

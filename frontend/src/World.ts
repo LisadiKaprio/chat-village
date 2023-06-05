@@ -153,7 +153,7 @@ class World {
 
   handleCommands(user: Player) {
     const commands = user.unhandled_commands
-    console.log('commands is ' + JSON.stringify(commands))
+    // console.log('commands is ' + JSON.stringify(commands))
     for (const { command, args, argUsers } of commands) {
       if (command === '!hug') {
         console.log('hug -> argUsers is ' + argUsers)
