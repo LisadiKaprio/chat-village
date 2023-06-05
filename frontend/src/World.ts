@@ -5,6 +5,8 @@ import emojiDetect from '@zutatensuppe/emoji-detect'
 
 import bunny from './images/chars/bunny.png'
 import cat from './images/chars/cat.png'
+import bear from './images/chars/bear.png'
+import panda from './images/chars/panda.png'
 
 import { PlayerMessages, UPDATE_PERIOD } from './types/Types'
 import {
@@ -37,11 +39,11 @@ const SKINS: NonEmptyArray<Skin> = [
   },
   {
     id: SkinId.BEAR,
-    source: bunny
+    source: bear
   },
   {
     id: SkinId.PANDA,
-    source: bunny
+    source: panda
   },
 ]
 
