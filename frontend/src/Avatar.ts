@@ -190,6 +190,12 @@ class Avatar {
   draw(ctx: CanvasRenderingContext2D) {
     this.sprite.draw(ctx)
     ctx.fillStyle = this.color
+    ctx.strokeStyle = 'white' 
+    ctx.strokeText(
+      this.display_name,
+      this.x + this.sprite.displaySize / 2,
+      this.y + this.sprite.displaySize + 10
+    )
     ctx.fillText(
       this.display_name,
       this.x + this.sprite.displaySize / 2,
