@@ -76,7 +76,6 @@ export default class Webserver {
         emotes: filteredEmotes,
         messages: state.allNewMessages[req.params.channel],
       })
-      console.log('filteredPlayers is ' + JSON.stringify(filteredPlayers))
 
       await state.clearFrontendRelevantData(db, req.params.channel, channelId)
     })
