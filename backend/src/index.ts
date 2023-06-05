@@ -1,5 +1,5 @@
 import tmi from 'tmi.js'
-import { Player, Players, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE } from '../../common/src/Types'
+import { Player, Players, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId } from '../../common/src/Types'
 import { SimpleMessages, MessageHug, MessageBonk, MessageFailedBonk, MessageFailedHug, MessageInventory, MessageFailedInitBet, MessageFailedRaiseBet, MessageInitBet, MessageRaiseBet, MessageFailedRaceJoin, MessageRandomBonk, MessageEmptyBonk, MessageWarningRaceStart } from '../../common/src/Messages'
 import Db from './Db'
 import { getChannelId, updatePlayerState } from './functions'
@@ -326,6 +326,7 @@ async function main() {
       username: username,
       display_name: display_name,
       color: color,
+      skin: getRandom(Object.values(SkinId) as NonEmptyArray<SkinId>)
     })    
   }
 
