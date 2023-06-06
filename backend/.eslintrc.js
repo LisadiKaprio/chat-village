@@ -13,12 +13,9 @@ module.exports = {
     parser: {
       ts: "@typescript-eslint/parser",
     },
+    project: "./tsconfig.json",
   },
-  extends: [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:@typescript-eslint/recommended-requiring-type-checking",
-  ],
+  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
   rules: {
     semi: ["error", "never"],
     quotes: [

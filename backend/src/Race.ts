@@ -38,14 +38,14 @@ export default class RaceConstructor {
         }
     }
 
-    public update(db: Db) {
+    public async update(db: Db) {
         for(const [_channel, race] of Object.entries(this.races)) {
             if (race.dateInit === 0) return
 
             const timePassedSinceInit = Date.now() - race.dateInit
             console.log(timePassedSinceInit + ' ' + race.minutesToWait * MINUTE)
             if (timePassedSinceInit >= race.minutesToWait * MINUTE) {
-                this.startRace(db, race)
+                await this.startRace(db, race)
             }
         }
     }
@@ -56,10 +56,10 @@ export default class RaceConstructor {
         }
     }
 
-    startRace(db: Db, race: Race) {
+    async startRace(db: Db, race: Race) {
         race.status = RaceStatus.RACING
         race.dateInit = 0
-        updateManyPlayerState(db, Object.values(race.participants).map(p => p.id), PlayerState.RACING)
+        await updateManyPlayerState(db, Object.values(race.participants).map(p => p.id), PlayerState.RACING)
         this.setBeginningSpeed(race)
     }
 }

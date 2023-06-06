@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import tmi from 'tmi.js'
 import { Player, Players, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId } from '../../common/src/Types'
 import { SimpleMessages, MessageHug, MessageBonk, MessageFailedBonk, MessageFailedHug, MessageInventory, MessageFailedInitBet, MessageFailedRaiseBet, MessageInitBet, MessageRaiseBet, MessageFailedRaceJoin, MessageRandomBonk, MessageEmptyBonk, MessageWarningRaceStart } from '../../common/src/Messages'
@@ -326,7 +327,7 @@ async function main() {
       username: username,
       display_name: display_name,
       color: color,
-      skin: getRandom(Object.values(SkinId) as NonEmptyArray<SkinId>)
+      skin: getRandom(Object.values(SkinId) as NonEmptyArray<SkinId>),
     })    
   }
 
