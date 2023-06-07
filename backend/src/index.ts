@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import tmi from 'tmi.js'
-import { Player, Players, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId } from '../../common/src/Types'
+import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId } from '../../common/src/Types'
 import { SimpleMessages, MessageHug, MessageBonk, MessageFailedBonk, MessageFailedHug, MessageInventory, MessageFailedInitBet, MessageFailedRaiseBet, MessageInitBet, MessageRaiseBet, MessageFailedRaceJoin, MessageRandomBonk, MessageEmptyBonk, MessageWarningRaceStart } from '../../common/src/Messages'
 import Db from './Db'
 import { getChannelId, updatePlayerState } from './functions'
@@ -225,13 +225,12 @@ async function main() {
           passCommandToFrontend = true
         }
         if(passCommandToFrontend) { // Pass (paid) commands to frontend
-          await db.update('cv.players', { 
-            unhandled_commands: JSON.stringify({
-              command: command,
-              args: args,
-              argUsers: argUsers,
-            }),
-          }, { id: currentPlayer.id })
+          state.allFrontendCommands[currentChannelUsername].push({
+            command: command,
+            args: args,
+            argPlayerUsernames: argUsers,
+            playerUsername: currentPlayer.username,
+          })
         }
       } else { // No command detected -> Pass messages and emotes to frontend
         await addPointsToPlayer(currentPlayer.points, IDLE_GAIN, currentPlayer.id)
@@ -312,8 +311,7 @@ async function main() {
         p.chatter_id,
         p.channel_id,
         p.points,
-        p.state,
-        p.unhandled_commands
+        p.state
       from cv.chatters c
       inner join cv.players p on p.chatter_id = c.id
       where

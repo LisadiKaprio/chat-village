@@ -40,11 +40,6 @@ export enum RaceStatus {
 export const MINUTE = 60_000 
 export const OFFLINE_MINUTES = 10
 
-export type UnhandledCommand = {
-  command: string;
-  args: string[];
-  argUsers: string[];
-};
 export type Chatter = {
   chatter_id: number;
   username: string;
@@ -60,19 +55,18 @@ export type Player = Chatter & {
   channel_id: number;
   points: number;
   state: PlayerState;
-  unhandled_commands: UnhandledCommand[];
   last_chatted: string; // json date
-};
+}
 export type Players = {
   [id: number]: Player;
-};
+}
 export type RaceParticipant = Player & {
   speed: number;
   // bet: number;
 }
 export type RaceParticipants = {
   [id: number]: RaceParticipant;
-};
+}
 export type Race = {
   status: RaceStatus
   participants: RaceParticipants
@@ -80,15 +74,15 @@ export type Race = {
   warningOccurred: boolean
   dateInit: number
   minutesToWait: number
-};
+}
 export type Races = {
   [channel: string]: Race;
-};
+}
 export type EmoteReceived = {
   name: string;
   id: number;
   channel: string;
-};
+}
 export type MessagesToChannel = {
   [channel: string]: Message[];
 }
@@ -101,4 +95,10 @@ export type Command = {
   command: CommandTrigger;
   args: string[];
   argPlayerUsernames: string[]; 
+}
+export type FrontendCommand = Command & {
+  playerUsername: string;
+}
+export type FrontendCommandsToChannel = {
+  [channelUsername: string]: FrontendCommand[];
 }

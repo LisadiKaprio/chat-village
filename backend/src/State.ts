@@ -1,5 +1,5 @@
 import Db from './Db'
-import { EmoteReceived,  MessagesToChannel, Chatter, Chatters, Player, Players, PlayerState, OFFLINE_MINUTES, MINUTE } from '../../common/src/Types'
+import { EmoteReceived,  MessagesToChannel, Chatter, Chatters, Player, Players, PlayerState, OFFLINE_MINUTES, MINUTE, FrontendCommandsToChannel } from '../../common/src/Types'
 
 async function loadChatters(
   db: Db,
@@ -40,7 +40,6 @@ async function loadAndProcessPlayers(
     p.channel_id,
     p.points,
     p.state,
-    p.unhandled_commands,
     p.last_chatted
   from
     cv.players p
@@ -77,7 +76,6 @@ export async function getPlayersInChannel(
     p.channel_id,
     p.points,
     p.state,
-    p.unhandled_commands,
     p.last_chatted
   from
     cv.players p
@@ -93,19 +91,13 @@ export async function getPlayersInChannel(
   return players
 }
 
-export async function clearUnhandledCommands(
-  db: Db,
-  channelId: number,
-): Promise<void> {
-  await db.update('cv.players', { unhandled_commands: JSON.stringify([]) }, {channel_id: channelId})
-}
-
 export default class State {
   public chatters: Chatters = {}
   public players: Players = {}
   public activePlayers: number[] = []
   public newEmotes: EmoteReceived[] = []
   public allNewMessages: MessagesToChannel = {}
+  public allFrontendCommands: FrontendCommandsToChannel = {}
 
   async init (
     db: Db,
@@ -113,15 +105,10 @@ export default class State {
     await this.refresh(db)
   }
 
-  async clearFrontendRelevantData (
-    db: Db,
-    channelUsername: string,
-    channelId: number,
-  ) {
-    await clearUnhandledCommands(db, channelId)
+  clearFrontendRelevantData (channelUsername: string) {
     this.newEmotes = this.newEmotes.filter(emote => emote.channel !== channelUsername)
     this.allNewMessages[channelUsername] = []
-    await this.refresh(db)
+    this.allFrontendCommands[channelUsername] = []
   }
 
   async refresh (

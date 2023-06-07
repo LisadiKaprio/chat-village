@@ -19,7 +19,7 @@ import {
 import { Bubble, BubbleType } from './Bubble.js'
 import { Emote } from './Emote.js'
 import { assertExists } from './Helpers.js'
-import { Player, Players, EmoteReceived, Message, PlayerState, SkinId, NonEmptyArray, Skin } from '../../common/src/Types'
+import { Player, Players, EmoteReceived, Message, PlayerState, SkinId, NonEmptyArray, Skin, FrontendCommand, CommandTrigger } from '../../common/src/Types'
 // import { ServerMessages } from './types/Types.js'
 
 const MESSAGES_ALL_OVER_THE_PLACE: boolean = false
@@ -66,6 +66,7 @@ class World {
     users: Players,
     emotes: EmoteReceived[],
     messages: Message[],
+    commands: FrontendCommand[],
   ) {
     const filteredMessages: PlayerMessages = {}
     if(messages){
@@ -79,6 +80,7 @@ class World {
     }
 
     this.time += UPDATE_PERIOD
+
     for (const [_id, user] of Object.entries(users)) {
       // create a new user avatar.
       if (!this.userAvatars[user.username]) {
@@ -93,9 +95,6 @@ class World {
 
       this.userAvatars[user.username].isActive = (user.state === PlayerState.ACTIVE)
 
-      // handle user commands
-      this.handleCommands(user)
-
       if (filteredMessages[user.username]) {
         const avatar = this.userAvatars[user.username]
         this.renderedEmotes.push(...createNewEmojis(filteredMessages[user.username].map(m => m.text), avatar.x, avatar.y))
@@ -106,7 +105,6 @@ class World {
         const avatar = this.userAvatars[user.username]
         avatar.changeBehaviour(BEHAVIOURS.idle)
         avatar.pushMotivation(BEHAVIOURS.talk)
-        avatar.lastChatTime = this.time
         const xpSprite = {
           src: messageParticles,
           cutSize: 100,
@@ -147,21 +145,19 @@ class World {
       }
     }
 
+    if (commands) this.handleCommands(commands)
+
     // spawn new emotes since last data pull
     this.renderedEmotes.push(...createNewEmotes(emotes, this.userAvatars))
   }
 
-  handleCommands(user: Player) {
-    const commands = user.unhandled_commands
-    // console.log('commands is ' + JSON.stringify(commands))
-    for (const { command, args, argUsers } of commands) {
-      if (command === '!hug') {
-        console.log('hug -> argUsers is ' + argUsers)
-        this.actionBetweenUsers(BehaviourName.HUG, ActionType.HUG, user, argUsers[0])
-      } else if (command == '!bonk') {
-        console.log('bonk -> argUsers is ' + argUsers)
-        this.actionBetweenUsers(BehaviourName.BONK, ActionType.BONK, user, argUsers[0])
-      } else if (command === '!volcano') {
+  handleCommands(commands: FrontendCommand[]) {
+    for (const { command, args, argPlayerUsernames, playerUsername } of commands) {
+      if (command === CommandTrigger.HUG) {
+        this.actionBetweenUsers(BehaviourName.HUG, ActionType.HUG, playerUsername, argPlayerUsernames[0])
+      } else if (command == CommandTrigger.BONK) {
+        this.actionBetweenUsers(BehaviourName.BONK, ActionType.BONK, playerUsername, argPlayerUsernames[0])
+      } else if (command === CommandTrigger.VOLCANO) {
         this.userAvatars = {}
       } else {
         // Ignore unhandled commands.
@@ -225,13 +221,12 @@ class World {
   actionBetweenUsers(
     behaviourName: BehaviourName,
     action: ActionType,
-    origin: Player,
-    target: string,
+    playerUsername: string,
+    targetUsername: string,
   ) {
-    const userAvatar = this.userAvatars[origin.username]
+    const userAvatar = this.userAvatars[playerUsername]
     const behaviours = []
-    const targetAvatar = this.userAvatars[target]
-    console.log(targetAvatar)
+    const targetAvatar = this.userAvatars[targetUsername]
     if (targetAvatar) {
       behaviours.push(new Behaviour(behaviourName, [{ type: action, who: targetAvatar }]))
     }

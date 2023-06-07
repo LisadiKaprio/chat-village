@@ -24,18 +24,20 @@ export default class WalkWidget extends Vue {
   private then: number
   private fpsInterval = (SECOND / FRAMERATE)
 
-  // public ws = new WebSocket('ws://localhost:2502')
+  public ws!: WebSocket
 
   public async mounted (): Promise<void> {
-    // if (this.ws) {
-    //   this.ws.onmessage = (ev: any) => {
-    //       console.log(ev)
-    //   }
-    // }
+    this.ws = new WebSocket(`ws://localhost:2502/${this.channel}`)
+    this.ws.onmessage = (ev: any) => {
+      const { type, data } = JSON.parse(ev.data)
+      if (type === 'users_info') { // todo: create enum for ws message types
+        const { users, emotes, messages, commands } = data
+        this.world.feedNewData(users, emotes, messages, commands)
+      }
+    }
     assertExists(this.gameContainer)
     assertExists(this.gameCanvas)
     this.world = new World(this.gameContainer, this.gameCanvas)
-    await this.fetchUsers()
     // this.resizeCanvasToDisplaySize()
     this.startDrawing()
   }
@@ -46,27 +48,6 @@ export default class WalkWidget extends Vue {
 
   public get windowHeight(): number {
     return window.innerHeight
-  }
-
-  public async fetchUsers(): Promise<void> {
-    try {
-      const resp = await fetch(`/api/users/${this.channel}`)
-      const { users, emotes, messages } = (await resp.json()) as ServerResponse
-      this.world.feedNewData(users, emotes, messages)
-    } catch (error: unknown) {
-      if (
-        error instanceof TypeError &&
-        error.message.startsWith('NetworkError')
-      ) {
-        // TODO: a disconnect icon or loading message.
-        console.error("Server didn't respond!")
-      } else {
-        throw error
-      }
-    }
-
-    // queue the next server request
-    setTimeout(this.fetchUsers, UPDATE_PERIOD)
   }
 
   public startDrawing() {

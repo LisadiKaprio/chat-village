@@ -1,4 +1,4 @@
-import { EmoteReceived, Message, Players } from '../../../common/src/Types'
+import { EmoteReceived, FrontendCommand, Message, Players } from '../../../common/src/Types'
 
 export const SECOND = 1000
 export const UPDATE_PERIOD = 1000
@@ -9,6 +9,7 @@ export interface ServerResponse {
     users: Players;
     emotes: EmoteReceived[];
     messages: Message[];
+    commands: FrontendCommand[];
   }
   
 export type Command = {
