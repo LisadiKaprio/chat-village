@@ -1,51 +1,66 @@
+import { CommandTrigger } from "./Types"
 import { getRandom } from "./Util"
+
+const EMPTY_MESSAGE = 'Instructions unclear'
 
 export enum SimpleMessages {
     VOLCANO = "GlitchLit A devastating eruption engulfs the avatars, leaving only ash and memories behind. The chat village mourns, yearning for new faces to fill its void."
 }
 
-export const MessageHug = (huggerName: string, huggeeName: string, price: number): string => {
-    return getRandom([
-        `💙 ${huggerName} embraces ${huggeeName}, their hearts intertwining in a warm, heartfelt hug. They sacrifice ${price} seastars to show their affection Kreygasm`,
-        `💙 Wrapped in a tender embrace, ${huggerName} and ${huggeeName} share a moment of genuine connection, exchanging ${huggerName}'s ${price} precious seastars as a symbol of their bond SeemsGood`,
-        `💙 With open arms, ${huggerName} pulls ${huggeeName} close, offering comfort and compassion. Their kind gesture costs ${huggerName} ${price} seastars, but the warmth of the hug is priceless VirtualHug`,
-        `💙 In a sweet embrace, ${huggerName} and ${huggeeName} share a heartfelt moment, spending ${huggerName}'s ${price} seastars to express their care and affection :)`,
-        `💙 The air fills with warmth as ${huggerName} wraps their arms around ${huggeeName}, pouring their heart into a tight hug. A sacrifice of ${price} seastars is made, a small price to pay for such a meaningful connection Kreygasm`
-    ])
+export const MessageInteraction = (chatterName: string, targetName: string, price: number, command: CommandTrigger): string => {
+    if (command === CommandTrigger.BONK) {
+        return getRandom([
+            `💥 ${chatterName} delivers a powerful bonk to ${targetName} Jebaited ${price} seastars well spent!`,
+            `💥 With a resounding bonk, ${chatterName} unleashes their might upon ${targetName}! 💥 The crowd gasps in awe NotLikeThis ${price} seastars well spent!`,
+            `💥 In a surprising turn of events, ${chatterName} bonks ${targetName} with great force BOP ${price} seastars well spent!`,
+            `💥 The atmosphere crackles with anticipation as ${chatterName} lands a solid bonk on ${targetName} Poooound ${price} seastars well spent!`,
+            `💥 With a mighty swing, ${chatterName} delivers a bonk upon ${targetName} that echoes through the realm! WholeWheat ${price} seastars well spent!`
+        ])
+    } else if (command === CommandTrigger.HUG) {
+        return getRandom([
+            `💙 ${chatterName} embraces ${targetName}, their hearts intertwining in a warm, heartfelt hug Kreygasm ${price} seastars well spent!`,
+            `💙 Wrapped in a tender embrace, ${chatterName} and ${targetName} share a moment of genuine connection SeemsGood ${price} seastars well spent!`,
+            `💙 With open arms, ${chatterName} pulls ${targetName} close, offering comfort and compassion VirtualHug ${price} seastars well spent!`,
+            `💙 In a sweet embrace, ${chatterName} and ${targetName} share a heartfelt moment :) ${price} seastars well spent!`,
+            `💙 The air fills with warmth as ${chatterName} wraps their arms around ${targetName}, pouring their heart into a tight hug Kreygasm ${price} seastars well spent!`
+        ])
+    } else return EMPTY_MESSAGE
 }
 
-export const MessageFailedHug = (huggerName: string, huggeeName?: string): string => {
-    return `💔 Hugs require seastars, and ${huggerName} didn't have enough. Keep participating in conversations to gather seastars for heartwarming embraces! MingLee`
+export const MessageInteractionFailed = (chatterName: string, command: CommandTrigger): string => {
+    if (command === CommandTrigger.BONK) {
+        return `💥 Uh-oh! ${chatterName}'s bonk attempt falls flat as they're short on seastars. Engage in more chat conversations to gather seastars for a mighty bonk! Keepo`
+    } else if (command === CommandTrigger.HUG) {
+        return `💔 Hugs require seastars, and ${chatterName} didn't have enough. Keep participating in conversations to gather seastars for heartwarming embraces! MingLee`
+    } else return EMPTY_MESSAGE
 }
 
-export const MessageEmptyHug = (huggerName: string): string => {
-    return `noone to hug`
+export const MessageInteractionEmpty = (chatterName: string, command: CommandTrigger): string => {
+    if (command === CommandTrigger.BONK) {
+        return `🔨 Fueled by the thrill of the moment, ${chatterName} swings their weapon... but alas, the empty air provides no resistance. Their eager bonk misses its target, leaving them feeling bewildered and disheartened.`
+    } else if (command === CommandTrigger.HUG) {
+        return `BibleThump ${chatterName} extends their arms for a warm embrace, but... nobody's home! FeelsLonelyMan`
+    } else return EMPTY_MESSAGE
 }
 
-export const MessageRandomHug = (huggerName: string, huggeeName: string, price: number): string => {
-    return `picked at random`
-}
-
-export const MessageBonk = (bonkerName: string, bonkeeName: string, price: number): string => {
-    return getRandom([
-        `${bonkerName} delivers a powerful bonk to ${bonkeeName}! 💥 The impact echoes through the air as ${bonkerName} sacrifices ${price} seastars for the strike Jebaited`,
-        `With a resounding bonk, ${bonkerName} unleashes their might upon ${bonkeeName}! 💥 The crowd gasps in awe as ${bonkerName} pays a hefty price of ${price} seastars for this epic attack NotLikeThis`,
-        `In a surprising turn of events, ${bonkerName} bonks ${bonkeeName} with great force! 💥 The sound of impact resonates as ${bonkerName} willingly spends ${price} seastars for this daring move BOP`,
-        `The atmosphere crackles with anticipation as ${bonkerName} lands a solid bonk on ${bonkeeName}! 💥 The crowd erupts in excitement, witnessing ${bonkerName}'s sacrifice of ${price} seastars for this memorable strike. Poooound`,
-        `With a mighty swing, ${bonkerName} delivers a bonk upon ${bonkeeName} that echoes through the realm! 💥 The sight of ${bonkerName} spending ${price} seastars for this decisive strike leaves everyone in awe WholeWheat`
-    ])
-}
-
-export const MessageFailedBonk = (bonkerName: string): string => {
-    return `💥 Uh-oh! ${bonkerName}'s bonk attempt falls flat as they're short on seastars. They must engage in more chat conversations to gather seastars for a mighty bonk BibleThump`
-}
-
-export const MessageEmptyBonk = (bonkerName: string): string => {
-    return `noone to bonk`
-}
-
-export const MessageRandomBonk = (bonkerName: string, bonkeeName: string, price: number): string => {
-    return `picked at random`
+export const MessageInteractionRandom = (chatterName: string, targetName: string, price: number, command: CommandTrigger): string => {
+    if (command === CommandTrigger.BONK) {
+        return getRandom([
+            `💥 ${chatterName}'s bonk lands on ${targetName}, selected by the capricious hand of fate Jebaited ${price} seastars well spent!`,
+            `💥 ${chatterName}'s bonking weapon swings wildly and fate chooses ${targetName} as its random target! Drama ensues! NotLikeThis ${price} seastars well spent!`,
+            `💥 ${chatterName}'s bonking spree takes an unexpected twist as fate picks ${targetName} as the random target! BOP ${price} seastars well spent!`,
+            `💥 ${chatterName}'s bonk, meant for anyone, surprisingly finds ${targetName} Poooound ${price} seastars well spent!`,
+            `💥 ${chatterName}  takes a chance and bonks a random target, and to everyone's surprise, it's ${targetName} who gets smacked WholeWheat ${price} seastars well spent!`
+        ])
+    } else if (command === CommandTrigger.HUG) {
+        return getRandom([
+            `🧡 ${chatterName}'s impulsive urge to hug engulfs ${targetName} in an unexpected embrace Kreygasm ${price} seastars well spent!`,
+            `🧡 ${chatterName} surprises everyone by snatching ${targetName} into a spontaneous hug, leaving both of them momentarily stunned SeemsGood ${price} seastars well spent!`,
+            `🧡 ${chatterName}'s overwhelming affection compels them to embrace ${targetName} VirtualHug ${price} seastars well spent!`,
+            `🧡 ${chatterName} reaches out, eyes closed, and unexpectedly wraps ${targetName} in a tight embrace :) ${price} seastars well spent!`,
+            `🧡 With a mischievous glimmer in their eyes, ${chatterName} chooses ${targetName} as the recipient of an impromptu hug Kreygasm ${price} seastars well spent!`
+        ])
+    } else return EMPTY_MESSAGE
 }
 
 export const MessageInventory = (displayName: string, seastarCount?: number): string => {
