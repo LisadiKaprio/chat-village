@@ -11,7 +11,9 @@ import { useRoute } from 'vue-router'
 import { assertExists } from '../Helpers'
 import { World } from '../World'
 import { FRAMERATE, SECOND, ServerResponse, UPDATE_PERIOD } from '../types/Types'
-require('dotenv').config()
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 @Component
 export default class WalkWidget extends Vue {
