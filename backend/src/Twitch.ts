@@ -282,22 +282,40 @@ export default class Twitch {
                     }
                     console.log('targetPlayerUsername is ' + targetPlayerUsername)
                     if (!argUsers[0]){
-                    argUsers.push(targetPlayerUsername)
-                    void client.say(channel, MessageInteractionRandom(currentPlayer.display_name, targetPlayerUsername, price, command))
-                    state.allFrontendCommands[currentPlayer.username].push({
-                        command: command,
-                        args: [],
-                        argPlayerUsernames: argUsers,
-                        playerUsername: currentPlayer.username,
-                      })
+                      argUsers.push(targetPlayerUsername)
+                      void client.say(channel, MessageInteractionRandom(currentPlayer.display_name, targetPlayerUsername, price, command))
+                      if (state.allFrontendCommands[currentPlayer.username]) { // TODO: maybe i can create a util function for that kind of situation?
+                        state.allFrontendCommands[currentPlayer.username].push({
+                            command: command,
+                            args: [],
+                            argPlayerUsernames: argUsers,
+                            playerUsername: currentPlayer.username,
+                          })
+                      } else {
+                        state.allFrontendCommands[currentPlayer.username] = [{
+                          command: command,
+                          args: [],
+                          argPlayerUsernames: argUsers,
+                          playerUsername: currentPlayer.username,
+                        }]
+                      }
                     } else {
-                    void client.say(channel, MessageInteraction(currentPlayer.display_name, targetPlayerUsername, price, command))
-                    state.allFrontendCommands[currentPlayer.username].push({
-                        command: command,
-                        args: [],
-                        argPlayerUsernames: argUsers,
-                        playerUsername: currentPlayer.username,
-                      })
+                      void client.say(channel, MessageInteraction(currentPlayer.display_name, targetPlayerUsername, price, command))
+                      if (state.allFrontendCommands[currentPlayer.username]) { // TODO: maybe i can create a util function for that kind of situation?
+                        state.allFrontendCommands[currentPlayer.username].push({
+                            command: command,
+                            args: [],
+                            argPlayerUsernames: argUsers,
+                            playerUsername: currentPlayer.username,
+                          })
+                      } else {
+                        state.allFrontendCommands[currentPlayer.username] = [{
+                          command: command,
+                          args: [],
+                          argPlayerUsernames: argUsers,
+                          playerUsername: currentPlayer.username,
+                        }]
+                      }
                     }
                 } else {
                     void client.say(channel, MessageInteractionEmpty(currentPlayer.display_name, command))

@@ -29,7 +29,7 @@ export const MessageInteraction = (chatterName: string, targetName: string, pric
 
 export const MessageInteractionFailed = (chatterName: string, command: CommandTrigger): string => {
     if (command === CommandTrigger.BONK) {
-        return `💥 Uh-oh! ${chatterName}'s bonk attempt falls flat as they're short on seastars. Engage in more chat conversations to gather seastars for a mighty bonk! Keepo`
+        return `:( Uh-oh! ${chatterName}'s bonk attempt falls flat as they're short on seastars. Engage in more chat conversations to gather seastars for a mighty bonk!`
     } else if (command === CommandTrigger.HUG) {
         return `💔 Hugs require seastars, and ${chatterName} didn't have enough. Keep participating in conversations to gather seastars for heartwarming embraces! MingLee`
     } else return EMPTY_MESSAGE

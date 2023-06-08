@@ -43,6 +43,7 @@ function buildUsersInfo(
 
 export default class Webserver {
   channelSockets: Record<string, WebSocket[]> = {}
+  ws_host: string = ''
 
   notify(channel: string, type: string, data: any) {
     for (const socket of this.channelSockets[channel] || []) {
@@ -66,13 +67,11 @@ export default class Webserver {
 
     const portWebsocket = 2502
     const server = new WebSocketServer({
-      host: 'localhost',
+      host: this.ws_host,
       port: portWebsocket,
     })
     server.on('connection', async (socket: WebSocket, req: any) => {
       const channelName = req.url.startsWith('/') ? req.url.substring(1).toLowerCase() : req.url.toLowerCase()
-      console.log(req.url)
-      console.log(channelName)
       const channelId = await getChannelId(db, channelName)
 
       // TODO: on disconnect remove the socket from the array

@@ -55,6 +55,7 @@ async function main() {
   await twitch.init(db, state, raceConstructor)
 
   const webserver = new Webserver()
+  webserver.ws_host = process.env.WS_HOST ?? 'localhost'
   webserver.init(db, state, raceConstructor)
 
   setInterval(async () => {
