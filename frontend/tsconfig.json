@@ -4,6 +4,7 @@
       "target": "esnext",
       "jsx": "preserve",
       "importHelpers": true,
+      "module": "es2022",
       "moduleResolution": "node",
       "experimentalDecorators": true,
       "skipLibCheck": true,
@@ -11,6 +12,7 @@
       "esModuleInterop": true,
       "allowSyntheticDefaultImports": true,
       "sourceMap": true,
+      "types": ["vite/client"]
   },
   "include": [
     "src/**/*.ts",

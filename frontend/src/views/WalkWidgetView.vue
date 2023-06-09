@@ -13,8 +13,6 @@ import { World } from '../World'
 import { FRAMERATE, SECOND, ServerResponse, UPDATE_PERIOD } from '../types/Types'
 import dotenv from 'dotenv'
 
-dotenv.config()
-
 @Component
 export default class WalkWidget extends Vue {
   @Ref('gameContainer') private gameContainer!: HTMLElement
@@ -31,7 +29,7 @@ export default class WalkWidget extends Vue {
   public ws_host: string
 
   public async mounted (): Promise<void> {
-    this.ws_host = process.env.WS_HOST ?? 'localhost'
+    this.ws_host = import.meta.env.VITE_WS_HOST ?? 'localhost'
     this.ws = new WebSocket(`ws://${this.ws_host}:2502/${this.channel}`)
     this.ws.onmessage = (ev: any) => {
       const { type, data } = JSON.parse(ev.data)
