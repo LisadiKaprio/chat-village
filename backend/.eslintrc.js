@@ -26,6 +26,7 @@ module.exports = {
         allowTemplateLiterals: true,
       },
     ],
+    indent: ["error", "tab"],
     "comma-dangle": ["error", "always-multiline"],
     "@typescript-eslint/no-inferrable-types": "off",
     "@typescript-eslint/ban-ts-comment": "off",

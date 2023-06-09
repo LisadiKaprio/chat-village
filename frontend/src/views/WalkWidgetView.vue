@@ -12,6 +12,7 @@ import { assertExists } from '../Helpers'
 import { World } from '../World'
 import { FRAMERATE, SECOND, ServerResponse, UPDATE_PERIOD } from '../types/Types'
 import dotenv from 'dotenv'
+import { WebsocketMessageType } from '../../../common/src/Types'
 
 @Component
 export default class WalkWidget extends Vue {
@@ -33,7 +34,7 @@ export default class WalkWidget extends Vue {
     this.ws = new WebSocket(`ws://${this.ws_host}:2502/${this.channel}`)
     this.ws.onmessage = (ev: any) => {
       const { type, data } = JSON.parse(ev.data)
-      if (type === 'users_info') { // todo: create enum for ws message types
+      if (type === WebsocketMessageType.USER_INFO) {
         const { users, emotes, messages, commands } = data
         this.world.feedNewData(users, emotes, messages, commands)
       }

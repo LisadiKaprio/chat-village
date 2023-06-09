@@ -1,6 +1,7 @@
-import { RaceParticipant, RaceParticipants, RaceStatus } from '../../common/src/Types.js'
+import { BackendBoatAvatar, RaceParticipant, RaceParticipants, RaceStatus } from '../../common/src/Types.js'
 import { BoatAvatar } from './BoatAvatar.js'
 import { assertExists } from './Helpers.js'
+import bunny from './images/chars/bunny.png'
 
 export const PLAYER_SPACE_VERTICAL = 150
 export const PLAYER_MARGIN_TOP = 15
@@ -17,7 +18,7 @@ export interface RaceField {
   participants: RaceParticipants;
   status: RaceStatus;
   avatars: BoatAvatars;
-  hasStarted: boolean;
+  globalStartDate: number;
   distance: number;
   allFinished: boolean;
 }
@@ -36,12 +37,13 @@ export class RaceField {
       this.participants = {}
       this.status = RaceStatus.OFF
       this.avatars = {}
-      this.hasStarted = false
+      this.globalStartDate = 0
       this.distance = RACE_LENGTH_HORIZONTAL - AVATAR_DISPLAY_SIZE
     }
 
     startRace() {
       const entries = Object.entries(this.participants);
+      this.globalStartDate = Date.now();
       for (let i = 0; i < entries.length; i++) {
         const [name, participant] = entries[i];
         this.avatars[name] = this.createNewBoatAvatar(this, participant, i);
@@ -50,23 +52,22 @@ export class RaceField {
 
     resetRace() {
       this.avatars = {}
-      this.hasStarted = false
+      this.globalStartDate = 0
     }
 
     update() {
       if (this.status === RaceStatus.FINISHING) return
-      if (Object.keys(this.avatars).length !== 0 && Object.values(this.avatars).every(a => a.isFinished)) {
+      if (Object.keys(this.avatars).length !== 0 && Object.values(this.avatars).every(a => a.finishTimeMs !== 0)) {
         this.status = RaceStatus.FINISHING
       }// stop everything
 
-      if (this.status === RaceStatus.RACING && !this.hasStarted) {
+      if (this.status === RaceStatus.RACING && this.globalStartDate === 0) {
         this.startRace()
-        this.hasStarted = true;
       }
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
       for (const avatar of Object.values(this.avatars)) {
-        avatar.update()
+        avatar.update(this.globalStartDate)
         avatar.draw(this.ctx)
       }
     }
@@ -80,9 +81,17 @@ export class RaceField {
         speed: participant.speed,
         x: CANVAS_MARGIN_HORIZONTAL,
         y: y,
-        src: template,
+        src: bunny,
         displaySize: AVATAR_DISPLAY_SIZE,
       })
       return boatAvatar
+    }
+
+    backendBoatAvatars(): BackendBoatAvatar[] {
+      const arrayToReturn = []
+      for (const avatar of Object.values(this.avatars)) {
+        arrayToReturn.push(avatar.backendBoatAvatar())
+      }
+      return arrayToReturn.sort((a, b) => a.numberValue - b.numberValue);
     }
 }

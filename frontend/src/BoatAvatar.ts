@@ -1,5 +1,6 @@
 import { ANIMATIONS, Sprite } from './Sprite.js'
 import { CANVAS_MARGIN_HORIZONTAL, RaceField } from './RaceField.js'
+import { BackendBoatAvatar } from '../../common/src/Types.js';
 
 export interface BoatAvatar {
   name: string;
@@ -10,7 +11,7 @@ export interface BoatAvatar {
   color: string;
   sprite: Sprite;
   speed: number;
-  isFinished: boolean;
+  finishTimeMs: number;
 }
 
 export class BoatAvatar {
@@ -32,14 +33,15 @@ export class BoatAvatar {
         idle: ANIMATIONS.idle,
       },
     })
-    this.isFinished = false
+    this.finishTimeMs = 0
   }
 
-  update() {
-    if (this.isFinished) return
+  update(globalStartDate: number) {
+    if (this.finishTimeMs !== 0) return
     this.x += this.speed
     if(this.x >= (this.raceField.distance + CANVAS_MARGIN_HORIZONTAL)) {
-      this.isFinished = true
+      this.finishTimeMs = Date.now() - globalStartDate
+      console.log('finished in ' + this.finishTimeMs)
     }
   }
 
@@ -52,6 +54,13 @@ export class BoatAvatar {
       this.y + this.sprite.displaySize + 10,
       this.sprite.displaySize
     )
+  }
+
+  backendBoatAvatar(): BackendBoatAvatar {
+    return {
+      name: this.name,
+      finishTimeMs: this.finishTimeMs
+    }
   }
   
   // showIcon(x: number) {

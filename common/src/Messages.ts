@@ -1,10 +1,11 @@
-import { CommandTrigger } from "./Types"
+import { BackendBoatAvatar, CommandTrigger } from "./Types"
 import { getRandom } from "./Util"
 
 const EMPTY_MESSAGE = 'Instructions unclear'
 
 export enum SimpleMessages {
-    VOLCANO = "GlitchLit A devastating eruption engulfs the avatars, leaving only ash and memories behind. The chat village mourns, yearning for new faces to fill its void."
+    VOLCANO = "GlitchLit A devastating eruption engulfs the avatars, leaving only ash and memories behind. The chat village mourns, yearning for new faces to fill its void.",
+    RACE_GOING = "ResidentSleeper A race has already started! Let's see how it turns out first"
 }
 
 export const MessageInteraction = (chatterName: string, targetName: string, price: number, command: CommandTrigger): string => {
@@ -101,6 +102,13 @@ export const MessageWarningRaceStart = (enoughPlayersToStart: boolean, waittime:
     } else {
         return `🚣‍♂️ Time is running out! Join the boat race now, or it's cancelled StinkyGlitch Don't let this opportunity to get more seastars pass you by!`
     }
+}
+
+export const MessageRaceFinish = (boatAvatars: BackendBoatAvatar[], bet: number): string => {
+    console.log(boatAvatars)
+    const loserNames: string[] = boatAvatars.splice(0, 1).map((b: any) => b.name)
+    console.log(boatAvatars, boatAvatars.length)
+    return `PartyHat Congrats! ${boatAvatars[0].name} finishes the race in first place, with ${loserNames} following behind. ${boatAvatars[0].name} gets ${bet * boatAvatars.length} seastars, while everyone else loses ${bet} seastars Jebaited`
 }
 
 

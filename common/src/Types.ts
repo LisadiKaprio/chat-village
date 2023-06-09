@@ -1,5 +1,11 @@
 export type NonEmptyArray<T> = [T, ...T[]]
 
+export enum WebsocketMessageType {
+  USER_INFO = 'user-info',
+  BACKEND_RACE_INFO = 'backend-race-info',
+  FRONTEND_RACE_INFO = 'frontend-race-info'
+}
+
 export enum SkinId {
   BUNNY = 'bunny',
   CAT = 'cat',
@@ -101,4 +107,8 @@ export type FrontendCommand = Command & {
 }
 export type FrontendCommandsToChannel = {
   [channelUsername: string]: FrontendCommand[];
+}
+export interface BackendBoatAvatar {
+  name: string;
+  finishTimeMs: number;
 }
