@@ -284,15 +284,15 @@ export default class Twitch {
                     if (!argUsers[0]){
                       argUsers.push(targetPlayerUsername)
                       void client.say(channel, MessageInteractionRandom(currentPlayer.display_name, targetPlayerUsername, price, command))
-                      if (state.allFrontendCommands[currentPlayer.username]) { // TODO: maybe i can create a util function for that kind of situation?
-                        state.allFrontendCommands[currentPlayer.username].push({
+                      if (state.allFrontendCommands[channel]) { // TODO: maybe i can create a util function for that kind of situation?
+                        state.allFrontendCommands[channel].push({
                             command: command,
                             args: [],
                             argPlayerUsernames: argUsers,
                             playerUsername: currentPlayer.username,
                           })
                       } else {
-                        state.allFrontendCommands[currentPlayer.username] = [{
+                        state.allFrontendCommands[channel] = [{
                           command: command,
                           args: [],
                           argPlayerUsernames: argUsers,
@@ -301,15 +301,15 @@ export default class Twitch {
                       }
                     } else {
                       void client.say(channel, MessageInteraction(currentPlayer.display_name, targetPlayerUsername, price, command))
-                      if (state.allFrontendCommands[currentPlayer.username]) { // TODO: maybe i can create a util function for that kind of situation?
-                        state.allFrontendCommands[currentPlayer.username].push({
+                      if (state.allFrontendCommands[channel]) { // TODO: maybe i can create a util function for that kind of situation?
+                        state.allFrontendCommands[channel].push({
                             command: command,
                             args: [],
                             argPlayerUsernames: argUsers,
                             playerUsername: currentPlayer.username,
                           })
                       } else {
-                        state.allFrontendCommands[currentPlayer.username] = [{
+                        state.allFrontendCommands[channel] = [{
                           command: command,
                           args: [],
                           argPlayerUsernames: argUsers,
