@@ -265,6 +265,7 @@ export default class Twitch {
         }
 
         async function handleInteractionCommand(channel: any, client: tmi.Client, currentPlayer: Player, command: CommandTrigger, argUsers: string[], currentChannelId: number) {
+            const currentChannelUsername = channel.startsWith('#') ? channel.substr(1) : channel
             let price = 0
             if (command === CommandTrigger.BONK) {
                 price = BONK_PRICE
@@ -283,39 +284,40 @@ export default class Twitch {
                     console.log('targetPlayerUsername is ' + targetPlayerUsername)
                     if (!argUsers[0]){
                       argUsers.push(targetPlayerUsername)
+                      console.log(currentChannelUsername)
+                      if (state.allFrontendCommands[currentChannelUsername]) { // TODO: maybe i can create a util function for that kind of situation?
+                        state.allFrontendCommands[currentChannelUsername].push({
+                            command: command,
+                            args: [],
+                            argPlayerUsernames: argUsers,
+                            playerUsername: currentPlayer.username,
+                          })
+                      } else {
+                        state.allFrontendCommands[currentChannelUsername] = [{
+                          command: command,
+                          args: [],
+                          argPlayerUsernames: argUsers,
+                          playerUsername: currentPlayer.username,
+                        }]
+                      }
                       void client.say(channel, MessageInteractionRandom(currentPlayer.display_name, targetPlayerUsername, price, command))
-                      if (state.allFrontendCommands[channel]) { // TODO: maybe i can create a util function for that kind of situation?
-                        state.allFrontendCommands[channel].push({
-                            command: command,
-                            args: [],
-                            argPlayerUsernames: argUsers,
-                            playerUsername: currentPlayer.username,
-                          })
-                      } else {
-                        state.allFrontendCommands[channel] = [{
-                          command: command,
-                          args: [],
-                          argPlayerUsernames: argUsers,
-                          playerUsername: currentPlayer.username,
-                        }]
-                      }
                     } else {
-                      void client.say(channel, MessageInteraction(currentPlayer.display_name, targetPlayerUsername, price, command))
-                      if (state.allFrontendCommands[channel]) { // TODO: maybe i can create a util function for that kind of situation?
-                        state.allFrontendCommands[channel].push({
+                      if (state.allFrontendCommands[currentChannelUsername]) { // TODO: maybe i can create a util function for that kind of situation?
+                        state.allFrontendCommands[currentChannelUsername].push({
                             command: command,
                             args: [],
                             argPlayerUsernames: argUsers,
                             playerUsername: currentPlayer.username,
                           })
                       } else {
-                        state.allFrontendCommands[channel] = [{
+                        state.allFrontendCommands[currentChannelUsername] = [{
                           command: command,
                           args: [],
                           argPlayerUsernames: argUsers,
                           playerUsername: currentPlayer.username,
                         }]
                       }
+                      void client.say(channel, MessageInteraction(currentPlayer.display_name, targetPlayerUsername, price, command))
                     }
                 } else {
                     void client.say(channel, MessageInteractionEmpty(currentPlayer.display_name, command))
