@@ -4,11 +4,12 @@
     <div v-if="!isRacing" class="advices-container">Type !join 200 to make a higher initial bet.</div> 
     <div v-if="!isRacing" class="advices-container">{{ participantsJoined === 0 ? 'Be the first one to start the race NOW!' : `${participantsJoined} player(s) already joined the race.` }}</div> 
     <canvas class="game-canvas" ref="gameCanvas" :style="!isRacing ? 'display: none' : ''" :height="windowHeight" :width="windowWidth"></canvas>
-    <div v-if="isRacing" class="timer">{{ timer() }}</div>
+    <div v-if="isRacing" class="timer">{{ raceField.timer }} sec</div>
   </div>
 </template>
 
 <script lang="ts">
+import { ref } from 'vue'
 import { Component, Prop, Ref, Vue } from 'vue-facing-decorator'
 import { RaceStatus, WebsocketMessageType } from '../../../common/src/Types'
 import { assertExists } from '../Helpers'
@@ -29,6 +30,8 @@ export default class EventWidget extends Vue {
   public raceField: RaceField
   private then: number
   private fpsInterval = (SECOND / FRAMERATE)
+
+  public timerRef = ref(this.timer)
 
   public ws!: WebSocket
   public ws_host: string
@@ -57,12 +60,11 @@ export default class EventWidget extends Vue {
       timeoutRaceResults = setTimeout(sendRaceResults, 2000)
     }
     sendRaceResults()
-
     this.startDrawing()
   }
 
   public timer(): number {
-    return (Date.now() - this.raceField.globalStartDate) / 1_000
+    return +((Date.now() - this.raceField.globalStartDate) / 1_000).toFixed(1)
   }
 
   public get participantsJoined(): number {
@@ -142,6 +144,7 @@ body {
   font-size: 24px;
   font-weight: bold;
   color: rgb(162, 228, 236);
+  margin-left: 10px;
   text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
 }
 

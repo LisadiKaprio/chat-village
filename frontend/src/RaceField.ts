@@ -25,12 +25,14 @@ export interface RaceField {
   element: Element;
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
+  currentRaceBg: CanvasImageSource | null;
   participants: RaceParticipants;
   status: RaceStatus;
   avatars: BoatAvatars;
   globalStartDate: number;
   distance: number;
   allFinished: boolean;
+  timer: number;
 }
 
 type BoatAvatars = {
@@ -59,6 +61,37 @@ export class RaceField {
       this.distance = RACE_LENGTH_HORIZONTAL - AVATAR_DISPLAY_SIZE
     }
 
+    buildCurrentRaceBg(): CanvasImageSource | null {
+      const tmpCanvas = document.createElement('canvas')
+      tmpCanvas.width = this.canvas.width
+      tmpCanvas.height = this.canvas.height
+      const tmpCtx = tmpCanvas.getContext('2d')
+
+      // weirdly sprites can fail to render, which leaves the bg blank
+      // in that case return null
+      const drawn = this.bg.draw(tmpCtx)
+      // if (!drawn) {
+      //   return null
+      // }
+
+      tmpCtx.lineWidth = HORIZONTAL_LINE_WIDTH;
+      tmpCtx.strokeStyle = "white";
+      tmpCtx.font = '30px CherryBombOne-Regular'
+      tmpCtx.fillStyle = "rgba(255, 255, 255, 0.75)"
+      this.drawLine(tmpCtx, CANVAS_MARGIN_HORIZONTAL, CANVAS_MARGIN_VERTICAL, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL, CANVAS_MARGIN_VERTICAL)
+      this.drawLine(tmpCtx, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL - AVATAR_DISPLAY_SIZE, CANVAS_MARGIN_VERTICAL, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL - AVATAR_DISPLAY_SIZE, 500 - CANVAS_MARGIN_VERTICAL)
+      for (const avatar of Object.values(this.avatars)) {
+        tmpCtx.fillText(
+          avatar.display_name,
+          USERNAME_HORIZONTAL_MARGIN,
+          avatar.y + (PLAYER_SPACE_VERTICAL / 2) + PLAYER_MARGIN_TOP + (PLAYER_SPACE_VERTICAL / 4),
+          this.distance
+        )
+        this.drawLine(tmpCtx, CANVAS_MARGIN_HORIZONTAL, avatar.y + PLAYER_SPACE_VERTICAL + PLAYER_MARGIN_BOTTOM - HORIZONTAL_LINE_WIDTH, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL, avatar.y + PLAYER_SPACE_VERTICAL + PLAYER_MARGIN_BOTTOM - HORIZONTAL_LINE_WIDTH)
+      }
+      return tmpCanvas
+    }
+
     startRace() {
       const entries = Object.entries(this.participants);
       this.globalStartDate = Date.now();
@@ -72,16 +105,20 @@ export class RaceField {
       this.avatars = {}
       this.participants = {}
       this.globalStartDate = 0
+      this.timer = 0
     }
 
     update() {
       if (this.status === RaceStatus.FINISHING) return
+      this.timer = +((Date.now() - this.globalStartDate) / 1_000).toFixed(0)
       if (Object.keys(this.avatars).length !== 0 && Object.values(this.avatars).find(a => a.finishTimeMs !== 0)) {
         this.status = RaceStatus.FINISHING
+        this.currentRaceBg = null
       }// stop everything
 
       if (this.status === RaceStatus.RACING && this.globalStartDate === 0) {
         this.startRace()
+        this.currentRaceBg = this.buildCurrentRaceBg()
       }
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
@@ -92,29 +129,16 @@ export class RaceField {
     }
 
     draw() {
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
-      this.bg.draw(this.ctx)
-      this.ctx.lineWidth = HORIZONTAL_LINE_WIDTH;
-      this.ctx.strokeStyle = "white";
-      this.ctx.font = '30px CherryBombOne-Regular'
-      this.ctx.fillStyle = "rgba(255, 255, 255, 0.75)"
-      this.drawLine(CANVAS_MARGIN_HORIZONTAL, CANVAS_MARGIN_VERTICAL, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL, CANVAS_MARGIN_VERTICAL)
-      this.drawLine(CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL - AVATAR_DISPLAY_SIZE, CANVAS_MARGIN_VERTICAL, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL - AVATAR_DISPLAY_SIZE, 500 - CANVAS_MARGIN_VERTICAL)
+      if (!this.currentRaceBg) return
+      this.ctx.drawImage(this.currentRaceBg, 0, 0)
       for (const avatar of Object.values(this.avatars)) {
-        this.ctx.fillText(
-          avatar.display_name,
-          USERNAME_HORIZONTAL_MARGIN,
-          avatar.y + (PLAYER_SPACE_VERTICAL / 2) + PLAYER_MARGIN_TOP + (PLAYER_SPACE_VERTICAL / 4),
-          this.distance
-        )
         avatar.draw(this.ctx)
-        this.drawLine(CANVAS_MARGIN_HORIZONTAL, avatar.y + PLAYER_SPACE_VERTICAL + PLAYER_MARGIN_BOTTOM - HORIZONTAL_LINE_WIDTH, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL, avatar.y + PLAYER_SPACE_VERTICAL + PLAYER_MARGIN_BOTTOM - HORIZONTAL_LINE_WIDTH)
       }}
 
-    drawLine(startX: number, startY: number, endX: number, endY: number) {
-      this.ctx.moveTo(startX, startY);
-      this.ctx.lineTo(endX, endY);
-      this.ctx.stroke();
+    drawLine(ctx: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number) {
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
     }
     
     createNewBoatAvatar(raceField: RaceField, participant: RaceParticipant, index: number) {

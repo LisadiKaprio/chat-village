@@ -106,7 +106,7 @@ export const MessageRaiseBet = (displayName: string, plusBetAmount: number, whol
 
 export const MessageWarningRaceStart = (morePlayersNeeded: number): string => {
     if (morePlayersNeeded <= 0) {
-        return `🚣‍♂️ The boat race is just 1 minute away! More players can join still! PogChamp`
+        return `🚣‍♂️ The boat race is just 30 seconds away! More players can join still! PogChamp`
     } else {
         return `🚣‍♂️ Time is running out! Join the boat race now, or it's cancelled StinkyGlitch Don't let this opportunity to get more seastars pass you by!`
     }

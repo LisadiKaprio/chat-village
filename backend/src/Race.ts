@@ -3,7 +3,7 @@ import { BackendBoatAvatar, MINUTE, PlayerState, Race, Races, RaceStatus } from 
 import Db from './Db'
 import { updateManyPlayerState } from './functions'
 import State from './State'
-import Twitch, { addPointsToPlayer, deductPointsFromPlayer } from './Twitch'
+import Twitch, { addPointsToPlayer } from './Twitch'
 
 
 export default class RaceConstructor {
@@ -12,20 +12,20 @@ export default class RaceConstructor {
 	public MIN_PARTICIPANTS = 2
 	public MAX_PARTICIPANTS = 4
 
-	public WAIT_MINUTES_FEW_PLAYERS = 0.3
-	public WAIT_MINUTES_ENOUGH_PLAYERS = 1
+	public WAIT_MINUTES_FEW_PLAYERS = 1
+	public WAIT_MINUTES_ENOUGH_PLAYERS = 0.5
 	public WAIT_SECONDS_FULL_LOBBY = 10
-	public WARNING_MINUTES = 0.1
+	public WARNING_MINUTES = 0.5
 
 	public SECONDS_WAIT_RANDOM_EVENT = 15
 
 	public BASE_BET = 5
 
 	// public DISTANCE = 100
-	public BASE_SPEED = 0.275 //race should last around 45 seconds
+	public BASE_SPEED = 0.075 //race should last around 45 seconds
 	public MAX_SPEED_RANDOMIZER = 0.075 // maximum degree to which to change speed
 	public MIN_SPEED_RANDOMIZER = -0.05 // maximum degree to which to change speed
-	public SPEED_CHANGE_LIKELIHOOD = 50 // in percents
+	public SPEED_CHANGE_LIKELIHOOD = 60 // in percents
 	public SPEED_DECIMAL_DIGITS = 3
     
 	public races: Races = {}
