@@ -290,6 +290,7 @@ export default class Twitch {
 				raceConstructor.createRace(currentChannelUsername, currentBet)
 			}
 			const currentRace = raceConstructor.races[currentChannelUsername]
+			currentBet = currentRace.currentBet
 
 			if (currentRace.status === RaceStatus.RACING || currentRace.status === RaceStatus.FINISHING) { // race is already going
 				void client.say(channel, SimpleMessages.RACE_GOING)
