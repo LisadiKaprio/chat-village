@@ -164,6 +164,6 @@ export class RaceField {
       for (const avatar of Object.values(this.avatars)) {
         arrayToReturn.push(avatar.backendBoatAvatar())
       }
-      return arrayToReturn.sort((a, b) => a.numberValue - b.numberValue);
+      return arrayToReturn.sort((a, b) => a.finishTimeMs - b.finishTimeMs);
     }
 }

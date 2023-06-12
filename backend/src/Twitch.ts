@@ -285,36 +285,38 @@ export default class Twitch {
 		async function handleBetCommand(channel: any, client: tmi.Client, currentPlayer: Player, args: string[]) {
 			const currentChannelUsername = channel.startsWith('#') ? channel.substr(1) : channel
 			let currentBet = raceConstructor.BASE_BET
-			if (!raceConstructor.races[currentChannelUsername]) {
+			if (!raceConstructor.races[currentChannelUsername]) { // initiate race
 				if(+args[0] >= raceConstructor.BASE_BET) currentBet = +args[0]
 				raceConstructor.createRace(currentChannelUsername, currentBet)
 			}
 			const currentRace = raceConstructor.races[currentChannelUsername]
 
-			if (currentRace.status === RaceStatus.RACING || currentRace.status === RaceStatus.FINISHING) {
+			if (currentRace.status === RaceStatus.RACING || currentRace.status === RaceStatus.FINISHING) { // race is already going
 				void client.say(channel, SimpleMessages.RACE_GOING)
 				return
 			}
 
-			if (Object.keys(currentRace.participants).length < raceConstructor.MIN_PARTICIPANTS && Object.keys(currentRace.participants).length !== 0) {
+			if (Object.keys(currentRace.participants).length < raceConstructor.MIN_PARTICIPANTS && Object.keys(currentRace.participants).length !== 0) { // add time to wait for race
 				currentRace.minutesToWait = (((Date.now() - currentRace.dateInit) + (raceConstructor.WAIT_MINUTES_FEW_PLAYERS * MINUTE)) / MINUTE)
 			}
 
-			if (currentRace.participants[currentPlayer.id]) {
+			if (currentRace.participants[currentPlayer.id]) { // already joined race
 				void client.say(channel, MessageFailedRaceJoin(currentPlayer.display_name))
 				return
 			}
 			
-			if (currentPlayer.points < currentBet) {
+			if (currentPlayer.points < currentBet) { // not enough points
 				void client.say(channel, MessageFailedInitBet(currentPlayer.display_name, currentBet))
-			} else {
-				currentRace.participants[currentPlayer.id] = {
-					...currentPlayer,
-					speed: 0,
-				}
-				void client.say(channel, MessageInitBet(currentPlayer.display_name, currentBet, raceConstructor.MIN_PARTICIPANTS - Object.values(currentRace.participants).length))
-				await deductPointsFromPlayer(db, currentPlayer.points, currentBet, currentPlayer.id)
-			}			
+				delete raceConstructor.races[currentChannelUsername]
+				return
+			}
+			
+			currentRace.participants[currentPlayer.id] = {
+				...currentPlayer,
+				speed: 0,
+			}
+			void client.say(channel, MessageInitBet(currentPlayer.display_name, currentBet, raceConstructor.MIN_PARTICIPANTS - Object.values(currentRace.participants).length))
+			await deductPointsFromPlayer(db, currentPlayer.points, currentBet, currentPlayer.id)		
 		}
 	}
 

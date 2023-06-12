@@ -41,7 +41,7 @@ export default class RaceConstructor {
 		}
 	}
 
-	public async update(db: Db, twitch: Twitch) {
+	public async update(db: Db, twitch: Twitch, state: State) {
 		for(const [channel, race] of Object.entries(this.races)) {
 			if (race.status === RaceStatus.STARTING) {
 				const timePassedSinceInit = Date.now() - race.dateInit
@@ -57,13 +57,20 @@ export default class RaceConstructor {
 						await this.startRace(db, race)
 					} else {
 						await twitch.sayRaceTooFewParticipantsMessage(channel, (this.MIN_PARTICIPANTS - Object.keys(race.participants).length))
+						for (const participant of Object.values(race.participants)){
+							const currentPlayer = Object.values(state.players).find(player => player.username === participant.username)
+							if (!currentPlayer) {
+								console.log('Trying to add point back to player: could not be done, no player found.')
+								break
+							}
+							await addPointsToPlayer(db, currentPlayer.points, race.currentBet, participant.id)
+						}
 						delete this.races[channel]
 					}
 				}
 			} else if (race.status === RaceStatus.RACING) {
 				for(const [_playerId, participant] of Object.entries(race.participants)){
 					if (this.chance.bool({ likelihood: this.SPEED_CHANGE_LIKELIHOOD })) {
-						const previousSpeed = participant.speed
 						participant.speed = this.chance.floating({ min: this.MIN_SPEED_RANDOMIZER + this.BASE_SPEED, max: this.MAX_SPEED_RANDOMIZER + this.BASE_SPEED, fixed: this.SPEED_DECIMAL_DIGITS })
 					}
 				}
