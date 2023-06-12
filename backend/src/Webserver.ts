@@ -125,7 +125,7 @@ export default class Webserver {
 					console.log('received frontend race info')
 					raceConstructor.races[channelName].status = RaceStatus.OFF
 					const { boatAvatars }: { boatAvatars: BackendBoatAvatar[] } = data
-					await raceConstructor.handleFinish(channelName, boatAvatars, twitch) 
+					await raceConstructor.handleFinish(db, state, channelName, boatAvatars, twitch) 
 				}
 			})
 

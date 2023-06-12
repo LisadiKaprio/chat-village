@@ -2,7 +2,8 @@ import { Chance } from 'chance'
 import { BackendBoatAvatar, MINUTE, PlayerState, Race, Races, RaceStatus } from '../../common/src/Types'
 import Db from './Db'
 import { updateManyPlayerState } from './functions'
-import Twitch from './Twitch'
+import State from './State'
+import Twitch, { addPointsToPlayer, deductPointsFromPlayer } from './Twitch'
 
 
 export default class RaceConstructor {
@@ -18,10 +19,10 @@ export default class RaceConstructor {
 
 	public SECONDS_WAIT_RANDOM_EVENT = 15
 
-	public BASE_BET = 10
+	public BASE_BET = 5
 
 	// public DISTANCE = 100
-	public BASE_SPEED = 0.075 //race should last around 45 seconds
+	public BASE_SPEED = 0.275 //race should last around 45 seconds
 	public MAX_SPEED_RANDOMIZER = 0.075 // maximum degree to which to change speed
 	public MIN_SPEED_RANDOMIZER = -0.05 // maximum degree to which to change speed
 	public SPEED_CHANGE_LIKELIHOOD = 50 // in percents
@@ -64,7 +65,6 @@ export default class RaceConstructor {
 					if (this.chance.bool({ likelihood: this.SPEED_CHANGE_LIKELIHOOD })) {
 						const previousSpeed = participant.speed
 						participant.speed = this.chance.floating({ min: this.MIN_SPEED_RANDOMIZER + this.BASE_SPEED, max: this.MAX_SPEED_RANDOMIZER + this.BASE_SPEED, fixed: this.SPEED_DECIMAL_DIGITS })
-						console.log(`${participant.username} speed is changed: ${(previousSpeed - participant.speed).toPrecision(3)}`)
 					}
 				}
 			}
@@ -84,10 +84,15 @@ export default class RaceConstructor {
 		this.setBeginningSpeed(race)
 	}
 
-	async handleFinish(channelName: string, boatAvatars: BackendBoatAvatar[], twitch: Twitch) {
+	async handleFinish(db: Db, state: State, channelName: string, boatAvatars: BackendBoatAvatar[], twitch: Twitch) {
+		const winnerPlayer = Object.values(state.players).find(p => p.username === boatAvatars[0].name)
+		if (!winnerPlayer) {
+			console.log('Winner player could not be found in state! Points will not be added to them.')
+			return
+		}
+		await addPointsToPlayer(db, winnerPlayer.points, this.races[channelName].currentBet * boatAvatars.length, winnerPlayer.id)
 		await twitch.sayRaceFinishMessage(channelName, boatAvatars, this.races[channelName].currentBet)
 		delete this.races[channelName]
 		console.log('race finished')
-		console.log(JSON.stringify(boatAvatars))
 	}
 }

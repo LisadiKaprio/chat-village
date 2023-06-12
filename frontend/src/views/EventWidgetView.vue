@@ -4,6 +4,7 @@
     <div v-if="!isRacing" class="advices-container">Type !join 200 to make a higher initial bet.</div> 
     <div v-if="!isRacing" class="advices-container">{{ participantsJoined === 0 ? 'Be the first one to start the race NOW!' : `${participantsJoined} player(s) already joined the race.` }}</div> 
     <canvas class="game-canvas" ref="gameCanvas" :style="!isRacing ? 'display: none' : ''" :height="windowHeight" :width="windowWidth"></canvas>
+    <div v-if="isRacing" class="timer">{{ timer() }}</div>
   </div>
 </template>
 
@@ -58,6 +59,10 @@ export default class EventWidget extends Vue {
     sendRaceResults()
 
     this.startDrawing()
+  }
+
+  public timer(): number {
+    return (Date.now() - this.raceField.globalStartDate) / 1_000
   }
 
   public get participantsJoined(): number {
@@ -131,6 +136,13 @@ body {
   margin: 0;
   /* prevents unwanted scrolling */
   overflow: hidden;
+}
+
+.timer {
+  font-size: 24px;
+  font-weight: bold;
+  color: rgb(162, 228, 236);
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
 }
 
 .advices-container {

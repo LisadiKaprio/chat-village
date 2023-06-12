@@ -11,6 +11,14 @@ import RaceConstructor from './Race'
 const BONK_PRICE = 10
 const HUG_PRICE = 5
 const IDLE_GAIN = 1
+    
+export async function addPointsToPlayer(db: Db, currentPoints: number, pointsToAdd: number, playerId: number): Promise<void> {
+	await db.update('cv.players', { points: currentPoints + pointsToAdd }, { id: playerId })
+}
+
+export async function deductPointsFromPlayer(db: Db, currentPoints: number, pointsToDeduct: number, playerId: number): Promise<void> {
+	await db.update('cv.players', { points: currentPoints - pointsToDeduct }, { id: playerId })
+}
 
 export default class Twitch {
 	#client: tmi.Client
@@ -116,47 +124,12 @@ export default class Twitch {
 					} else if (command == CommandTrigger.HUG) {
 						await handleInteractionCommand(channel, this.#client, currentPlayer, command, argUsers, currentChannelId)
 					} else if (command === CommandTrigger.BET) {
-						let currentBet = raceConstructor.BASE_BET
-						if (!raceConstructor.races[currentChannelUsername]) {
-							if(+args[0] >= raceConstructor.BASE_BET) currentBet = +args[0]
-							raceConstructor.createRace(currentChannelUsername, currentBet)
-						}
-						const currentRace = raceConstructor.races[currentChannelUsername]
-
-						if (currentRace.status === RaceStatus.RACING || currentRace.status === RaceStatus.FINISHING) {
-							void this.#client.say(channel, SimpleMessages.RACE_GOING)
-							return
-						}
-    
-						if (Object.keys(currentRace.participants).length < raceConstructor.MIN_PARTICIPANTS && Object.keys(currentRace.participants).length !== 0) {
-							currentRace.minutesToWait = (((Date.now() - currentRace.dateInit) + (raceConstructor.WAIT_MINUTES_FEW_PLAYERS * MINUTE)) / MINUTE)
-						}
-              
-						if (!currentRace.participants[currentPlayer.id]) { // is initial race entry
-							if (currentPlayer.points < currentBet) {
-								void this.#client.say(channel, MessageFailedInitBet(displayName, currentBet))
-							} else {
-								currentRace.participants[currentPlayer.id] = {
-									...currentPlayer,
-									speed: 0,
-								}
-								void this.#client.say(channel, MessageInitBet(displayName, currentBet, raceConstructor.MIN_PARTICIPANTS - Object.values(currentRace.participants).length))
-							}
-						} else {
-							if (Object.keys(currentRace.participants).length !== 1) {
-								void this.#client.say(channel, MessageFailedRaceJoin(displayName))
-							} else { // add more to bet
-								if (currentPlayer.points < currentBet) {
-									void this.#client.say(channel, MessageFailedRaiseBet(displayName, currentBet))
-								} else {
-									currentRace.currentBet += currentBet
-									void this.#client.say(channel, MessageRaiseBet(displayName, currentBet, currentRace.currentBet))
-								}
-							}
-						}
+						await handleBetCommand(channel, this.#client, currentPlayer, args)
+					} else if (command === CommandTrigger.DEBUG_ID) {
+						void this.#client.say(channel, `@${currentPlayer.display_name} Your player ID is ${currentPlayer.id}`)
 					}
 				} else { // No command detected -> Pass messages and emotes to frontend
-					await addPointsToPlayer(currentPlayer.points, IDLE_GAIN, currentPlayer.id)
+					await addPointsToPlayer(db, currentPlayer.points, IDLE_GAIN, currentPlayer.id)
 					console.log(`${username} gets ${IDLE_GAIN} stars for chatting idly!`)
 					if (!tags.emotes) {
 						if (state.allNewMessages[currentChannelUsername] && state.allNewMessages[currentChannelUsername][username]) {
@@ -250,14 +223,6 @@ export default class Twitch {
 			})  
 		}
     
-		async function addPointsToPlayer(currentPoints: number, pointsToAdd: number, playerId: number): Promise<void> {
-			await db.update('cv.players', { points: currentPoints + pointsToAdd }, { id: playerId })
-		}
-    
-		async function deductPointsFromPlayer(currentPoints: number, pointsToDeduct: number, playerId: number): Promise<void> {
-			await db.update('cv.players', { points: currentPoints - pointsToDeduct }, { id: playerId })
-		}
-    
 		async function setAllChannelPlayersOffline(channelId: number): Promise<void> {
 			await db.update('cv.players', { state: PlayerState.OFFLINE }, { channel_id: channelId })
 			state.activePlayers = []
@@ -282,7 +247,7 @@ export default class Twitch {
 				return
 			}
 
-			await deductPointsFromPlayer(currentPlayer.points, price, currentPlayer.id)
+			await deductPointsFromPlayer(db, currentPlayer.points, price, currentPlayer.id)
 			const potentialTargets = Object.values(state.players).filter(p => p.state === PlayerState.ACTIVE && p.channel_id === currentChannelId && p.username !== currentPlayer.username)
 			if (potentialTargets.length === 0){
 				void client.say(channel, MessageInteractionEmpty(currentPlayer.display_name, command))
@@ -315,6 +280,41 @@ export default class Twitch {
 					playerUsername: currentPlayer.username,
 				}]
 			}
+		}
+
+		async function handleBetCommand(channel: any, client: tmi.Client, currentPlayer: Player, args: string[]) {
+			const currentChannelUsername = channel.startsWith('#') ? channel.substr(1) : channel
+			let currentBet = raceConstructor.BASE_BET
+			if (!raceConstructor.races[currentChannelUsername]) {
+				if(+args[0] >= raceConstructor.BASE_BET) currentBet = +args[0]
+				raceConstructor.createRace(currentChannelUsername, currentBet)
+			}
+			const currentRace = raceConstructor.races[currentChannelUsername]
+
+			if (currentRace.status === RaceStatus.RACING || currentRace.status === RaceStatus.FINISHING) {
+				void client.say(channel, SimpleMessages.RACE_GOING)
+				return
+			}
+
+			if (Object.keys(currentRace.participants).length < raceConstructor.MIN_PARTICIPANTS && Object.keys(currentRace.participants).length !== 0) {
+				currentRace.minutesToWait = (((Date.now() - currentRace.dateInit) + (raceConstructor.WAIT_MINUTES_FEW_PLAYERS * MINUTE)) / MINUTE)
+			}
+
+			if (currentRace.participants[currentPlayer.id]) {
+				void client.say(channel, MessageFailedRaceJoin(currentPlayer.display_name))
+				return
+			}
+			
+			if (currentPlayer.points < currentBet) {
+				void client.say(channel, MessageFailedInitBet(currentPlayer.display_name, currentBet))
+			} else {
+				currentRace.participants[currentPlayer.id] = {
+					...currentPlayer,
+					speed: 0,
+				}
+				void client.say(channel, MessageInitBet(currentPlayer.display_name, currentBet, raceConstructor.MIN_PARTICIPANTS - Object.values(currentRace.participants).length))
+				await deductPointsFromPlayer(db, currentPlayer.points, currentBet, currentPlayer.id)
+			}			
 		}
 	}
 

@@ -69,7 +69,7 @@ export const MessageInventory = (displayName: string, seastarCount?: number): st
 }
 
 export const MessageFailedInitBet = (displayName: string, price: number): string => {
-    return `Oh no, @${displayName}! BibleThump You don't have enough seastars (${price}) to join the boat race!`
+    return `BibleThump @${displayName} You don't have enough seastars (${price}) to join the boat race!`
 }
 
 export const MessageFailedRaiseBet = (displayName: string, price: number): string => {
@@ -113,9 +113,7 @@ export const MessageWarningRaceStart = (morePlayersNeeded: number): string => {
 }
 
 export const MessageRaceFinish = (boatAvatars: BackendBoatAvatar[], bet: number): string => {
-    console.log(boatAvatars)
-    const loserNames: string[] = boatAvatars.splice(0, 1).map((b: any) => b.name)
-    console.log(boatAvatars, boatAvatars.length)
+    const loserNames: string[] = boatAvatars.slice(1).map((b: any) => b.name)
     return `PartyHat Congrats! ${boatAvatars[0].name} finishes the race in first place, with ${loserNames} following behind. ${boatAvatars[0].name} gets ${bet * boatAvatars.length} seastars, while everyone else loses ${bet} seastars Jebaited`
 }
 

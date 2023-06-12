@@ -34,7 +34,8 @@ export enum CommandTrigger {
   HUG = '!hug',
   INVENTORY = '!inventory',
   INV_SHORT = '!seastars',
-  BET = '!join'
+  BET = '!join',
+  DEBUG_ID = 'myid'
 }
 
 export enum RaceStatus {
