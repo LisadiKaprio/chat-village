@@ -9,22 +9,23 @@ export default class RaceConstructor {
 	private chance = new Chance()
     
 	public MIN_PARTICIPANTS = 2
-	public MAX_PARTICIPANTS = 3
+	public MAX_PARTICIPANTS = 4
 
-	public WAIT_MINUTES_FEW_PLAYERS = 1
+	public WAIT_MINUTES_FEW_PLAYERS = 0.3
 	public WAIT_MINUTES_ENOUGH_PLAYERS = 1
 	public WAIT_SECONDS_FULL_LOBBY = 10
-	public WARNING_MINUTES = 1
+	public WARNING_MINUTES = 0.1
 
 	public SECONDS_WAIT_RANDOM_EVENT = 15
 
 	public BASE_BET = 10
 
 	// public DISTANCE = 100
-	public BASE_SPEED = 0.5 //race should last around 45 seconds
-	public MAX_SPEED_RANDOMIZER = 0.01 // maximum degree to which to change speed
-	public MIN_SPEED_RANDOMIZER = -0.01 // maximum degree to which to change speed
-	public SPEED_DECIMAL_DIGITS = 5
+	public BASE_SPEED = 0.075 //race should last around 45 seconds
+	public MAX_SPEED_RANDOMIZER = 0.075 // maximum degree to which to change speed
+	public MIN_SPEED_RANDOMIZER = -0.05 // maximum degree to which to change speed
+	public SPEED_CHANGE_LIKELIHOOD = 50 // in percents
+	public SPEED_DECIMAL_DIGITS = 3
     
 	public races: Races = {}
 
@@ -39,14 +40,33 @@ export default class RaceConstructor {
 		}
 	}
 
-	public async update(db: Db) {
-		for(const [_channel, race] of Object.entries(this.races)) {
-			if (race.dateInit === 0) return
-
-			const timePassedSinceInit = Date.now() - race.dateInit
-			console.log(timePassedSinceInit + ' ' + race.minutesToWait * MINUTE)
-			if (timePassedSinceInit >= race.minutesToWait * MINUTE) {
-				await this.startRace(db, race)
+	public async update(db: Db, twitch: Twitch) {
+		for(const [channel, race] of Object.entries(this.races)) {
+			if (race.status === RaceStatus.STARTING) {
+				const timePassedSinceInit = Date.now() - race.dateInit
+				console.log(timePassedSinceInit + ' ' + race.minutesToWait * MINUTE)
+				const whenToWarn = (race.minutesToWait - this.WARNING_MINUTES) * MINUTE
+				if ((timePassedSinceInit >= whenToWarn) && !race.warningOccurred) {
+					const morePlayersNeeded = this.MIN_PARTICIPANTS - Object.keys(race.participants).length
+					await twitch.sayRaceWarningMessage(channel, morePlayersNeeded)
+					race.warningOccurred = true
+				}
+				if (timePassedSinceInit >= race.minutesToWait * MINUTE) {
+					if(Object.keys(race.participants).length >= this.MIN_PARTICIPANTS) {
+						await this.startRace(db, race)
+					} else {
+						await twitch.sayRaceTooFewParticipantsMessage(channel, (this.MIN_PARTICIPANTS - Object.keys(race.participants).length))
+						delete this.races[channel]
+					}
+				}
+			} else if (race.status === RaceStatus.RACING) {
+				for(const [_playerId, participant] of Object.entries(race.participants)){
+					if (this.chance.bool({ likelihood: this.SPEED_CHANGE_LIKELIHOOD })) {
+						const previousSpeed = participant.speed
+						participant.speed = this.chance.floating({ min: this.MIN_SPEED_RANDOMIZER + this.BASE_SPEED, max: this.MAX_SPEED_RANDOMIZER + this.BASE_SPEED, fixed: this.SPEED_DECIMAL_DIGITS })
+						console.log(`${participant.username} speed is changed: ${(previousSpeed - participant.speed).toPrecision(3)}`)
+					}
+				}
 			}
 		}
 	}

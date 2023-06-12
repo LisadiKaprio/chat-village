@@ -77,11 +77,19 @@ export const MessageFailedRaiseBet = (displayName: string, price: number): strin
 }
 
 export const MessageInitBet = (displayName: string, price: number, playerAmount: number): string => {
-    return getRandom([
-        `🌊 Huzzah! ${displayName} has courageously wagered ${price} seastars on their trusty boat, ready to embark on the upcoming race! But the excitement lingers as we eagerly await for ${playerAmount} more players to join and set sail! CoolCat`,
-        `🌊 Huzzah! ${displayName} puts it all on the line, betting ${price} seastars and joining the race! Just ${playerAmount} more players needed to set sail! PogChamp`,
-        `🌊 Huzzah! Tension builds as ${displayName} dives headfirst into the race, risking it all with a bet of ${price} seastars! We're on the edge of our seats, waiting for ${playerAmount} more players to take the plunge! PogBones`
-    ])
+    if (playerAmount > 0) {
+        return getRandom([
+            `🌊 Huzzah! ${displayName} has wagered ${price} seastars on their trusty boat, ready to embark on the upcoming race! Now we await for ${playerAmount} more players to join CoolCat`,
+            `🌊 Huzzah! ${displayName} bets ${price} seastars and joins the race! Just ${playerAmount} more players needed to start! PogChamp`,
+            `🌊 Huzzah! ${displayName} dives headfirst into the race, betting ${price} seastars! Now waiting for ${playerAmount} more players to take the plunge! PogBones`
+        ])
+    } else {
+        return getRandom([
+            `🌊 Huzzah! ${displayName} has wagered ${price} seastars on their trusty boat, ready to embark on the upcoming race CoolCat`,
+            `🌊 Huzzah! ${displayName} bets ${price} seastars and joins the race PogChamp`,
+            `🌊 Huzzah! ${displayName} dives headfirst into the race, betting ${price} seastars PogBones`
+        ])
+    }
 }
 
 export const MessageFailedRaceJoin = (displayName: string): string => {
@@ -96,8 +104,8 @@ export const MessageRaiseBet = (displayName: string, plusBetAmount: number, whol
     ])
 }
 
-export const MessageWarningRaceStart = (enoughPlayersToStart: boolean, waittime: number): string => {
-    if (enoughPlayersToStart) {
+export const MessageWarningRaceStart = (morePlayersNeeded: number): string => {
+    if (morePlayersNeeded <= 0) {
         return `🚣‍♂️ The boat race is just 1 minute away! More players can join still! PogChamp`
     } else {
         return `🚣‍♂️ Time is running out! Join the boat race now, or it's cancelled StinkyGlitch Don't let this opportunity to get more seastars pass you by!`
@@ -111,4 +119,7 @@ export const MessageRaceFinish = (boatAvatars: BackendBoatAvatar[], bet: number)
     return `PartyHat Congrats! ${boatAvatars[0].name} finishes the race in first place, with ${loserNames} following behind. ${boatAvatars[0].name} gets ${bet * boatAvatars.length} seastars, while everyone else loses ${bet} seastars Jebaited`
 }
 
+export const MessageRaceTooFewParticipants = (participantsAmount: number): string => {
+    return `UWot The race was canceled! Come on, people, we only needed ${participantsAmount} more players to join! `
+}
 

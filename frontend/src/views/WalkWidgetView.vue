@@ -78,8 +78,8 @@ export default class WalkWidget extends Vue {
 
 <style>
 @font-face {
-  font-family: 'VictorMono-Medium';
-  src: url('../fonts/VictorMono-Medium.woff2') format('woff2');
+  font-family: 'CherryBombOne-Regular';
+  src: url('../fonts/CherryBombOne-Regular.ttf');
   font-weight: normal;
   font-style: normal;
 }
@@ -96,7 +96,7 @@ body{
 }
 
 .game-container{
-  font-family: 'VictorMono-Medium';
+  font-family: 'CherryBombOne-Regular';
   position: relative;
   padding: 0;
   margin: 0 auto;

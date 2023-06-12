@@ -1,7 +1,7 @@
 import tmi from 'tmi.js'
 import { getChannelId, updatePlayerState } from './functions'
 import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, BackendBoatAvatar, RaceStatus } from '../../common/src/Types'
-import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageInventory, MessageFailedInitBet, MessageFailedRaiseBet, MessageInitBet, MessageRaiseBet, MessageFailedRaceJoin, MessageRaceFinish } from '../../common/src/Messages'
+import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageInventory, MessageFailedInitBet, MessageFailedRaiseBet, MessageInitBet, MessageRaiseBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart } from '../../common/src/Messages'
 import { CommandParser } from './CommandParser'
 import { getRandom } from '../../common/src/Util'
 import Db from './Db'
@@ -128,8 +128,7 @@ export default class Twitch {
 							return
 						}
     
-						if (Object.keys(currentRace.participants).length < raceConstructor.MIN_PARTICIPANTS 
-              && Object.keys(currentRace.participants).length !== 0) {
+						if (Object.keys(currentRace.participants).length < raceConstructor.MIN_PARTICIPANTS && Object.keys(currentRace.participants).length !== 0) {
 							currentRace.minutesToWait = (((Date.now() - currentRace.dateInit) + (raceConstructor.WAIT_MINUTES_FEW_PLAYERS * MINUTE)) / MINUTE)
 						}
               
@@ -137,11 +136,11 @@ export default class Twitch {
 							if (currentPlayer.points < currentBet) {
 								void this.#client.say(channel, MessageFailedInitBet(displayName, currentBet))
 							} else {
-								void this.#client.say(channel, MessageInitBet(displayName, currentBet, raceConstructor.MIN_PARTICIPANTS - Object.values(currentRace.participants).length))
 								currentRace.participants[currentPlayer.id] = {
 									...currentPlayer,
 									speed: 0,
 								}
+								void this.#client.say(channel, MessageInitBet(displayName, currentBet, raceConstructor.MIN_PARTICIPANTS - Object.values(currentRace.participants).length))
 							}
 						} else {
 							if (Object.keys(currentRace.participants).length !== 1) {
@@ -278,56 +277,43 @@ export default class Twitch {
 				price = HUG_PRICE
 			}
 
-			if (currentPlayer.points >= price) {
-				await deductPointsFromPlayer(currentPlayer.points, price, currentPlayer.id)
-				const potentialTargets = Object.values(state.players).filter(p => p.state === PlayerState.ACTIVE && p.channel_id === currentChannelId && p.username !== currentPlayer.username)
-				if (potentialTargets.length > 0){
-					let targetPlayerUsername = argUsers[0]
-					if (!targetPlayerUsername) {
-						targetPlayerUsername = getRandom([...potentialTargets] as NonEmptyArray<Player>).username
-					}
-					console.log('targetPlayerUsername is ' + targetPlayerUsername)
-					if (!argUsers[0]){
-						argUsers.push(targetPlayerUsername)
-						if (state.allFrontendCommands[currentChannelUsername]) { // TODO: maybe i can create a util function for that kind of situation?
-							state.allFrontendCommands[currentChannelUsername].push({
-								command: command,
-								args: [],
-								argPlayerUsernames: argUsers,
-								playerUsername: currentPlayer.username,
-							})
-						} else {
-							state.allFrontendCommands[currentChannelUsername] = [{
-								command: command,
-								args: [],
-								argPlayerUsernames: argUsers,
-								playerUsername: currentPlayer.username,
-							}]
-						}
-						void client.say(channel, MessageInteractionRandom(currentPlayer.display_name, targetPlayerUsername, price, command))
-					} else {
-						if (state.allFrontendCommands[currentChannelUsername]) { // TODO: maybe i can create a util function for that kind of situation?
-							state.allFrontendCommands[currentChannelUsername].push({
-								command: command,
-								args: [],
-								argPlayerUsernames: argUsers,
-								playerUsername: currentPlayer.username,
-							})
-						} else {
-							state.allFrontendCommands[currentChannelUsername] = [{
-								command: command,
-								args: [],
-								argPlayerUsernames: argUsers,
-								playerUsername: currentPlayer.username,
-							}]
-						}
-						void client.say(channel, MessageInteraction(currentPlayer.display_name, targetPlayerUsername, price, command))
-					}
-				} else {
-					void client.say(channel, MessageInteractionEmpty(currentPlayer.display_name, command))
-				}
-			} else {
+			if (currentPlayer.points <= price) {
 				void client.say(channel, MessageInteractionFailed(currentPlayer.display_name, command))
+				return
+			}
+
+			await deductPointsFromPlayer(currentPlayer.points, price, currentPlayer.id)
+			const potentialTargets = Object.values(state.players).filter(p => p.state === PlayerState.ACTIVE && p.channel_id === currentChannelId && p.username !== currentPlayer.username)
+			if (potentialTargets.length === 0){
+				void client.say(channel, MessageInteractionEmpty(currentPlayer.display_name, command))
+				return
+			}
+
+			let targetPlayerUsername = argUsers[0]
+			if (!targetPlayerUsername) {
+				targetPlayerUsername = getRandom([...potentialTargets] as NonEmptyArray<Player>).username
+			}
+			console.log('targetPlayerUsername is ' + targetPlayerUsername)
+			if (!argUsers[0]){
+				argUsers.push(targetPlayerUsername)
+				void client.say(channel, MessageInteractionRandom(currentPlayer.display_name, targetPlayerUsername, price, command))
+			} else {
+				void client.say(channel, MessageInteraction(currentPlayer.display_name, targetPlayerUsername, price, command))
+			}
+			if (state.allFrontendCommands[currentChannelUsername]) { // TODO: maybe i can create a util function for that kind of situation?
+				state.allFrontendCommands[currentChannelUsername].push({
+					command: command,
+					args: [],
+					argPlayerUsernames: argUsers,
+					playerUsername: currentPlayer.username,
+				})
+			} else {
+				state.allFrontendCommands[currentChannelUsername] = [{
+					command: command,
+					args: [],
+					argPlayerUsernames: argUsers,
+					playerUsername: currentPlayer.username,
+				}]
 			}
 		}
 	}
@@ -335,5 +321,15 @@ export default class Twitch {
 	async sayRaceFinishMessage(channelName: string, boatAvatars: BackendBoatAvatar[], bet: number) {
 		const channel = `#${channelName}`
 		await this.#client.say(channel, MessageRaceFinish(boatAvatars, bet))
+	}
+
+	async sayRaceTooFewParticipantsMessage(channelName: string, participantsAmount: number) {
+		const channel = `#${channelName}`
+		await this.#client.say(channel, MessageRaceTooFewParticipants(participantsAmount))
+	}
+
+	async sayRaceWarningMessage(channelName: string, morePlayersNeeded: number) {
+		const channel = `#${channelName}`
+		await this.#client.say(channel, MessageWarningRaceStart(morePlayersNeeded))
 	}
 }

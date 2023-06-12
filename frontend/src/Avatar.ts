@@ -4,8 +4,7 @@ import { ANIMATIONS, Sprite } from './Sprite.js'
 import { createAdvancedBubble, World } from './World.js'
 import heartParticles from './images/bubble/heartParticles.png'
 import { SkinId } from '../../common/src/Types.js'
-
-export const AVATAR_DISPLAY_SIZE = 150
+import { AVATAR_DISPLAY_SIZE } from './RaceField.js'
 
 export enum BehaviourName {
   BONK = 'bonk',
@@ -195,7 +194,7 @@ class Avatar {
   draw(ctx: CanvasRenderingContext2D) {
     this.sprite.draw(ctx)
     ctx.fillStyle = this.color
-    ctx.strokeStyle = 'white' 
+    ctx.strokeStyle = 'black' 
     ctx.strokeText(
       this.display_name,
       this.x + this.sprite.displaySize / 2,

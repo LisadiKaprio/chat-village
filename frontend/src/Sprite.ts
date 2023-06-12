@@ -76,7 +76,9 @@ class Sprite {
       if (this.animations[this.currentAnimation].doesLoop) {
         this.currentAnimationFrame = 0
       } else {
-        this.gameObject.endAnimation()
+        if (this.gameObject) {
+          this.gameObject.endAnimation()
+        }
         this.currentAnimationFrame = 0
       }
     }
@@ -86,8 +88,15 @@ class Sprite {
     // position control (add nudge if needed)
     xOffset = xOffset ?? 0
     yOffset = yOffset ?? 0
-    const x = this.gameObject.x + xOffset
-    const y = this.gameObject.y + yOffset
+    let x
+    let y
+    if (this.gameObject) {
+      x = this.gameObject.x + xOffset
+      y = this.gameObject.y + yOffset
+    } else {
+      x = xOffset
+      y = yOffset
+    }
 
     // if (!this.frame) 
     const [frameX, frameY] = this.frame
@@ -130,6 +139,12 @@ class Sprite {
 }
 
 const ANIMATIONS = {
+  static: new Animation({
+    frames: [
+      [1, 1],
+    ],
+    doesLoop: false,
+  }),
   idle: new Animation({
     frames: [
       [1, 1],
@@ -207,7 +222,7 @@ interface SpriteConfig {
   animations?: Animations
   currentAnimation?: string
   animationFrameLimit?: number
-  gameObject: any
+  gameObject?: any
 }
 
 interface Sprite {
@@ -222,5 +237,5 @@ interface Sprite {
   animationFrameLimit: number;
   animationFrameProgress: number;
   mirrored: boolean;
-  gameObject: any; // ?
+  gameObject: any;
 }

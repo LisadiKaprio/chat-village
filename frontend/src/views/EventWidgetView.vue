@@ -1,8 +1,9 @@
 <template>
   <div class="event-widget">
-    <div v-if="!isRacing" class="advices-container">Type !join to enter a race. The first player can type something like "!join 200", to make a higher bet.</div> 
-    <div v-if="!isRacing" class="advices-container">{{ participantsJoined === 0 ? 'Be the first one to start the race NOW!' : `${participantsJoined} player(s) already joined the race` }}</div> 
-    <canvas class="game-canvas" ref="gameCanvas" :height="windowHeight" :width="windowWidth"></canvas>
+    <div v-if="!isRacing" class="advices-container">Type !join to enter a race.</div> 
+    <div v-if="!isRacing" class="advices-container">Type !join 200 to make a higher initial bet.</div> 
+    <div v-if="!isRacing" class="advices-container">{{ participantsJoined === 0 ? 'Be the first one to start the race NOW!' : `${participantsJoined} player(s) already joined the race.` }}</div> 
+    <canvas class="game-canvas" ref="gameCanvas" :style="!isRacing ? 'display: none' : ''" :height="windowHeight" :width="windowWidth"></canvas>
   </div>
 </template>
 
@@ -16,6 +17,7 @@ import {
   RACE_LENGTH_HORIZONTAL,
   CANVAS_MARGIN_HORIZONTAL,
   RaceField,
+CANVAS_WIDTH,
 } from '../RaceField'
 import { FRAMERATE, SECOND, UPDATE_PERIOD_FAST } from '../types/Types'
 
@@ -59,7 +61,9 @@ export default class EventWidget extends Vue {
   }
 
   public get participantsJoined(): number {
-    return (this.raceField && this.raceField.participants) ? Object.keys(this.raceField.participants).length : 0
+    if (!this.raceField) return 0
+    if (!this.raceField.participants) return 0
+    return Object.keys(this.raceField.participants).length
   }
 
   public get isRacing(): boolean {
@@ -82,11 +86,11 @@ export default class EventWidget extends Vue {
     if(this.raceField && this.raceField.participants) {
       const playerSpace = PLAYER_SPACE_VERTICAL * Object.keys(this.raceField.participants).length
       return playerSpace + (CANVAS_MARGIN_VERTICAL * 2)
-    } else return 10
+    } else return 0
   }
 
   public get windowWidth(): number {
-    return RACE_LENGTH_HORIZONTAL + (CANVAS_MARGIN_HORIZONTAL * 2)
+    return CANVAS_WIDTH
   }
 
   public startDrawing() {
@@ -101,6 +105,7 @@ export default class EventWidget extends Vue {
     if (elapsed > this.fpsInterval) {
       this.then = now - (elapsed % this.fpsInterval)
       this.raceField.update()
+      this.raceField.draw()
     }
     requestAnimationFrame(this.drawAtFramerate)
   }
@@ -110,8 +115,8 @@ export default class EventWidget extends Vue {
 
 <style>
 @font-face {
-  font-family: 'VictorMono-Medium';
-  src: url('../fonts/VictorMono-Medium.woff2') format('woff2');
+  font-family: 'CherryBombOne-Regular';
+  src: url('../fonts/CherryBombOne-Regular.ttf');
   font-weight: normal;
   font-style: normal;
 }
@@ -121,7 +126,7 @@ export default class EventWidget extends Vue {
 } */
 
 body {
-  font-family: 'VictorMono-Medium';
+  font-family: 'CherryBombOne-Regular';
   padding: 0;
   margin: 0;
   /* prevents unwanted scrolling */
@@ -129,7 +134,9 @@ body {
 }
 
 .advices-container {
+  max-width: 400px;
   margin: 4px;
+  font-size: 24px;
   font-weight: bold;
   color: white;
   text-shadow: 1px 1px 3px black;

@@ -16,7 +16,8 @@ export enum SkinId {
 
 export interface Skin {
   id: string,
-  source: any
+  avatarSource: any,
+  boatSource: any,
 }
 
 export enum PlayerState {
@@ -32,7 +33,7 @@ export enum CommandTrigger {
   BONK = '!bonk',
   HUG = '!hug',
   INVENTORY = '!inventory',
-  INV_SHORT = '!inv',
+  INV_SHORT = '!seastars',
   BET = '!join'
 }
 

@@ -60,7 +60,7 @@ async function main() {
 
 	setInterval(async () => {
 		await state.refresh(db)
-		await raceConstructor.update(db)
+		await raceConstructor.update(db, twitch)
 	}, 2 * 1000) // check every two seconds
 }
 void main()

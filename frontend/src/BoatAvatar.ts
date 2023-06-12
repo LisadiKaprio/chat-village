@@ -27,6 +27,7 @@ export class BoatAvatar {
       gameObject: this,
       src: config.src,
       mask: config.mask,
+      cutSize: config.cutSize || 200,
       color: this.color,
       displaySize: config.displaySize || 75,
       animations: config.animations || {
@@ -47,13 +48,6 @@ export class BoatAvatar {
 
   draw(ctx: CanvasRenderingContext2D) {
     this.sprite.draw(ctx)
-    ctx.fillStyle = this.color
-    ctx.fillText(
-      this.display_name,
-      this.x + this.sprite.displaySize / 4,
-      this.y + this.sprite.displaySize + 10,
-      this.sprite.displaySize
-    )
   }
 
   backendBoatAvatar(): BackendBoatAvatar {

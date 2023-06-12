@@ -8,6 +8,11 @@ import cat from './images/chars/cat.png'
 import bear from './images/chars/bear.png'
 import panda from './images/chars/panda.png'
 
+import boatBunny from './images/boats/boat-bunny.png'
+import boatCat from './images/boats/boat-cat.png'
+import boatBear from './images/boats/boat-bear.png'
+import boatPanda from './images/boats/boat-panda.png'
+
 import { PlayerMessages, UPDATE_PERIOD } from './types/Types'
 import {
   ActionType,
@@ -24,26 +29,31 @@ import { Player, Players, EmoteReceived, Message, PlayerState, SkinId, NonEmptyA
 
 const MESSAGES_ALL_OVER_THE_PLACE: boolean = false
 
-const SKINS: NonEmptyArray<Skin> = [
+export const SKINS: NonEmptyArray<Skin> = [
   {
     id: SkinId.BUNNY,
-    source: bunny
+    avatarSource: bunny,
+    boatSource: boatBunny,
   },
   {
     id: SkinId.CAT,
-    source: cat
+    avatarSource: cat,
+    boatSource: boatCat,
   },
   {
     id: SkinId.DOG,
-    source: bunny
+    avatarSource: bunny,
+    boatSource: boatBunny,
   },
   {
     id: SkinId.BEAR,
-    source: bear
+    avatarSource: bear,
+    boatSource: boatBear,
   },
   {
     id: SkinId.PANDA,
-    source: panda
+    avatarSource: panda,
+    boatSource: boatPanda,
   },
 ]
 
@@ -177,7 +187,7 @@ class World {
   updateAvatars() {
     // aligns all nicknames
     this.ctx.textAlign = 'center'
-    this.ctx.font = 'bold 16px VictorMono-Medium'
+    this.ctx.font = '16px CherryBombOne-Regular'
     for (const userAvatar of Object.values(this.userAvatars)) {
       if (userAvatar.isActive) {
         userAvatar.update()
@@ -245,7 +255,7 @@ function createNewUserAvatar(
   y: number,
   skin: SkinId
 ) {
-  const skinSrc = SKINS.find(s => s.id === skin).source
+  const skinSrc = SKINS.find(s => s.id === skin).avatarSource
   const avatar = new Avatar(world, {
     id: user.id,
     name: user.username,
