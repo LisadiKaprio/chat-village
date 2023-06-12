@@ -49,6 +49,7 @@ function buildRaceInfo(raceConstructor: RaceConstructor, channelName: string) {
 		}
 	} else {
 		return{
+			bet: raceConstructor.races[channelName].currentBet,
 			status: raceConstructor.races[channelName].status,
 			participants: raceConstructor.races[channelName].participants,
 		}

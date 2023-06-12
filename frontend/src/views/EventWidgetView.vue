@@ -1,7 +1,10 @@
 <template>
   <div class="event-widget">
     <div v-if="!isRacing" class="advices-container">Type !join to enter a race.</div> 
-    <div v-if="!isRacing" class="advices-container">Type !join 200 to make a higher initial bet.</div> 
+    <div v-if="!isRacing" class="advices-container">
+      <template v-if="participantsJoined === 0">Type !join 200 to make a higher initial bet.</template>
+      <template v-else>Current bet: {{ currentBet }} seastars</template>
+    </div>
     <div v-if="!isRacing" class="advices-container">{{ participantsJoined === 0 ? 'Be the first one to start the race NOW!' : `${participantsJoined} player(s) already joined the race.` }}</div> 
     <canvas class="game-canvas" ref="gameCanvas" :style="!isRacing ? 'display: none' : ''" :height="windowHeight" :width="windowWidth"></canvas>
     <div v-if="isRacing" class="timer">{{ raceField.timer }} sec</div>
@@ -31,7 +34,7 @@ export default class EventWidget extends Vue {
   private then: number
   private fpsInterval = (SECOND / FRAMERATE)
 
-  public timerRef = ref(this.timer)
+  public currentBet = 0
 
   public ws!: WebSocket
   public ws_host: string
@@ -44,7 +47,8 @@ export default class EventWidget extends Vue {
     this.ws.onmessage = (ev: any) => {
       const { type, data } = JSON.parse(ev.data)
       if (type === WebsocketMessageType.BACKEND_RACE_INFO) {
-        const { status, participants } = data
+        const { bet, status, participants } = data
+        this.currentBet = bet
         this.raceField.status = status
         if ( status !== RaceStatus.OFF ) this.raceField.participants = participants
       }
@@ -61,10 +65,6 @@ export default class EventWidget extends Vue {
     }
     sendRaceResults()
     this.startDrawing()
-  }
-
-  public timer(): number {
-    return +((Date.now() - this.raceField.globalStartDate) / 1_000).toFixed(1)
   }
 
   public get participantsJoined(): number {
