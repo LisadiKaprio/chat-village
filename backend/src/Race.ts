@@ -92,13 +92,18 @@ export default class RaceConstructor {
 	}
 
 	async handleFinish(db: Db, state: State, channelName: string, boatAvatars: BackendBoatAvatar[], twitch: Twitch) {
-		const winnerPlayer = Object.values(state.players).find(p => p.username === boatAvatars[0].name)
+		const winnerAvatar = Object.values(boatAvatars).find(a => a.finishTimeMs !== 0)
+		if (!winnerAvatar) {
+			console.log('Error: No winner avatar!')
+			return
+		}
+		const winnerPlayer = Object.values(state.players).find(p => p.username === winnerAvatar.name)
 		if (!winnerPlayer) {
-			console.log('Winner player could not be found in state! Points will not be added to them.')
+			console.log('Error: No winner player in state!')
 			return
 		}
 		await addPointsToPlayer(db, winnerPlayer.points, this.races[channelName].currentBet * boatAvatars.length, winnerPlayer.id)
-		await twitch.sayRaceFinishMessage(channelName, boatAvatars, this.races[channelName].currentBet)
+		await twitch.sayRaceFinishMessage(channelName, winnerAvatar.name, this.races[channelName].currentBet * boatAvatars.length, this.races[channelName].currentBet)
 		delete this.races[channelName]
 		console.log('race finished')
 	}

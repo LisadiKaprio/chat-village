@@ -320,9 +320,9 @@ export default class Twitch {
 		}
 	}
 
-	async sayRaceFinishMessage(channelName: string, boatAvatars: BackendBoatAvatar[], bet: number) {
+	async sayRaceFinishMessage(channelName: string, winnerName: string, pointsAdded: number, pointsDeducted: number) {
 		const channel = `#${channelName}`
-		await this.#client.say(channel, MessageRaceFinish(boatAvatars, bet))
+		await this.#client.say(channel, MessageRaceFinish(winnerName, pointsAdded, pointsDeducted))
 	}
 
 	async sayRaceTooFewParticipantsMessage(channelName: string, participantsAmount: number) {

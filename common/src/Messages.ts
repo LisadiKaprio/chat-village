@@ -112,8 +112,8 @@ export const MessageWarningRaceStart = (morePlayersNeeded: number): string => {
     }
 }
 
-export const MessageRaceFinish = (boatAvatars: BackendBoatAvatar[], bet: number): string => {
-    return `PartyHat Congrats! ${boatAvatars[0].name} finishes the race in first place and gets ${bet * boatAvatars.length} seastars, while everyone else loses ${bet} seastars Jebaited`
+export const MessageRaceFinish = (winnerName: string, pointsAdded: number, pointsDeducted: number): string => {
+    return `PartyHat Congrats! ${winnerName} finishes the race in first place and gets ${pointsAdded} seastars, while everyone else loses ${pointsDeducted} seastars Jebaited`
 }
 
 export const MessageRaceTooFewParticipants = (participantsAmount: number): string => {
