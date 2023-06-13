@@ -1,5 +1,5 @@
 import { Command, CommandTrigger, Players } from '../../common/src/Types'
-import { searchUser } from './functions'
+import { searchUsernameOfExistingPlayer } from './functions'
 
 export class CommandParser {
 	public parse(message: string, playersInChannel: Players): Command | null {
@@ -16,12 +16,8 @@ export class CommandParser {
 		}
 
 		const currentArgPlayerUsernames = messageWords.args.map((arg) => {
-			return searchUser(arg, playersInChannel, false)
+			return searchUsernameOfExistingPlayer(arg, playersInChannel)
 		}).filter((user) => user != undefined) as string[]
-
-		
-		console.log(messageWords.args)
-		console.log(currentArgPlayerUsernames)
 
 		return {
 			command: detectedCommand,

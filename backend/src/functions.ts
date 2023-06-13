@@ -22,13 +22,24 @@ export async function getChannelId(db: Db, channelUsername: string): Promise<num
 	return row.id
 }
 
-export function searchUser(query: string, players: Players, returnPlayer?: boolean): string | Player | undefined {
+export function searchUsernameOfExistingPlayer(query: string, players: Players): string | undefined {
 	if (query.startsWith('@')) {
 		query = query.replace('@', '')
 	}
 	for (const [_playerId, userTags] of Object.entries(players)) {
-		if (userTags.username !== query && userTags.display_name !== query) break
-		if (returnPlayer) return userTags
-		else return userTags.username
+		if (userTags.username === query || userTags.display_name === query){
+			return userTags.username
+		}
+	}
+}
+
+export function searchPlayerOfExistingPlayer(query: string, players: Players): Player | undefined {
+	if (query.startsWith('@')) {
+		query = query.replace('@', '')
+	}
+	for (const [_playerId, userTags] of Object.entries(players)) {
+		if (userTags.username === query || userTags.display_name === query){
+			return userTags
+		}
 	}
 }
