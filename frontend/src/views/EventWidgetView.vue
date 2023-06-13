@@ -1,11 +1,20 @@
 <template>
   <div class="event-widget">
-    <div v-if="!isRacing" class="advices-container">Type !join to enter a race.</div> 
-    <div v-if="!isRacing" class="advices-container">
-      <template v-if="participantsJoined === 0">Type !join 200 to make a higher initial bet.</template>
-      <template v-else>Current bet: {{ currentBet }} seastars</template>
-    </div>
-    <div v-if="!isRacing" class="advices-container">{{ participantsJoined === 0 ? 'Be the first one to start the race NOW!' : `${participantsJoined} player(s) already joined the race.` }}</div> 
+    <v-window class="information-window information-text" v-model="tab" v-if="!isRacing">
+      <v-window-item :value="eventTabEnum.RACE_INFORMATION">
+        <div >Type !join to enter a race.</div> 
+        <div >
+          <template v-if="participantsJoined === 0">Type !join 200 to make a higher initial bet.</template>
+          <template v-else>Current bet: {{ currentBet }} seastars</template>
+        </div>
+        <div>{{ participantsJoined === 0 ? 'Be the first one to start the race NOW!' : `${participantsJoined} player(s) already joined the race.` }}</div> 
+      </v-window-item>
+      <v-window-item :value="eventTabEnum.INTERACTION_INFORMATION">
+        <div>Type !hug @user to hug a user.</div> 
+        <div>Type !bonk @user to bonk a user.</div>
+        <div>You can hug/bonk without specifying who :)</div>
+      </v-window-item>
+    </v-window>
     <canvas class="game-canvas" ref="gameCanvas" :style="!isRacing ? 'display: none' : ''" :height="windowHeight" :width="windowWidth"></canvas>
     <div v-if="isRacing" class="timer">{{ raceField.timer }} sec</div>
   </div>
@@ -19,12 +28,15 @@ import { assertExists } from '../Helpers'
 import { 
   CANVAS_MARGIN_VERTICAL,
   PLAYER_SPACE_VERTICAL,
-  RACE_LENGTH_HORIZONTAL,
-  CANVAS_MARGIN_HORIZONTAL,
   RaceField,
-CANVAS_WIDTH,
+  CANVAS_WIDTH,
 } from '../RaceField'
-import { FRAMERATE, SECOND, UPDATE_PERIOD_FAST } from '../types/Types'
+import { FRAMERATE, SECOND } from '../types/Types'
+
+export enum EventTab {
+  RACE_INFORMATION = 'race information',
+  INTERACTION_INFORMATION = 'interaction information',
+}
 
 @Component
 export default class EventWidget extends Vue {
@@ -36,8 +48,14 @@ export default class EventWidget extends Vue {
 
   public currentBet = 0
 
+  public eventTabEnum = EventTab
+
   public ws!: WebSocket
   public ws_host: string
+
+  public tab = EventTab.RACE_INFORMATION
+  public tabInterval: NodeJS.Timeout | null = null
+  public TAB_SWITCH_MS = 30_000
 
   public async mounted (): Promise<void> {
     assertExists(this.gameCanvas)
@@ -65,6 +83,21 @@ export default class EventWidget extends Vue {
     }
     sendRaceResults()
     this.startDrawing()
+    
+    this.tabInterval = setInterval(() => {
+      this.switchInfoTab();
+    }, this.TAB_SWITCH_MS);
+  }
+
+  public switchInfoTab() {
+    if (this.participantsJoined) {
+      this.tab = EventTab.RACE_INFORMATION
+      return
+    }
+    const enumValues = Object.values(EventTab);
+    const currentIndex = enumValues.indexOf(this.tab);
+    const nextIndex = (currentIndex + 1) % enumValues.length;
+    this.tab = enumValues[nextIndex];
   }
 
   public get participantsJoined(): number {
@@ -148,8 +181,11 @@ body {
   text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
 }
 
-.advices-container {
-  max-width: 400px;
+.information-window {
+  max-width: 375px;
+}
+
+.information-text {
   margin: 4px;
   font-size: 24px;
   font-weight: bold;

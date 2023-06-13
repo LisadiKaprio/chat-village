@@ -120,3 +120,10 @@ export const MessageRaceTooFewParticipants = (participantsAmount: number): strin
     return `UWot The race was canceled! Come on, people, we only needed ${participantsAmount} more players to join! `
 }
 
+export const MessageGiftedPoints = (gifterDisplayName: string, targetDisplayName: string, points: number): string => {
+    return `GivePLZ ⭐ @${gifterDisplayName} just gifted @${targetDisplayName} ${points} seastars! What a kind soul!`
+}
+
+export const MessageFailedGifting = (gifterDisplayName: string, points: number): string => {
+    return `BibleThump @${gifterDisplayName} You don't have ${points} seastars yet, so you can't gift that much!`
+}
