@@ -1,7 +1,7 @@
 import tmi from 'tmi.js'
-import { getChannelId, updatePlayerState } from './functions'
+import { getChannelId, searchUser, updatePlayerState } from './functions'
 import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, BackendBoatAvatar, RaceStatus } from '../../common/src/Types'
-import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageInventory, MessageFailedInitBet, MessageFailedRaiseBet, MessageInitBet, MessageRaiseBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart } from '../../common/src/Messages'
+import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageInventory, MessageFailedInitBet, MessageFailedRaiseBet, MessageInitBet, MessageRaiseBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedPoints, MessageFailedGifting } from '../../common/src/Messages'
 import { CommandParser } from './CommandParser'
 import { getRandom } from '../../common/src/Util'
 import Db from './Db'
@@ -125,6 +125,8 @@ export default class Twitch {
 						await handleInteractionCommand(channel, this.#client, currentPlayer, command, argUsers, currentChannelId)
 					} else if (command === CommandTrigger.BET) {
 						await handleBetCommand(channel, this.#client, currentPlayer, args)
+					} else if (command === CommandTrigger.GIFT) {
+						await handleGiftingStars(channel, this.#client, currentPlayer, args, argUsers)
 					} else if (command === CommandTrigger.DEBUG_ID) {
 						void this.#client.say(channel, `@${currentPlayer.display_name} Your player ID is ${currentPlayer.id}`)
 					}
@@ -318,6 +320,44 @@ export default class Twitch {
 			}
 			void client.say(channel, MessageInitBet(currentPlayer.display_name, currentBet, raceConstructor.MIN_PARTICIPANTS - Object.values(currentRace.participants).length))
 			await deductPointsFromPlayer(db, currentPlayer.points, currentBet, currentPlayer.id)		
+		}
+
+		async function handleGiftingStars(channel: any, client: tmi.Client, currentPlayer: Player, args: string[], argUsers: string[]) {
+			let pointsToGift = 1
+			if(+args[0] >= 2) {
+				pointsToGift = +args[0]
+			} else if(+args[1] >= 2) {
+				pointsToGift = +args[1]
+			}
+
+			if (currentPlayer.points < pointsToGift) {
+				void client.say(channel, MessageFailedGifting(currentPlayer.display_name, pointsToGift))
+			}
+			
+			if(!argUsers[0]) {
+				console.log('Error: no args[0]')
+				return
+			}
+			console.log(args)
+			console.log(argUsers)
+			const targetPlayer = determinePlayerObject(argUsers)
+			if (!targetPlayer) {
+				console.log('Error: No target player for gifting stars could be determined.')
+				return
+			}
+			
+			await deductPointsFromPlayer(db, currentPlayer.points, pointsToGift, currentPlayer.id)
+			await addPointsToPlayer(db, targetPlayer.points, pointsToGift, targetPlayer.id)
+			void client.say(channel, MessageGiftedPoints(currentPlayer.display_name, targetPlayer.display_name, pointsToGift))
+		}
+
+		function determinePlayerObject(argUsers: string[]): Player | undefined {
+			if(!argUsers) {
+				return getRandom([...Object.values(state.players)] as NonEmptyArray<Player>)
+			}
+			const player = searchUser(argUsers[0], state.players, true)
+			if (typeof player === 'undefined' || typeof player === 'string') return undefined
+			else return player
 		}
 	}
 
