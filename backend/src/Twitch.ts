@@ -310,7 +310,7 @@ export default class Twitch {
 			
 			if (currentPlayer.points < currentBet) { // not enough points
 				void client.say(channel, MessageFailedInitBet(currentPlayer.display_name, currentBet))
-				delete raceConstructor.races[currentChannelUsername]
+				if (Object.values(currentRace.participants).length <= 0) delete raceConstructor.races[currentChannelUsername]
 				return
 			}
 			
