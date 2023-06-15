@@ -332,6 +332,7 @@ export default class Twitch {
 
 			if (currentPlayer.points < pointsToGift) {
 				void client.say(channel, MessageFailedGifting(currentPlayer.display_name, pointsToGift))
+				return
 			}
 			
 			const targetPlayer = await determinePlayerObject(argUsers, channelName, currentPlayer.username)
