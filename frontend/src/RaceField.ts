@@ -1,17 +1,17 @@
 import { BackendBoatAvatar, RaceParticipant, RaceParticipants, RaceStatus } from '../../common/src/Types.js'
 import { BoatAvatar } from './BoatAvatar.js'
-import { SKINS } from './World'
+import { SKINS } from './Visuals'
 import { assertExists } from './Helpers.js'
 import seaBg from './images/sea-bg.png'
 import { ANIMATIONS, Sprite } from './Sprite.js'
 
 import boatMask from './images/boats/boat-MASK.png'
 
-export const AVATAR_DISPLAY_SIZE = 50
+export const BOAT_AVATAR_DISPLAY_SIZE = 50
 export const HORIZONTAL_LINE_WIDTH = 2
 export const VERTICAL_LINE_WIDTH = 2
 export const MAX_PARTICIPANTS = 4
-export const PLAYER_SPACE_VERTICAL = AVATAR_DISPLAY_SIZE
+export const PLAYER_SPACE_VERTICAL = BOAT_AVATAR_DISPLAY_SIZE
 export const PLAYER_MARGIN_TOP = 2
 export const PLAYER_MARGIN_BOTTOM = 2
 export const RACE_LENGTH_HORIZONTAL = 325
@@ -58,7 +58,7 @@ export class RaceField {
       this.status = RaceStatus.OFF
       this.avatars = {}
       this.globalStartDate = 0
-      this.distance = RACE_LENGTH_HORIZONTAL - AVATAR_DISPLAY_SIZE
+      this.distance = RACE_LENGTH_HORIZONTAL - BOAT_AVATAR_DISPLAY_SIZE
     }
 
     buildCurrentRaceBg(): CanvasImageSource | null {
@@ -79,7 +79,7 @@ export class RaceField {
       tmpCtx.font = '30px CherryBombOne-Regular'
       tmpCtx.fillStyle = "rgba(255, 255, 255, 0.75)"
       this.drawLine(tmpCtx, CANVAS_MARGIN_HORIZONTAL, CANVAS_MARGIN_VERTICAL, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL, CANVAS_MARGIN_VERTICAL)
-      this.drawLine(tmpCtx, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL - AVATAR_DISPLAY_SIZE, CANVAS_MARGIN_VERTICAL, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL - AVATAR_DISPLAY_SIZE, 500 - CANVAS_MARGIN_VERTICAL)
+      this.drawLine(tmpCtx, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL - BOAT_AVATAR_DISPLAY_SIZE, CANVAS_MARGIN_VERTICAL, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL - BOAT_AVATAR_DISPLAY_SIZE, 500 - CANVAS_MARGIN_VERTICAL)
       for (const avatar of Object.values(this.avatars)) {
         tmpCtx.fillText(
           avatar.display_name,
@@ -154,7 +154,7 @@ export class RaceField {
         src: skinSrc,
         mask: boatMask,
         cutSize: 50,
-        displaySize: AVATAR_DISPLAY_SIZE,
+        displaySize: BOAT_AVATAR_DISPLAY_SIZE,
       })
       return boatAvatar
     }

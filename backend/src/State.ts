@@ -40,7 +40,9 @@ async function loadAndProcessPlayers(
     p.channel_id,
     p.points,
     p.state,
-    p.last_chatted
+    p.last_chatted,
+	p.avatar_decoration,
+	p.inventory
   from
     cv.players p
     inner join cv.chatters c on c.id = p.chatter_id
@@ -76,7 +78,9 @@ export async function getPlayersInChannel(
     p.channel_id,
     p.points,
     p.state,
-    p.last_chatted
+    p.last_chatted,
+	p.avatar_decoration,
+	p.inventory
   from
     cv.players p
     inner join cv.chatters c on c.id = p.chatter_id

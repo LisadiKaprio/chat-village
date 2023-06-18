@@ -1,3 +1,5 @@
+import { AvatarDecorationId } from "./Deco";
+
 export type NonEmptyArray<T> = [T, ...T[]]
 
 export enum WebsocketMessageType {
@@ -15,7 +17,7 @@ export enum SkinId {
 }
 
 export interface Skin {
-  id: string,
+  id: SkinId,
   avatarSource: any,
   boatSource: any,
 }
@@ -64,6 +66,9 @@ export type Player = Chatter & {
   channel_id: number;
   points: number;
   state: PlayerState;
+  avatar_decoration: AvatarDecorationId;
+  inventory: [];
+  // currentBoatDecoration: BoatDecoration;
   last_chatted: string; // json date
 }
 export type Players = {

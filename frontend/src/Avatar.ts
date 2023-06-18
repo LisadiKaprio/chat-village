@@ -4,7 +4,9 @@ import { ANIMATIONS, Sprite } from './Sprite.js'
 import { createAdvancedBubble, World } from './World.js'
 import heartParticles from './images/bubble/heartParticles.png'
 import { SkinId } from '../../common/src/Types.js'
-import { AVATAR_DISPLAY_SIZE } from './RaceField.js'
+import { AvatarDecoration, AvatarDecorationId } from '../../common/src/Deco.js'
+
+export const AVATAR_DISPLAY_SIZE = 150
 
 export enum BehaviourName {
   BONK = 'bonk',
@@ -58,6 +60,8 @@ class Behaviour {
 
 const BEHAVIOURS = {
   idle: new Behaviour(BehaviourName.IDLE, [
+    { type: ActionType.WALK, direction: 'right' },
+    { type: ActionType.STAND },
     { type: ActionType.WALK, direction: 'left' },
     { type: ActionType.STAND },
     { type: ActionType.WALK, direction: 'right' },
@@ -75,9 +79,11 @@ interface Avatar {
   x: number;
   y: number;
   skin: SkinId;
+  currentAvatarDecoration: AvatarDecorationId;
   toRemove: boolean;
   color: string;
   sprite: Sprite;
+  decoSprite: Sprite;
   actionTime: number;
   speed: number;
   walkingTime: number;
@@ -105,24 +111,20 @@ interface Action {
   mirrored?: boolean;
 }
 class Avatar {
-  // TODO
   constructor(world: World, config: any) {
-    // username
     this.id = config.id
     this.name = config.name ?? 'NoName'
     this.display_name = config.display_name ?? 'NoName'
     this.world = world
-    // define and pass in position, or else default to 0
     this.x = config.x || 0
     this.y = config.y || 150
     this.toRemove = false
     this.color = config.color || 'purple'
-    // define sprite
     this.sprite = new Sprite({
       gameObject: this,
       src: config.src,
       mask: config.mask,
-      color: this.color,
+      // color: this.color,
       displaySize: config.displaySize || AVATAR_DISPLAY_SIZE,
       animations: config.animations || {
         idle: ANIMATIONS.idle,
@@ -169,9 +171,11 @@ class Avatar {
       if (this.direction == 'left') {
         this.x -= this.speed
         this.sprite.mirrored = false
+        this.decoSprite.mirrored = false
       } else if (this.direction == 'right') {
         this.x += this.speed
         this.sprite.mirrored = true
+        this.decoSprite.mirrored = true
       }
     } else if (action.type == ActionType.GO) {
       const speedMultiplier = 2.0
@@ -181,9 +185,11 @@ class Avatar {
       if (deltaX > this.speed * speedMultiplier + 0.1) { // running right
         this.x += this.speed * speedMultiplier
         this.sprite.mirrored = true
+        this.decoSprite.mirrored = true
       } else if (deltaX < -(this.speed * speedMultiplier + 0.1)) { // running left
         this.x -= this.speed * speedMultiplier
         this.sprite.mirrored = false
+        this.decoSprite.mirrored = false
       } else {
         this.x = x
         this.actionTime = 1
@@ -193,6 +199,9 @@ class Avatar {
 
   draw(ctx: CanvasRenderingContext2D) {
     this.sprite.draw(ctx)
+    if (this.decoSprite) {
+      this.decoSprite.draw(ctx)
+    }
     ctx.fillStyle = this.color
     ctx.strokeStyle = 'black' 
     ctx.strokeText(
@@ -269,8 +278,10 @@ class Avatar {
 
     const action = this.currentBehaviour.actions[this.behaviourLoopIndex]
     this.sprite.setAnimation('idle')
+    this.decoSprite.setAnimation('idle')
     if (action.type == ActionType.WALK) {
       this.sprite.setAnimation('walk')
+      this.decoSprite.setAnimation('walk')
       this.actionTime = Math.random() * this.walkingTime
       const direction = action.direction ?? 'left'
       this.direction = direction
@@ -279,14 +290,17 @@ class Avatar {
     } else if (action.type == ActionType.TALK) {
       // play out all the frames of animation, then animation advances to next behaviour
       this.sprite.setAnimation('talk')
+      this.decoSprite.setAnimation('talk')
       this.actionTime = 9999
     } else if (action.type == ActionType.HUG) {
       if (!this.getCloser(action.who!)) {
         if (action.who!.canSwapBehaviour()) {
           // close enough for a hug, change animation of this and the other
           this.sprite.setAnimation('hug')
+          this.decoSprite.setAnimation('hug')
           this.actionTime = 500
           this.sprite.mirrored = this.x < action.who!.x
+          this.decoSprite.mirrored = this.x < action.who!.x
           // sets sprite mirrored here, doesn't reset it
           action.who!.changeBehaviour(
             new Behaviour(BehaviourName.HUGGED, [
@@ -304,14 +318,18 @@ class Avatar {
     } else if (action.type == ActionType.HUGGED) {
       this.sprite.mirrored = action.mirrored ?? false
       this.sprite.setAnimation('hug')
+      this.decoSprite.setAnimation('hug')
       this.actionTime = 500
     } else if (action.type == ActionType.BONK) {
       if (!this.getCloser(action.who!)) {
         if (action.who!.canSwapBehaviour()) {
           // close enough for a hug, change animation of this and the other
           this.sprite.setAnimation('bonk')
+          this.decoSprite.setAnimation('bonk')
+          this.decoSprite.setAnimation('bonk')
           this.actionTime = 300
           this.sprite.mirrored = this.x < action.who!.x
+          this.decoSprite.mirrored = this.x < action.who!.x
           // sets sprite mirrored here, doesn't reset it
           action.who!.changeBehaviour(
             new Behaviour(BehaviourName.BONKED, [
@@ -328,6 +346,7 @@ class Avatar {
     } else if (action.type == ActionType.BONKED) {
       this.sprite.mirrored = !action.mirrored ?? false
       this.sprite.setAnimation('bonked')
+      this.decoSprite.setAnimation('bonked')
       this.actionTime = 300
     } else if (action.type == ActionType.GO) {
       this.actionTime = 100
@@ -353,7 +372,9 @@ class Avatar {
       // need to go closer to who we want to hug.
       // TODO: if too close maybe need to step away a little bit.
       this.sprite.setAnimation('walk')
+      this.decoSprite.setAnimation('walk')
       this.sprite.mirrored = this.direction !== 'left' ?? false
+      this.decoSprite.mirrored = this.direction !== 'left' ?? false
       this.actionTime = 100
       this.currentBehaviour.insert(this.behaviourLoopIndex, {
         type: ActionType.GO,

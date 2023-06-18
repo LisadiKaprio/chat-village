@@ -1,7 +1,7 @@
 import tmi from 'tmi.js'
-import { getChannelId, searchPlayerOfExistingPlayer, searchUsernameOfExistingPlayer, updatePlayerState } from './functions'
-import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, BackendBoatAvatar, RaceStatus } from '../../common/src/Types'
-import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageInventory, MessageFailedInitBet, MessageFailedRaiseBet, MessageInitBet, MessageRaiseBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedPoints, MessageFailedGifting } from '../../common/src/Messages'
+import { getChannelId, searchPlayerOfExistingPlayer, updatePlayerState } from './functions'
+import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus } from '../../common/src/Types'
+import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageInventory, MessageFailedInitBet, MessageInitBet, MessageRaiseBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedPoints, MessageFailedGifting } from '../../common/src/Messages'
 import { CommandParser } from './CommandParser'
 import { getRandom } from '../../common/src/Util'
 import Db from './Db'
@@ -199,7 +199,9 @@ export default class Twitch {
             p.chatter_id,
             p.channel_id,
             p.points,
-            p.state
+            p.state,
+			p.avatar_decoration,
+			p.inventory
           from cv.chatters c
           inner join cv.players p on p.chatter_id = c.id
           where

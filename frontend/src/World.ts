@@ -3,20 +3,11 @@ export { World, createAdvancedBubble }
 import messageParticles from './images/bubble/messageParticles.png'
 import emojiDetect from '@zutatensuppe/emoji-detect'
 
-import bunny from './images/chars/bunny.png'
-import cat from './images/chars/cat.png'
-import bear from './images/chars/bear.png'
-import panda from './images/chars/panda.png'
-
-import boatBunny from './images/boats/boat-bunny.png'
-import boatCat from './images/boats/boat-cat.png'
-import boatBear from './images/boats/boat-bear.png'
-import boatPanda from './images/boats/boat-panda.png'
-
 import { PlayerMessages, UPDATE_PERIOD } from './types/Types'
 import {
   ActionType,
   Avatar,
+  AVATAR_DISPLAY_SIZE,
   Behaviour,
   BehaviourName,
   BEHAVIOURS,
@@ -24,38 +15,13 @@ import {
 import { Bubble, BubbleType } from './Bubble.js'
 import { Emote } from './Emote.js'
 import { assertExists } from './Helpers.js'
-import { Player, Players, EmoteReceived, Message, PlayerState, SkinId, NonEmptyArray, Skin, FrontendCommand, CommandTrigger } from '../../common/src/Types'
+import { Player, Players, EmoteReceived, Message, PlayerState, SkinId, FrontendCommand, CommandTrigger } from '../../common/src/Types'
+import { AVATAR_DECORATIONS, SKINS } from './Visuals'
+import { Sprite } from './Sprite'
 // import { ServerMessages } from './types/Types.js'
 
 const MESSAGES_ALL_OVER_THE_PLACE: boolean = false
-
-export const SKINS: NonEmptyArray<Skin> = [
-  {
-    id: SkinId.BUNNY,
-    avatarSource: bunny,
-    boatSource: boatBunny,
-  },
-  {
-    id: SkinId.CAT,
-    avatarSource: cat,
-    boatSource: boatCat,
-  },
-  {
-    id: SkinId.DOG,
-    avatarSource: bunny,
-    boatSource: boatBunny,
-  },
-  {
-    id: SkinId.BEAR,
-    avatarSource: bear,
-    boatSource: boatBear,
-  },
-  {
-    id: SkinId.PANDA,
-    avatarSource: panda,
-    boatSource: boatPanda,
-  },
-]
+const EMOTE_DISPLAY_SIZE = 100
 
 class World {
   constructor(gameContainer: HTMLElement, canvas: HTMLCanvasElement) {
@@ -98,9 +64,21 @@ class World {
           this,
           user,
           Math.random() * this.canvas.width,
-          this.canvas.height - 125,
+          this.canvas.height - AVATAR_DISPLAY_SIZE - 25, // name display size
           user.skin
         )
+      }
+      if (this.userAvatars[user.username].currentAvatarDecoration !== user.avatar_decoration) {
+        const avatarDecoration = AVATAR_DECORATIONS.find(d => d.id === user.avatar_decoration)
+        this.userAvatars[user.username].currentAvatarDecoration = user.avatar_decoration
+        this.userAvatars[user.username].decoSprite = new Sprite({
+          gameObject: this.userAvatars[user.username],
+          src: avatarDecoration.avatarSource,
+          mask: avatarDecoration.avatarMask,
+          color: this.userAvatars[user.username].color,
+          displaySize: AVATAR_DISPLAY_SIZE,
+          animations: this.userAvatars[user.username].sprite.animations,
+        })
       }
 
       this.userAvatars[user.username].isActive = (user.state === PlayerState.ACTIVE)
@@ -264,7 +242,7 @@ function createNewUserAvatar(
     x: x,
     y: y,
     src: skinSrc,
-    displaySize: 100,
+    displaySize: AVATAR_DISPLAY_SIZE,
   })
   return avatar
 }
@@ -318,7 +296,7 @@ function createNewEmojis(messages: string[], x: number, y: number) {
         y: y,
         src: `https://cdn.betterttv.net/assets/emoji/${emoji}.svg`,
         cutSize: 1300,
-        displaySize: 50,
+        displaySize: EMOTE_DISPLAY_SIZE,
         speedPhysicsX: Math.random() * 6 - 3,
         speedPhysicsY: -(Math.random() * 5),
         dragPhysicsY: -0.02,
@@ -337,6 +315,7 @@ function createNewEmote(emoteId: number, x: number, y: number) {
     speedPhysicsX: Math.random() * 6 - 3,
     speedPhysicsY: -(Math.random() * 5),
     dragPhysicsY: -0.02,
+    displaySize: EMOTE_DISPLAY_SIZE,
   })
   return emote
 }
