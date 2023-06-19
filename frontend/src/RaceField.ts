@@ -1,6 +1,6 @@
 import { BackendBoatAvatar, RaceParticipant, RaceParticipants, RaceStatus } from '../../common/src/Types.js'
 import { BoatAvatar } from './BoatAvatar.js'
-import { SKINS } from './Visuals'
+import { SKINS } from '../../common/src/Visuals'
 import { assertExists } from './Helpers.js'
 import seaBg from './images/sea-bg.png'
 import { ANIMATIONS, Sprite } from './Sprite.js'

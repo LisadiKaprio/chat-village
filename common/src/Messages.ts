@@ -1,3 +1,4 @@
+import { AvatarDecoration, AvatarDecorationId } from "./Visuals"
 import { BackendBoatAvatar, CommandTrigger } from "./Types"
 import { getRandom } from "./Util"
 
@@ -5,7 +6,24 @@ const EMPTY_MESSAGE = 'Instructions unclear'
 
 export enum SimpleMessages {
     VOLCANO = "GlitchLit A devastating eruption engulfs the avatars, leaving only ash and memories behind. The chat village mourns, yearning for new faces to fill its void.",
-    RACE_GOING = "ResidentSleeper A race has already started! Let's see how it turns out first"
+    RACE_GOING = "ResidentSleeper A race has already started! Let's see how it turns out first",
+    INVALID_BUY_REQUEST = "What item did you want to buy? Choose an item from today\'s shop, then use \"!buy A\" or \"!buy bow\" OhMyDog"
+}
+
+const randomCompliment = (): string => {
+    return getRandom([
+        'adorable',
+        'fabulous',
+        'good',
+        'fantastic',
+        'marvelous',
+        'charming',
+        'delightful',
+        'lovely',
+        'amazing',
+        'wonderful',
+        'splendid',
+    ])
 }
 
 export const MessageInteraction = (chatterName: string, targetName: string, price: number, command: CommandTrigger): string => {
@@ -126,4 +144,21 @@ export const MessageGiftedPoints = (gifterDisplayName: string, targetDisplayName
 
 export const MessageFailedGifting = (gifterDisplayName: string, points: number): string => {
     return `BibleThump @${gifterDisplayName} You don't have ${points} seastars yet, so you can't gift that much!`
+}
+
+export const MessageDailyShop = (dailyItems: AvatarDecoration[]): string => {
+    if (dailyItems.length<=2) return `PizzaTime Today, you can purchase: ${dailyItems}`
+    return `PizzaTime Today, you can buy: (A) ${dailyItems[0].name} (${dailyItems[0].price} seastars); (B) ${dailyItems[1].name} (${dailyItems[1].price} seastars); (C) ${dailyItems[2].name} (${dailyItems[2].price} seastars);`
+}
+
+export const MessageBuyingFailedPrice = (displayName: string, price: number, itemName: string): string => {
+    return `BibleThump @${displayName} You don't have ${price} seastars to buy ${itemName.toLowerCase()} yet!`
+}
+
+export const MessageBuyingSuccessEquipped = (displayName: string, itemName: string): string => {
+    return `SeemsGood @${displayName} Thanks for the purchase! This ${itemName.toLowerCase()} looks ${randomCompliment} on you!`
+}
+
+export const MessageBuyingSuccessInventory = (displayName: string, itemName: string): string => {
+    return `SeemsGood @${displayName} Thanks for the purchase! ${itemName.toLowerCase()} is now in your inventory. Use \"!equip ${itemName}\" to put it on!`
 }

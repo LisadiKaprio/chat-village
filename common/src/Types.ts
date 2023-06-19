@@ -1,4 +1,4 @@
-import { AvatarDecorationId } from "./Deco";
+import { AvatarDecorationId } from "./Visuals";
 
 export type NonEmptyArray<T> = [T, ...T[]]
 
@@ -39,6 +39,8 @@ export enum CommandTrigger {
   BET = '!join',
   DEBUG_ID = 'myid',
   GIFT = '!gift',
+  SHOP = '!shop',
+  BUY = '!buy',
 }
 
 export enum RaceStatus {
@@ -50,6 +52,11 @@ export enum RaceStatus {
 
 export const MINUTE = 60_000 
 export const OFFLINE_MINUTES = 10
+
+// export type DailyItems = {
+//   created: string; // json date
+//   items: AvatarDecorationId[];
+// }
 
 export type Chatter = {
   chatter_id: number;
@@ -108,7 +115,7 @@ export type Message = {
 export type Command = {
   command: CommandTrigger;
   args: string[];
-  argPlayerUsernames: string[]; 
+  argPlayerUsernames: string[];
 }
 export type FrontendCommand = Command & {
   playerUsername: string;

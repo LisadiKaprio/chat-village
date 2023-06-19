@@ -1,5 +1,6 @@
 import Db from './Db'
 import { EmoteReceived,  MessagesToChannel, Chatter, Chatters, Player, Players, PlayerState, OFFLINE_MINUTES, MINUTE, FrontendCommandsToChannel } from '../../common/src/Types'
+import { AvatarDecoration, AvatarDecorationId } from './Visuals'
 
 async function loadChatters(
 	db: Db,
@@ -102,6 +103,7 @@ export default class State {
 	public newEmotes: EmoteReceived[] = []
 	public allNewMessages: MessagesToChannel = {}
 	public allFrontendCommands: FrontendCommandsToChannel = {}
+	public dailyItems: AvatarDecoration[] = []
 
 	async init (
 		db: Db,

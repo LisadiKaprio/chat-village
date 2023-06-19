@@ -16,7 +16,7 @@ import { Bubble, BubbleType } from './Bubble.js'
 import { Emote } from './Emote.js'
 import { assertExists } from './Helpers.js'
 import { Player, Players, EmoteReceived, Message, PlayerState, SkinId, FrontendCommand, CommandTrigger } from '../../common/src/Types'
-import { AVATAR_DECORATIONS, SKINS } from './Visuals'
+import { AVATAR_DECORATIONS, SKINS } from '../../common/src/Visuals'
 import { Sprite } from './Sprite'
 // import { ServerMessages } from './types/Types.js'
 
@@ -68,7 +68,7 @@ class World {
           user.skin
         )
       }
-      if (this.userAvatars[user.username].currentAvatarDecoration !== user.avatar_decoration) {
+      if (user.avatar_decoration && this.userAvatars[user.username].currentAvatarDecoration !== user.avatar_decoration) {
         const avatarDecoration = AVATAR_DECORATIONS.find(d => d.id === user.avatar_decoration)
         this.userAvatars[user.username].currentAvatarDecoration = user.avatar_decoration
         this.userAvatars[user.username].decoSprite = new Sprite({

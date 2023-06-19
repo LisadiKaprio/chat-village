@@ -1,16 +1,19 @@
-import tmi from 'tmi.js'
+import tmi, { client } from 'tmi.js'
+import { Chance } from 'chance'
 import { getChannelId, searchPlayerOfExistingPlayer, updatePlayerState } from './functions'
 import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus } from '../../common/src/Types'
-import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageInventory, MessageFailedInitBet, MessageInitBet, MessageRaiseBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedPoints, MessageFailedGifting } from '../../common/src/Messages'
+import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageInventory, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedPoints, MessageFailedGifting, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory } from '../../common/src/Messages'
 import { CommandParser } from './CommandParser'
 import { getRandom } from '../../common/src/Util'
 import Db from './Db'
 import State, { getPlayersInChannel } from './State'
 import RaceConstructor from './Race'
+import { AvatarDecoration, AvatarDecorationId, AVATAR_DECORATIONS } from '../../common/src/Visuals'
       
 const BONK_PRICE = 10
 const HUG_PRICE = 5
 const IDLE_GAIN = 1
+const DAILY_ITEMS_AMOUNT = 3
     
 export async function addPointsToPlayer(db: Db, currentPoints: number, pointsToAdd: number, playerId: number): Promise<void> {
 	await db.update('cv.players', { points: currentPoints + pointsToAdd }, { id: playerId })
@@ -20,12 +23,36 @@ export async function deductPointsFromPlayer(db: Db, currentPoints: number, poin
 	await db.update('cv.players', { points: currentPoints - pointsToDeduct }, { id: playerId })
 }
 
+export async function equipAvatarDecorationToPlayer(db: Db, deco: AvatarDecorationId, playerId: number): Promise<void> {
+	await db.update('cv.players', { avatar_decoration: deco }, { id: playerId })
+}
+
+export async function addAvatarDecorationToPlayerInventory(db: Db, deco: AvatarDecorationId, playerId: number): Promise<void> {
+	const row = await db._get(`
+    select
+        cv.players.inventory
+    from
+        cv.players
+    where
+        cv.players.id = $1
+    `, [playerId])
+	const currentInventory: AvatarDecorationId[] = row.inventory
+	const updatedInventory: AvatarDecorationId[] = currentInventory.concat(deco)
+	if (!updatedInventory) {
+		console.log(`Could not update inventory of player ${playerId}!`)
+		return
+	}
+	await db.update('cv.players', { inventory: JSON.stringify(updatedInventory) }, { id: playerId })
+}
+
 export default class Twitch {
+	chance: Chance.Chance
 	#client: tmi.Client
 	commandParser: CommandParser
 	IS_BOT_ACTIVE: boolean
 
 	constructor(options: any) {
+		this.chance = new Chance()
 		this.#client = new tmi.client(options)
 		this.commandParser = new CommandParser()
 
@@ -63,99 +90,114 @@ export default class Twitch {
 				void this.#client.say(channel, `Ok, bot is now set to ${this.IS_BOT_ACTIVE}.`)
 				return
 			}
-    
-			if (this.IS_BOT_ACTIVE) {
-				if(!(username in state.chatters)) {
-					console.log(`${username} not found among chatters: creating chatter...`)
-					await createNewChatter(username, displayName, tags.color)
-					console.log(`Chatter ${username} created!`)
-				}
-    
-				const chatterId = await getChatterId(username)
-				if (!chatterId) return
-    
-				let currentPlayer = await getPlayer(currentChannelId ?? 0, chatterId ?? 0)
+
+			if (!this.IS_BOT_ACTIVE) return
+
+			if(!(username in state.chatters)) {
+				console.log(`${username} not found among chatters: creating chatter...`)
+				await createNewChatter(username, displayName, tags.color)
+				console.log(`Chatter ${username} created!`)
+			}
+
+			const chatterId = await getChatterId(username)
+			if (!chatterId) return
+
+			let currentPlayer = await getPlayer(currentChannelId ?? 0, chatterId ?? 0)
+			if(!currentPlayer) {
+				console.log(`${username} not found among ${currentChannelUsername} players: creating player...`)
+				await createNewPlayer(chatterId, currentChannelId)
+				console.log(`Player ${username} created!`)
+				currentPlayer = await getPlayer(currentChannelId ?? 0, chatterId ?? 0)
 				if(!currentPlayer) {
-					console.log(`${username} not found among ${currentChannelUsername} players: creating player...`)
-					await createNewPlayer(chatterId, currentChannelId)
-					console.log(`Player ${username} created!`)
-					currentPlayer = await getPlayer(currentChannelId ?? 0, chatterId ?? 0)
-					if(!currentPlayer) {
-						console.log(`Player ${username} on ${currentChannelUsername} channel could not be found or created!`)
+					console.log(`Player ${username} on ${currentChannelUsername} channel could not be found or created!`)
+					return
+				}
+			}
+			await setTimeLastChatted(currentPlayer.id)
+
+			if(currentPlayer.state !== PlayerState.ACTIVE){
+				await updatePlayerState(db, currentPlayer.id, PlayerState.ACTIVE)
+			}
+
+			if (!state.activePlayers.includes(currentPlayer.id)) {
+				state.activePlayers.push(currentPlayer.id)
+			}
+
+			// todo: command doesn't necessarily have an `!` infront?..
+			const detectedCommand = this.commandParser.parse(message, playersInChannel)
+			if (detectedCommand) {
+				const command = detectedCommand.command
+				const args = detectedCommand.args
+				const argUsers = detectedCommand.argPlayerUsernames
+
+				if (tags.mod || tags.badges?.broadcaster) { // mod commands
+					if (command === CommandTrigger.VOLCANO){
+						void this.#client.say(channel, SimpleMessages.VOLCANO)
+						await setAllChannelPlayersOffline(currentChannelId)
 						return
 					}
 				}
-				await setTimeLastChatted(currentPlayer.id)
-    
-				if(currentPlayer.state !== PlayerState.ACTIVE){
-					await updatePlayerState(db, currentPlayer.id, PlayerState.ACTIVE)
+
+				switch (command) {
+				case CommandTrigger.INV_SHORT:
+				case CommandTrigger.INVENTORY: {
+					void this.#client.say(channel, MessageInventory(displayName, currentPlayer.points))
+					break
 				}
-    
-				if (!state.activePlayers.includes(currentPlayer.id)) {
-					state.activePlayers.push(currentPlayer.id)
+				case CommandTrigger.BONK:
+				case CommandTrigger.HUG: {
+					await handleInteractionCommand(channel, this.#client, currentPlayer, command, argUsers, currentChannelId)
+					break
 				}
-    
-				// todo: command doesn't necessarily have an `!` infront?..
-				const detectedCommand = this.commandParser.parse(message, playersInChannel)
-				if (detectedCommand) {
-					const command = detectedCommand.command
-					const args = detectedCommand.args
-					const argUsers = detectedCommand.argPlayerUsernames
-					// let argUsername: string|undefined
-					// if(argUsers[0]){
-					//   argUsername = state.players[+argUsers[0]].username
-					// }
-    
-					if (tags.mod || tags.badges?.broadcaster) { // mod commands
-						if (command === CommandTrigger.VOLCANO){
-							void this.#client.say(channel, SimpleMessages.VOLCANO)
-							await setAllChannelPlayersOffline(currentChannelId)
-							return
-						} else if (command === process.env.BOT_STATUS_COMMAND){
-							this.IS_BOT_ACTIVE = !this.IS_BOT_ACTIVE
-							void this.#client.say(channel, `Ok, bot is now set to ${this.IS_BOT_ACTIVE}.`)
-						}
-					}
-					if (command === CommandTrigger.INVENTORY || command === CommandTrigger.INV_SHORT) {
-						void this.#client.say(channel, MessageInventory(displayName, currentPlayer.points))
-					}
-					if (command == CommandTrigger.BONK) { // player commands
-						await handleInteractionCommand(channel, this.#client, currentPlayer, command, argUsers, currentChannelId)
-					} else if (command == CommandTrigger.HUG) {
-						await handleInteractionCommand(channel, this.#client, currentPlayer, command, argUsers, currentChannelId)
-					} else if (command === CommandTrigger.BET) {
-						await handleBetCommand(channel, this.#client, currentPlayer, args)
-					} else if (command === CommandTrigger.GIFT) {
-						await handleGiftingStars(channel, this.#client, currentPlayer, args, argUsers, currentChannelUsername)
-					} else if (command === CommandTrigger.DEBUG_ID) {
-						void this.#client.say(channel, `@${currentPlayer.display_name} Your player ID is ${currentPlayer.id}`)
-					}
-				} else { // No command detected -> Pass messages and emotes to frontend
-					await addPointsToPlayer(db, currentPlayer.points, IDLE_GAIN, currentPlayer.id)
-					console.log(`${username} gets ${IDLE_GAIN} stars for chatting idly!`)
-					if (!tags.emotes) {
-						if (state.allNewMessages[currentChannelUsername] && state.allNewMessages[currentChannelUsername][username]) {
-							state.allNewMessages[currentChannelUsername].push({
-								name: username,
-								text: message,
-								channel: currentChannelUsername,
-							} as Message)
-						} else {
-							state.allNewMessages[currentChannelUsername] = [{
-								name: username,
-								text: message,
-								channel: currentChannelUsername,
-							} as Message]
-						}
+				case CommandTrigger.BET: {
+					await handleBetCommand(channel, this.#client, currentPlayer, args)
+					break
+				}
+				case CommandTrigger.GIFT: {
+					await handleGiftingStars(channel, this.#client, currentPlayer, args, argUsers, currentChannelUsername)
+					break
+				}
+				case CommandTrigger.SHOP: {
+					await displayDailyShop(channel, this.#client, this.chance)
+					break
+				}
+				case CommandTrigger.BUY: {
+					await handleBuyingCommand(channel, this.#client, this.chance, currentPlayer, args)
+					break
+				}
+				case CommandTrigger.DEBUG_ID: {
+					void this.#client.say(channel, `@${currentPlayer.display_name} Your player ID is ${currentPlayer.id}`)
+					break
+				}
+				default: {
+					break
+				}
+				}
+			} else { // No command detected -> Pass messages and emotes to frontend
+				await addPointsToPlayer(db, currentPlayer.points, IDLE_GAIN, currentPlayer.id)
+				console.log(`${username} gets ${IDLE_GAIN} stars for chatting idly!`)
+				if (!tags.emotes) {
+					if (state.allNewMessages[currentChannelUsername] && state.allNewMessages[currentChannelUsername][username]) {
+						state.allNewMessages[currentChannelUsername].push({
+							name: username,
+							text: message,
+							channel: currentChannelUsername,
+						} as Message)
 					} else {
-						for (const [emote, charPositions] of Object.entries(tags.emotes) as [string, any]) {
-							for (let i = 0; i < charPositions.length; i++) {
-								state.newEmotes.push({
-									name: username,
-									id: emote,
-									channel: currentChannelUsername,
-								})
-							}
+						state.allNewMessages[currentChannelUsername] = [{
+							name: username,
+							text: message,
+							channel: currentChannelUsername,
+						} as Message]
+					}
+				} else {
+					for (const [emote, charPositions] of Object.entries(tags.emotes) as [string, any]) {
+						for (let i = 0; i < charPositions.length; i++) {
+							state.newEmotes.push({
+								name: username,
+								id: emote,
+								channel: currentChannelUsername,
+							})
 						}
 					}
 				}
@@ -360,6 +402,77 @@ export default class Twitch {
 			}
 			return searchPlayerOfExistingPlayer(argUsers[0], players)
 		}
+
+		async function checkDailyItems(channel: any, client: tmi.Client, chance: Chance.Chance) {
+			const now = new Date()
+
+			const row = await db._get('SELECT * FROM cv.daily_shop WHERE DATE(created) = DATE($1) ORDER BY created DESC', [JSON.stringify(now)])
+			
+			let dailyItemIds: AvatarDecorationId[]
+			if (row && row.items) {
+				dailyItemIds = row.items
+			} else {
+				dailyItemIds = chance.pickset(Object.values(AvatarDecorationId), DAILY_ITEMS_AMOUNT)
+				await db.insert('cv.daily_shop', {
+					items: JSON.stringify(dailyItemIds),
+					created: JSON.stringify(now),
+				})
+			}
+
+			const dailyItems = dailyItemIds.map(itemId => AVATAR_DECORATIONS.find(deco => deco.id === itemId)) as AvatarDecoration[]
+			if (!dailyItems) {
+				void client.say(channel, 'Error: could not identify items for sale!')
+				return []
+			}
+
+			state.dailyItems = dailyItems
+		}
+
+		async function displayDailyShop(channel: any, client: tmi.Client, chance: Chance.Chance) {
+			await checkDailyItems(channel, client, chance)
+			void client.say(channel, MessageDailyShop(state.dailyItems))
+		}
+
+		async function handleBuyingCommand(channel: any, client: tmi.Client, chance: Chance.Chance, currentPlayer: Player, args: string[]) {
+			await checkDailyItems(channel, client, chance)
+
+			let itemToBuy: AvatarDecoration | undefined = undefined
+			const itemMentionedInCommand = state.dailyItems.find(item => item.name.toLowerCase() === args.join(' ').toLowerCase())
+
+			if(args.length === 0) {
+				void client.say(channel, SimpleMessages.INVALID_BUY_REQUEST)
+				return
+			}
+
+			if (args[0].toLowerCase() === 'a') {
+				itemToBuy = state.dailyItems[0]
+			} else if (args[0].toLowerCase() === 'b') {
+				itemToBuy = state.dailyItems[1]
+			} else if (args[0].toLowerCase() === 'c') {
+				itemToBuy = state.dailyItems[2]
+			} else if (itemMentionedInCommand) {
+				itemToBuy = itemMentionedInCommand
+			}
+
+			if (!itemToBuy) {
+				void client.say(channel, SimpleMessages.INVALID_BUY_REQUEST)
+				return
+			}
+
+			if (currentPlayer.points < itemToBuy.price) {
+				void client.say(channel, MessageBuyingFailedPrice(currentPlayer.display_name, itemToBuy.price, itemToBuy.name))
+				return
+			}
+			
+			if (!currentPlayer.avatar_decoration) {
+				await equipAvatarDecorationToPlayer(db, itemToBuy.id, currentPlayer.id)
+				void client.say(channel, MessageBuyingSuccessEquipped(currentPlayer.display_name, itemToBuy.name))
+			} else {
+				await addAvatarDecorationToPlayerInventory(db, itemToBuy.id, currentPlayer.id)
+				void client.say(channel, MessageBuyingSuccessInventory(currentPlayer.display_name, itemToBuy.name))
+			}
+			await deductPointsFromPlayer(db, currentPlayer.points, itemToBuy.price, currentPlayer.id)
+		} 
 	}
 
 	async sayRaceFinishMessage(channelName: string, winnerName: string, pointsAdded: number, pointsDeducted: number) {

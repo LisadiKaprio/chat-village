@@ -171,11 +171,11 @@ class Avatar {
       if (this.direction == 'left') {
         this.x -= this.speed
         this.sprite.mirrored = false
-        this.decoSprite.mirrored = false
+        if (this.decoSprite) this.decoSprite.mirrored = false
       } else if (this.direction == 'right') {
         this.x += this.speed
         this.sprite.mirrored = true
-        this.decoSprite.mirrored = true
+        if (this.decoSprite) this.decoSprite.mirrored = true
       }
     } else if (action.type == ActionType.GO) {
       const speedMultiplier = 2.0
@@ -185,11 +185,11 @@ class Avatar {
       if (deltaX > this.speed * speedMultiplier + 0.1) { // running right
         this.x += this.speed * speedMultiplier
         this.sprite.mirrored = true
-        this.decoSprite.mirrored = true
+        if (this.decoSprite) this.decoSprite.mirrored = true
       } else if (deltaX < -(this.speed * speedMultiplier + 0.1)) { // running left
         this.x -= this.speed * speedMultiplier
         this.sprite.mirrored = false
-        this.decoSprite.mirrored = false
+        if (this.decoSprite) this.decoSprite.mirrored = false
       } else {
         this.x = x
         this.actionTime = 1
@@ -278,10 +278,10 @@ class Avatar {
 
     const action = this.currentBehaviour.actions[this.behaviourLoopIndex]
     this.sprite.setAnimation('idle')
-    this.decoSprite.setAnimation('idle')
+    if (this.decoSprite) this.decoSprite.setAnimation('idle')
     if (action.type == ActionType.WALK) {
       this.sprite.setAnimation('walk')
-      this.decoSprite.setAnimation('walk')
+      if (this.decoSprite) this.decoSprite.setAnimation('walk')
       this.actionTime = Math.random() * this.walkingTime
       const direction = action.direction ?? 'left'
       this.direction = direction
@@ -290,17 +290,17 @@ class Avatar {
     } else if (action.type == ActionType.TALK) {
       // play out all the frames of animation, then animation advances to next behaviour
       this.sprite.setAnimation('talk')
-      this.decoSprite.setAnimation('talk')
+      if (this.decoSprite) this.decoSprite.setAnimation('talk')
       this.actionTime = 9999
     } else if (action.type == ActionType.HUG) {
       if (!this.getCloser(action.who!)) {
         if (action.who!.canSwapBehaviour()) {
           // close enough for a hug, change animation of this and the other
           this.sprite.setAnimation('hug')
-          this.decoSprite.setAnimation('hug')
+          if (this.decoSprite) this.decoSprite.setAnimation('hug')
           this.actionTime = 500
           this.sprite.mirrored = this.x < action.who!.x
-          this.decoSprite.mirrored = this.x < action.who!.x
+          if (this.decoSprite) this.decoSprite.mirrored = this.x < action.who!.x
           // sets sprite mirrored here, doesn't reset it
           action.who!.changeBehaviour(
             new Behaviour(BehaviourName.HUGGED, [
@@ -318,18 +318,18 @@ class Avatar {
     } else if (action.type == ActionType.HUGGED) {
       this.sprite.mirrored = action.mirrored ?? false
       this.sprite.setAnimation('hug')
-      this.decoSprite.setAnimation('hug')
+      if (this.decoSprite) this.decoSprite.setAnimation('hug')
       this.actionTime = 500
     } else if (action.type == ActionType.BONK) {
       if (!this.getCloser(action.who!)) {
         if (action.who!.canSwapBehaviour()) {
           // close enough for a hug, change animation of this and the other
           this.sprite.setAnimation('bonk')
-          this.decoSprite.setAnimation('bonk')
-          this.decoSprite.setAnimation('bonk')
+          if (this.decoSprite) this.decoSprite.setAnimation('bonk')
+          if (this.decoSprite) this.decoSprite.setAnimation('bonk')
           this.actionTime = 300
           this.sprite.mirrored = this.x < action.who!.x
-          this.decoSprite.mirrored = this.x < action.who!.x
+          if (this.decoSprite) this.decoSprite.mirrored = this.x < action.who!.x
           // sets sprite mirrored here, doesn't reset it
           action.who!.changeBehaviour(
             new Behaviour(BehaviourName.BONKED, [
@@ -346,7 +346,7 @@ class Avatar {
     } else if (action.type == ActionType.BONKED) {
       this.sprite.mirrored = !action.mirrored ?? false
       this.sprite.setAnimation('bonked')
-      this.decoSprite.setAnimation('bonked')
+      if (this.decoSprite) this.decoSprite.setAnimation('bonked')
       this.actionTime = 300
     } else if (action.type == ActionType.GO) {
       this.actionTime = 100
@@ -372,9 +372,9 @@ class Avatar {
       // need to go closer to who we want to hug.
       // TODO: if too close maybe need to step away a little bit.
       this.sprite.setAnimation('walk')
-      this.decoSprite.setAnimation('walk')
+      if (this.decoSprite) this.decoSprite.setAnimation('walk')
       this.sprite.mirrored = this.direction !== 'left' ?? false
-      this.decoSprite.mirrored = this.direction !== 'left' ?? false
+      if (this.decoSprite) this.decoSprite.mirrored = this.direction !== 'left' ?? false
       this.actionTime = 100
       this.currentBehaviour.insert(this.behaviourLoopIndex, {
         type: ActionType.GO,
