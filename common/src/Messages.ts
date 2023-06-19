@@ -156,7 +156,7 @@ export const MessageBuyingFailedPrice = (displayName: string, price: number, ite
 }
 
 export const MessageBuyingSuccessEquipped = (displayName: string, itemName: string): string => {
-    return `SeemsGood @${displayName} Thanks for the purchase! This ${itemName.toLowerCase()} looks ${randomCompliment} on you!`
+    return `SeemsGood @${displayName} Thanks for the purchase! This ${itemName.toLowerCase()} looks ${randomCompliment()} on you!`
 }
 
 export const MessageBuyingSuccessInventory = (displayName: string, itemName: string): string => {
