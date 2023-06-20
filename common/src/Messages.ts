@@ -7,7 +7,8 @@ const EMPTY_MESSAGE = 'Instructions unclear'
 export enum SimpleMessages {
     VOLCANO = "GlitchLit A devastating eruption engulfs the avatars, leaving only ash and memories behind. The chat village mourns, yearning for new faces to fill its void.",
     RACE_GOING = "ResidentSleeper A race has already started! Let's see how it turns out first",
-    INVALID_BUY_REQUEST = "What item did you want to buy? Choose an item from today\'s shop, then use \"!buy A\" or \"!buy bow\" OhMyDog"
+    INVALID_BUY_REQUEST = "What item did you want to buy? Choose an item from today\'s shop, then use \"!buy A\" or \"!buy bow\" OhMyDog",
+    INVALID_EQUIP_REQUEST = "What item did you want to equip? Choose an item from your inventory (!inv), then use \"!equip 1\" or \"!equip bow\" OhMyDog"
 }
 
 const randomCompliment = (): string => {
@@ -82,8 +83,20 @@ export const MessageInteractionRandom = (chatterName: string, targetName: string
     } else return EMPTY_MESSAGE
 }
 
-export const MessageInventory = (displayName: string, seastarCount?: number): string => {
-    return `🌟 ${displayName} has gathered ${seastarCount} seastars so far! For every message you write, you'll discover a new seastar twinkling in your collection!`
+export const MessageSeastars = (displayName: string, seastarCount?: number): string => {
+    return `🌟 @${displayName} You've got ${seastarCount} seastars so far! For every message you write, you'll discover a new seastar twinkling in your collection!`
+}
+
+export const MessageInventory = (displayName: string, inventory: AvatarDecoration[], equipment?: AvatarDecoration): string => {
+    if (inventory.length === 0 && equipment) {
+        return `🎒 @${displayName} Your inventory is empty! Currently equipped: ${equipment.name}.`
+    } else if (inventory.length === 0 && !equipment) {
+        return `🎒 @${displayName} Your inventory is empty, and you don't have anything equipped! Check out the "!shop" :)`
+    }
+
+    const formattedStrings = inventory.map((item, index) => `(${index + 1}) ${item.name}`);
+    const inventoryString = formattedStrings.join(' ');
+    return `🎒 @${displayName} You've got: ${inventoryString}! Currently equipped: ${equipment?.name}`
 }
 
 export const MessageFailedInitBet = (displayName: string, price: number): string => {
@@ -155,10 +168,22 @@ export const MessageBuyingFailedPrice = (displayName: string, price: number, ite
     return `BibleThump @${displayName} You don't have ${price} seastars to buy ${itemName.toLowerCase()} yet!`
 }
 
+export const MessageBuyingFailedDuplicate = (displayName: string, itemName: string): string => {
+    return `Kippa @${displayName} You already have the ${itemName.toLowerCase()} in your inventory!`
+}
+
 export const MessageBuyingSuccessEquipped = (displayName: string, itemName: string): string => {
     return `SeemsGood @${displayName} Thanks for the purchase! This ${itemName.toLowerCase()} looks ${randomCompliment()} on you!`
 }
 
 export const MessageBuyingSuccessInventory = (displayName: string, itemName: string): string => {
     return `SeemsGood @${displayName} Thanks for the purchase! ${itemName.toLowerCase()} is now in your inventory. Use \"!equip ${itemName}\" to put it on!`
+}
+
+export const MessageEquipFailedEmptyInventory = (displayName: string): string => {
+    return `NinjaGrumpy @${displayName} Your inventory is empty, so there is nothing to equip!`
+}
+
+export const MessageEquipSuccess = (displayName: string): string => {
+    return `duDudu  @${displayName} Swoosh! You look ${randomCompliment()}~`
 }

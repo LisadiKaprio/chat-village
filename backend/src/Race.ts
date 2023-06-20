@@ -104,6 +104,7 @@ export default class RaceConstructor {
 		}
 		await addPointsToPlayer(db, winnerPlayer.points, this.races[channelName].currentBet * boatAvatars.length, winnerPlayer.id)
 		await twitch.sayRaceFinishMessage(channelName, winnerAvatar.name, this.races[channelName].currentBet * boatAvatars.length, this.races[channelName].currentBet)
+		await updateManyPlayerState(db, Object.values(this.races[channelName].participants).map(p => p.id), PlayerState.ACTIVE)
 		delete this.races[channelName]
 		console.log('race finished')
 	}

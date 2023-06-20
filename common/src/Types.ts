@@ -35,12 +35,15 @@ export enum CommandTrigger {
   BONK = '!bonk',
   HUG = '!hug',
   INVENTORY = '!inventory',
-  INV_SHORT = '!seastars',
+  INV_SHORT = '!inv',
+  SEASTARS = '!seastars',
+  STARS = '!stars',
   BET = '!join',
   DEBUG_ID = 'myid',
   GIFT = '!gift',
   SHOP = '!shop',
   BUY = '!buy',
+  EQUIP = '!equip',
 }
 
 export enum RaceStatus {
@@ -52,11 +55,6 @@ export enum RaceStatus {
 
 export const MINUTE = 60_000 
 export const OFFLINE_MINUTES = 10
-
-// export type DailyItems = {
-//   created: string; // json date
-//   items: AvatarDecorationId[];
-// }
 
 export type Chatter = {
   chatter_id: number;
@@ -74,7 +72,7 @@ export type Player = Chatter & {
   points: number;
   state: PlayerState;
   avatar_decoration: AvatarDecorationId;
-  inventory: [];
+  inventory: AvatarDecorationId[];
   // currentBoatDecoration: BoatDecoration;
   last_chatted: string; // json date
 }

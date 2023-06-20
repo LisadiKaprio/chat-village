@@ -2,7 +2,7 @@ import tmi, { client } from 'tmi.js'
 import { Chance } from 'chance'
 import { getChannelId, searchPlayerOfExistingPlayer, updatePlayerState } from './functions'
 import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus } from '../../common/src/Types'
-import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageInventory, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedPoints, MessageFailedGifting, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory } from '../../common/src/Messages'
+import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageSeastars, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedPoints, MessageFailedGifting, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory, MessageEquipFailedEmptyInventory, MessageEquipSuccess, MessageBuyingFailedDuplicate, MessageInventory } from '../../common/src/Messages'
 import { CommandParser } from './CommandParser'
 import { getRandom } from '../../common/src/Util'
 import Db from './Db'
@@ -23,8 +23,28 @@ export async function deductPointsFromPlayer(db: Db, currentPoints: number, poin
 	await db.update('cv.players', { points: currentPoints - pointsToDeduct }, { id: playerId })
 }
 
-export async function equipAvatarDecorationToPlayer(db: Db, deco: AvatarDecorationId, playerId: number): Promise<void> {
+export async function equipNewAvatarDecorationToPlayer(db: Db, deco: AvatarDecorationId, playerId: number): Promise<void> {
 	await db.update('cv.players', { avatar_decoration: deco }, { id: playerId })
+}
+
+export async function equipAvatarDecorationFromPlayerInventory(db: Db, previousEquip: AvatarDecorationId, newEquip: AvatarDecorationId, playerId: number): Promise<void> {
+	await equipNewAvatarDecorationToPlayer(db, newEquip, playerId)
+
+	const row = await db._get(`
+    select
+        cv.players.inventory
+    from
+        cv.players
+    where
+        cv.players.id = $1
+    `, [playerId])
+	const currentInventory: AvatarDecorationId[] = row.inventory
+	const updatedInventory: AvatarDecorationId[] = currentInventory.filter(id => id !== newEquip).concat(previousEquip)
+	if (!updatedInventory) {
+		console.log(`Could not update inventory of player ${playerId}!`)
+		return
+	}
+	await db.update('cv.players', { inventory: JSON.stringify(updatedInventory) }, { id: playerId })
 }
 
 export async function addAvatarDecorationToPlayerInventory(db: Db, deco: AvatarDecorationId, playerId: number): Promise<void> {
@@ -102,20 +122,26 @@ export default class Twitch {
 			const chatterId = await getChatterId(username)
 			if (!chatterId) return
 
-			let currentPlayer = await getPlayer(currentChannelId ?? 0, chatterId ?? 0)
+			let currentPlayer = await getPlayer(currentChannelId, chatterId)
 			if(!currentPlayer) {
 				console.log(`${username} not found among ${currentChannelUsername} players: creating player...`)
 				await createNewPlayer(chatterId, currentChannelId)
 				console.log(`Player ${username} created!`)
-				currentPlayer = await getPlayer(currentChannelId ?? 0, chatterId ?? 0)
+				currentPlayer = await getPlayer(currentChannelId, chatterId)
 				if(!currentPlayer) {
 					console.log(`Player ${username} on ${currentChannelUsername} channel could not be found or created!`)
 					return
 				}
 			}
+
+			if (tags.color !== currentPlayer.color) {
+				await updateChatterColor(tags.color, chatterId)
+				console.log(`Color updated for ${currentPlayer.username}!`)
+			}
+
 			await setTimeLastChatted(currentPlayer.id)
 
-			if(currentPlayer.state !== PlayerState.ACTIVE){
+			if(currentPlayer.state === PlayerState.LURKING || currentPlayer.state === PlayerState.OFFLINE ){
 				await updatePlayerState(db, currentPlayer.id, PlayerState.ACTIVE)
 			}
 
@@ -123,7 +149,6 @@ export default class Twitch {
 				state.activePlayers.push(currentPlayer.id)
 			}
 
-			// todo: command doesn't necessarily have an `!` infront?..
 			const detectedCommand = this.commandParser.parse(message, playersInChannel)
 			if (detectedCommand) {
 				const command = detectedCommand.command
@@ -139,10 +164,23 @@ export default class Twitch {
 				}
 
 				switch (command) {
+				case CommandTrigger.SEASTARS:
+				case CommandTrigger.STARS: {
+					void this.#client.say(channel, MessageSeastars(displayName, currentPlayer.points))
+					break
+				}
 				case CommandTrigger.INV_SHORT:
 				case CommandTrigger.INVENTORY: {
-					void this.#client.say(channel, MessageInventory(displayName, currentPlayer.points))
-					break
+					const inventoryItems = currentPlayer.inventory.map(itemId => AVATAR_DECORATIONS.find(deco => deco.id === itemId)) as AvatarDecoration[]
+					if (!currentPlayer.avatar_decoration) {
+						void this.#client.say(channel, MessageInventory(displayName, inventoryItems))
+						break
+					} else {
+						const toSearch = currentPlayer.avatar_decoration
+						const equippedIteam = AVATAR_DECORATIONS.find(deco => deco.id === toSearch)
+						void this.#client.say(channel, MessageInventory(displayName, inventoryItems, equippedIteam))
+						break
+					}
 				}
 				case CommandTrigger.BONK:
 				case CommandTrigger.HUG: {
@@ -163,6 +201,10 @@ export default class Twitch {
 				}
 				case CommandTrigger.BUY: {
 					await handleBuyingCommand(channel, this.#client, this.chance, currentPlayer, args)
+					break
+				}
+				case CommandTrigger.EQUIP: {
+					await handleEquipCommand(channel, this.#client, currentPlayer, args)
 					break
 				}
 				case CommandTrigger.DEBUG_ID: {
@@ -277,6 +319,10 @@ export default class Twitch {
     
 		async function setTimeLastChatted(playerId: number): Promise<void> {
 			await db.update('cv.players', { last_chatted: JSON.stringify(new Date()) }, { id: playerId })
+		}
+    
+		async function updateChatterColor(newColor: string, chatterId: number): Promise<void> {
+			await db.update('cv.chatters', { color: newColor }, { id: chatterId })
 		}
 
 		async function handleInteractionCommand(channel: any, client: tmi.Client, currentPlayer: Player, command: CommandTrigger, argUsers: string[], currentChannelId: number) {
@@ -459,20 +505,64 @@ export default class Twitch {
 				return
 			}
 
+			if (currentPlayer.inventory.includes(itemToBuy.id)) {
+				void client.say(channel, MessageBuyingFailedDuplicate(currentPlayer.display_name, itemToBuy.name))
+				return
+			}
+
 			if (currentPlayer.points < itemToBuy.price) {
 				void client.say(channel, MessageBuyingFailedPrice(currentPlayer.display_name, itemToBuy.price, itemToBuy.name))
 				return
 			}
 			
 			if (!currentPlayer.avatar_decoration) {
-				await equipAvatarDecorationToPlayer(db, itemToBuy.id, currentPlayer.id)
+				await equipNewAvatarDecorationToPlayer(db, itemToBuy.id, currentPlayer.id)
 				void client.say(channel, MessageBuyingSuccessEquipped(currentPlayer.display_name, itemToBuy.name))
 			} else {
 				await addAvatarDecorationToPlayerInventory(db, itemToBuy.id, currentPlayer.id)
 				void client.say(channel, MessageBuyingSuccessInventory(currentPlayer.display_name, itemToBuy.name))
 			}
 			await deductPointsFromPlayer(db, currentPlayer.points, itemToBuy.price, currentPlayer.id)
-		} 
+		}
+		
+		async function handleEquipCommand(channel: any, client: tmi.Client, currentPlayer: Player, args: string[]) {
+			let itemToEquip: AvatarDecoration | undefined = undefined
+
+			if (currentPlayer.inventory.length === 0) {
+				void client.say(channel, MessageEquipFailedEmptyInventory(currentPlayer.display_name))
+				return
+			}
+
+			const inventoryItems = currentPlayer.inventory.map(itemId => AVATAR_DECORATIONS.find(deco => deco.id === itemId)) as AvatarDecoration[]
+			const itemMentionedInCommand = inventoryItems.find(item => item.name.toLowerCase() === args.join(' ').toLowerCase())
+
+			if(args.length === 0) {
+				void client.say(channel, SimpleMessages.INVALID_EQUIP_REQUEST)
+				return
+			}
+
+			const indexMentionedInCommand = +args[0]
+			let correctIndex: number | undefined = undefined
+			if (indexMentionedInCommand) {
+				correctIndex = indexMentionedInCommand - 1
+			}
+
+			if (correctIndex !== undefined && inventoryItems[correctIndex]) {
+				itemToEquip = inventoryItems[correctIndex]
+			} else if (itemMentionedInCommand) {
+				itemToEquip = itemMentionedInCommand
+			}
+
+			if (!itemToEquip) {
+				void client.say(channel, SimpleMessages.INVALID_EQUIP_REQUEST)
+				return
+			}
+
+			const currentAvatarDecoration = currentPlayer.avatar_decoration
+
+			await equipAvatarDecorationFromPlayerInventory(db, currentAvatarDecoration, itemToEquip.id, currentPlayer.id)
+			void client.say(channel, MessageEquipSuccess(currentPlayer.display_name))
+		}
 	}
 
 	async sayRaceFinishMessage(channelName: string, winnerName: string, pointsAdded: number, pointsDeducted: number) {
