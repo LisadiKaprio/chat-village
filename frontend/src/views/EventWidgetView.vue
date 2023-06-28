@@ -1,6 +1,7 @@
 <template>
   <div class="event-widget">
-    <v-window class="information-window information-text" v-model="tab" v-if="!isRacing">
+    <img src="..\images\cv-logo-800ms.gif">
+    <v-window class="information-window information-text mt-0 mx-6" v-model="tab" v-if="!isRacing">
       <v-window-item :value="eventTabEnum.RACE_INFORMATION">
         <div >Type !join to enter a race.</div> 
         <div >
