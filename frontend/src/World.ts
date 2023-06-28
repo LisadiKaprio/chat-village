@@ -21,7 +21,7 @@ import { Sprite } from './Sprite'
 // import { ServerMessages } from './types/Types.js'
 
 const MESSAGES_ALL_OVER_THE_PLACE: boolean = false
-const EMOTE_DISPLAY_SIZE = 100
+const EMOTE_DISPLAY_SIZE = 50
 
 class World {
   constructor(gameContainer: HTMLElement, canvas: HTMLCanvasElement) {
@@ -79,6 +79,7 @@ class World {
           displaySize: AVATAR_DISPLAY_SIZE,
           animations: this.userAvatars[user.username].sprite.animations,
         })
+        this.userAvatars[user.username].setSprite
       }
 
       this.userAvatars[user.username].isActive = (user.state === PlayerState.ACTIVE)
@@ -196,16 +197,6 @@ class World {
     }
   }
 
-  randomAvatarName(besides?: string): string {
-    let names: string[] = Object.keys(this.userAvatars)
-    if (besides) {
-      names = names.filter((name) => name != besides)
-    }
-    const randomIndex = Math.floor(Math.random() * names.length)
-    const result = names.at(randomIndex)
-    // assertExists(result)
-    return result
-  }
   actionBetweenUsers(
     behaviourName: BehaviourName,
     action: ActionType,

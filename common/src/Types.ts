@@ -32,6 +32,7 @@ export enum PlayerState {
 
 export enum CommandTrigger {
   VOLCANO = '!volcano',
+  REVIVE = '!revive',
   BONK = '!bonk',
   HUG = '!hug',
   INVENTORY = '!inventory',

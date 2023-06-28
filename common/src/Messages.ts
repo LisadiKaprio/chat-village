@@ -8,7 +8,8 @@ export enum SimpleMessages {
     VOLCANO = "GlitchLit A devastating eruption engulfs the avatars, leaving only ash and memories behind. The chat village mourns, yearning for new faces to fill its void.",
     RACE_GOING = "ResidentSleeper A race has already started! Let's see how it turns out first",
     INVALID_BUY_REQUEST = "What item did you want to buy? Choose an item from today\'s shop, then use \"!buy A\" or \"!buy bow\" OhMyDog",
-    INVALID_EQUIP_REQUEST = "What item did you want to equip? Choose an item from your inventory (!inv), then use \"!equip 1\" or \"!equip bow\" OhMyDog"
+    INVALID_EQUIP_REQUEST = "What item did you want to equip? Choose an item from your inventory (!inv), then use \"!equip 1\" or \"!equip bow\" OhMyDog",
+    RACE_START = "🎉 Race started!"
 }
 
 const randomCompliment = (): string => {
@@ -177,7 +178,7 @@ export const MessageBuyingSuccessEquipped = (displayName: string, itemName: stri
 }
 
 export const MessageBuyingSuccessInventory = (displayName: string, itemName: string): string => {
-    return `SeemsGood @${displayName} Thanks for the purchase! ${itemName.toLowerCase()} is now in your inventory. Use \"!equip ${itemName}\" to put it on!`
+    return `SeemsGood @${displayName} Thanks for the purchase! ${itemName} is now in your inventory. Use \"!equip ${itemName.toLowerCase()}\" to put it on!`
 }
 
 export const MessageEquipFailedEmptyInventory = (displayName: string): string => {

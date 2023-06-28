@@ -142,6 +142,7 @@ export default class Twitch {
 			await setTimeLastChatted(currentPlayer.id)
 
 			if(currentPlayer.state === PlayerState.LURKING || currentPlayer.state === PlayerState.OFFLINE ){
+				state.players[currentPlayer.id].state = PlayerState.ACTIVE
 				await updatePlayerState(db, currentPlayer.id, PlayerState.ACTIVE)
 			}
 
@@ -160,6 +161,25 @@ export default class Twitch {
 						void this.#client.say(channel, SimpleMessages.VOLCANO)
 						await setAllChannelPlayersOffline(currentChannelId)
 						return
+					} else if (command === CommandTrigger.REVIVE) {
+						if (!argUsers || !argUsers[0]) {
+							console.log('Error: What user should be revived?')
+							return
+						}
+						const targetChatterId = await getChatterId(argUsers[0])
+						if (!targetChatterId) {
+							console.log('Error: Chatter id not found.')
+							return
+						}
+						const targetPlayer = await getPlayer(currentChannelId, targetChatterId)
+						if (!targetPlayer) {
+							console.log(`Error: Player in channel ${currentChannelUsername} not found.`)
+							return
+						}
+						state.players[targetPlayer.id].state = PlayerState.ACTIVE
+						await updatePlayerState(db, targetPlayer.id, PlayerState.ACTIVE)
+						await setTimeLastChatted(targetPlayer.id)
+						state.activePlayers.push(targetPlayer.id)
 					}
 				}
 
@@ -565,11 +585,6 @@ export default class Twitch {
 		}
 	}
 
-	async sayRaceFinishMessage(channelName: string, winnerName: string, pointsAdded: number, pointsDeducted: number) {
-		const channel = `#${channelName}`
-		await this.#client.say(channel, MessageRaceFinish(winnerName, pointsAdded, pointsDeducted))
-	}
-
 	async sayRaceTooFewParticipantsMessage(channelName: string, participantsAmount: number) {
 		const channel = `#${channelName}`
 		await this.#client.say(channel, MessageRaceTooFewParticipants(participantsAmount))
@@ -578,5 +593,15 @@ export default class Twitch {
 	async sayRaceWarningMessage(channelName: string, morePlayersNeeded: number) {
 		const channel = `#${channelName}`
 		await this.#client.say(channel, MessageWarningRaceStart(morePlayersNeeded))
+	}
+
+	async sayRaceStartMessage(channelName: string) {
+		const channel = `#${channelName}`
+		await this.#client.say(channel, SimpleMessages.RACE_START)
+	}
+
+	async sayRaceFinishMessage(channelName: string, winnerName: string, pointsAdded: number, pointsDeducted: number) {
+		const channel = `#${channelName}`
+		await this.#client.say(channel, MessageRaceFinish(winnerName, pointsAdded, pointsDeducted))
 	}
 }
