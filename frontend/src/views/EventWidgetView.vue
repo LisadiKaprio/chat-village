@@ -174,6 +174,12 @@ body {
   overflow: hidden;
 }
 
+.event-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .timer {
   font-size: 24px;
   font-weight: bold;
