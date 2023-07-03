@@ -1,19 +1,23 @@
 import tmi, { client } from 'tmi.js'
 import { Chance } from 'chance'
 import { getChannelId, searchPlayerOfExistingPlayer, updatePlayerState } from './functions'
-import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus } from '../../common/src/Types'
-import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageSeastars, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedPoints, MessageFailedGifting, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory, MessageEquipFailedEmptyInventory, MessageEquipSuccess, MessageBuyingFailedDuplicate, MessageInventory } from '../../common/src/Messages'
+import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus, FishStatesToUser, FishState } from '../../common/src/Types'
+import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageSeastars, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedPoints, MessageFailedGifting, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory, MessageEquipFailedEmptyInventory, MessageEquipSuccess, MessageBuyingFailedDuplicate, MessageInventory, MessageFishFailRace, MessageFishTooEarly } from '../../common/src/Messages'
 import { CommandParser } from './CommandParser'
 import { getRandom } from '../../common/src/Util'
 import Db from './Db'
 import State, { getPlayersInChannel } from './State'
 import RaceConstructor from './Race'
 import { AvatarDecoration, AvatarDecorationId, AVATAR_DECORATIONS } from '../../common/src/Visuals'
+import { ChainableFunction } from '@vitest/runner/utils'
       
 const BONK_PRICE = 10
 const HUG_PRICE = 5
 const IDLE_GAIN = 1
 const DAILY_ITEMS_AMOUNT = 3
+const MIN_FISH_WAIT_TIME_MS = 0.4 * MINUTE
+const MAX_FISH_WAIT_TIME_MS = 0.7 * MINUTE
+const FISH_WAIT_TIME_DECIMALS = 2
     
 export async function addPointsToPlayer(db: Db, currentPoints: number, pointsToAdd: number, playerId: number): Promise<void> {
 	await db.update('cv.players', { points: currentPoints + pointsToAdd }, { id: playerId })
@@ -225,6 +229,11 @@ export default class Twitch {
 				}
 				case CommandTrigger.EQUIP: {
 					await handleEquipCommand(channel, this.#client, currentPlayer, args)
+					break
+				}
+				case CommandTrigger.FISH:
+				case CommandTrigger.FISH_EXCL: {
+					await handleFishCommand(channel, this.#client, currentPlayer, this.chance)
 					break
 				}
 				case CommandTrigger.DEBUG_ID: {
@@ -582,6 +591,42 @@ export default class Twitch {
 
 			await equipAvatarDecorationFromPlayerInventory(db, currentAvatarDecoration, itemToEquip.id, currentPlayer.id)
 			void client.say(channel, MessageEquipSuccess(currentPlayer.display_name))
+		}		
+
+		async function handleFishCommand(channel: any, client: tmi.Client, currentPlayer: Player, chance: Chance.Chance) {
+			const currentChannelUsername = channel.startsWith('#') ? channel.substr(1) : channel
+
+			if(currentPlayer.state === PlayerState.RACING) { // not possible
+				void client.say(channel, MessageFishFailRace(currentPlayer.display_name))
+				return
+			} else if (currentPlayer.state === PlayerState.FISHING) { // catch too early
+				if (!state.allFishStates[currentChannelUsername]) return
+				delete state.allFishStates[currentChannelUsername][currentPlayer.username as any]
+
+				state.players[currentPlayer.id].state = PlayerState.ACTIVE
+				await updatePlayerState(db, currentPlayer.id, PlayerState.ACTIVE)
+				
+				void client.say(channel, MessageFishTooEarly(currentPlayer.display_name))
+				return
+			} else if (currentPlayer.state === PlayerState.CATCHING) { // catch the fish
+				state.allFishStates[currentChannelUsername][currentPlayer.username as any].isCaught = true
+			}
+
+			if (state.allFishStates[currentChannelUsername]) { // TODO: maybe i can create a util function for that kind of situation?
+				state.allFishStates[currentChannelUsername][currentPlayer.username] = {
+					waittime: chance.floating({ min: MIN_FISH_WAIT_TIME_MS, max: MAX_FISH_WAIT_TIME_MS, fixed: FISH_WAIT_TIME_DECIMALS }),
+					isCaught: false,
+				}
+			} else {
+				state.allFishStates[currentChannelUsername] = {
+					[currentPlayer.username] : {
+						waittime: chance.floating({ min: MIN_FISH_WAIT_TIME_MS, max: MAX_FISH_WAIT_TIME_MS, fixed: FISH_WAIT_TIME_DECIMALS }),
+						isCaught: false,
+					}}
+			}
+
+			state.players[currentPlayer.id].state = PlayerState.FISHING
+			await updatePlayerState(db, currentPlayer.id, PlayerState.FISHING)
 		}
 	}
 

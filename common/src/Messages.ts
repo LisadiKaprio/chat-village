@@ -188,3 +188,11 @@ export const MessageEquipFailedEmptyInventory = (displayName: string): string =>
 export const MessageEquipSuccess = (displayName: string): string => {
     return `duDudu  @${displayName} Swoosh! You look ${randomCompliment()}~`
 }
+
+export const MessageFishFailRace = (displayName: string): string => {
+    return `NinjaGrumpy  @${displayName} You can't fish while racing!`
+}
+
+export const MessageFishTooEarly = (displayName: string): string => {
+    return `HotPokket  @${displayName} swings their fishing pole too early and catches nothing!`
+}

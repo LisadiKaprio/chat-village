@@ -1,4 +1,4 @@
-export { World, createAdvancedBubble }
+export { World }
 
 import messageParticles from './images/bubble/messageParticles.png'
 import emojiDetect from '@zutatensuppe/emoji-detect'
@@ -34,8 +34,6 @@ class World {
     this.userAvatars = {}
     this.renderedEmotes = []
     this.renderedBubbles = []
-
-    this.time = 0
   }
 
   feedNewData(
@@ -54,8 +52,6 @@ class World {
         }
       }
     }
-
-    this.time += UPDATE_PERIOD
 
     for (const [_id, user] of Object.entries(users)) {
       // create a new user avatar.
@@ -79,7 +75,6 @@ class World {
           displaySize: AVATAR_DISPLAY_SIZE,
           animations: this.userAvatars[user.username].sprite.animations,
         })
-        this.userAvatars[user.username].setSprite
       }
 
       this.userAvatars[user.username].isActive = (user.state === PlayerState.ACTIVE)
@@ -251,7 +246,7 @@ function createNewUserAvatar(
 // }
 
 // TODO
-function createAdvancedBubble(config: any) {
+export function createAdvancedBubble(config: any) {
   const offset = config.spriteInfo ? config.spriteInfo.displaySize / 2 : 0
   if (config.type === BubbleType.TEXT) {
     return new Bubble({
@@ -278,7 +273,7 @@ function createAdvancedBubble(config: any) {
 }
 
 
-function createNewEmojis(messages: string[], x: number, y: number) {
+export function createNewEmojis(messages: string[], x: number, y: number) {
 	const emotes: Emote[] = []
 	for (const message of messages) {
 		emojiDetect.detectStrings(message).map((emoji: string) => {
@@ -298,7 +293,7 @@ function createNewEmojis(messages: string[], x: number, y: number) {
 	return emotes
 }
 
-function createNewEmote(emoteId: number, x: number, y: number) {
+export function createNewEmote(emoteId: number, x: number, y: number) {
   const emote = new Emote({
     x: x,
     y: y,
@@ -311,7 +306,7 @@ function createNewEmote(emoteId: number, x: number, y: number) {
   return emote
 }
 
-function createNewEmotes(emotes: EmoteReceived[], avatars: Avatars) {
+export function createNewEmotes(emotes: EmoteReceived[], avatars: Avatars) {
   const newEmotes = []
   for (let i = 0; i < emotes.length; i++) {
     const avatar = avatars[emotes[i].name]
@@ -323,7 +318,7 @@ function createNewEmotes(emotes: EmoteReceived[], avatars: Avatars) {
 }
 
 // get (normal twitchtv) emotes
-function getEmoteImg(emoteId: number) {
+export function getEmoteImg(emoteId: number) {
   return (
     'https://static-cdn.jtvnw.net/emoticons/v2/' + emoteId + '/default/dark/2.0'
   )
@@ -341,7 +336,6 @@ interface World {
   renderedEmotes: any[];
   renderedBubbles: any[];
   chat: ChatMessage[];
-  time: number;
 }
 
 interface ChatMessage {

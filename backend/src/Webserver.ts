@@ -56,6 +56,18 @@ function buildRaceInfo(raceConstructor: RaceConstructor, channelName: string) {
 	}
 }
 
+function buildFishInfo(state: State, channelName: string) {
+	if(!state.allFishStates[channelName]) {
+		return {
+			allFishStates: [],
+		}
+	} else {
+		return{
+			allFishStates: state.allFishStates[channelName],
+		}
+	}
+}
+
 
 export default class Webserver {
 	channelSockets: Record<string, WebSocket[]> = {}
@@ -105,6 +117,8 @@ export default class Webserver {
 
 			let timeoutUsersInfo: NodeJS.Timeout | null = null
 			let timeoutRaceInfo: NodeJS.Timeout | null = null
+			let timeoutFishInfo: NodeJS.Timeout | null = null
+
 			const sendUsersInfo = () => {
 				const usersInfo = buildUsersInfo(channelName, channelId, state)
 				this.notifyOne(socket, WebsocketMessageType.USER_INFO, usersInfo)
@@ -119,6 +133,13 @@ export default class Webserver {
 				timeoutRaceInfo = setTimeout(sendRaceInfo, 500)
 			}
 			sendRaceInfo()
+
+			const sendFishInfo = () => {
+				const fishInfo = buildFishInfo(state, channelName)
+				this.notifyOne(socket, WebsocketMessageType.BACKEND_FISH_WAIT_TIME_INFO, fishInfo)
+				timeoutFishInfo = setTimeout(sendFishInfo, 500)
+			}
+			sendFishInfo()
       
 			socket.on('message', async (rawData: RawData, _isBinary: boolean) => {
 				const { type, data } = JSON.parse(`${rawData}`)
@@ -133,6 +154,7 @@ export default class Webserver {
 			socket.on('close', () => {
 				if (timeoutUsersInfo) clearTimeout(timeoutUsersInfo)
 				if (timeoutRaceInfo) clearTimeout(timeoutRaceInfo)
+				if (timeoutFishInfo) clearTimeout(timeoutFishInfo)
 				this.channelSockets[channelName] = this.channelSockets[channelName].filter(s => s !== socket)
 				console.log(`${this.channelSockets[channelName].length} widgets are connected`)
 			})

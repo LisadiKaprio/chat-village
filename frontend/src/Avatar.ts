@@ -4,7 +4,7 @@ import { ANIMATIONS, Sprite } from './Sprite.js'
 import { createAdvancedBubble, World } from './World.js'
 import heartParticles from './images/bubble/heartParticles.png'
 import { SkinId } from '../../common/src/Types.js'
-import { AvatarDecoration, AvatarDecorationId } from '../../common/src/Deco.js'
+import { AvatarDecoration, AvatarDecorationId } from '../../common/src/Visuals.js'
 
 export const AVATAR_DISPLAY_SIZE = 150
 

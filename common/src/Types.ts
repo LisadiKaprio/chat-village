@@ -5,7 +5,8 @@ export type NonEmptyArray<T> = [T, ...T[]]
 export enum WebsocketMessageType {
   USER_INFO = 'user-info',
   BACKEND_RACE_INFO = 'backend-race-info',
-  FRONTEND_RACE_INFO = 'frontend-race-info'
+  FRONTEND_RACE_INFO = 'frontend-race-info',
+  BACKEND_FISH_WAIT_TIME_INFO = 'backend-fish-wait-time-info'
 }
 
 export enum SkinId {
@@ -27,6 +28,7 @@ export enum PlayerState {
     LURKING = 'lurking',
     ACTIVE = 'active',
     FISHING = 'fishing',
+    CATCHING = 'CATCHING',
     RACING = 'racing',
   }
 
@@ -45,6 +47,8 @@ export enum CommandTrigger {
   SHOP = '!shop',
   BUY = '!buy',
   EQUIP = '!equip',
+  FISH = 'fish',
+  FISH_EXCL = '!fish',
 }
 
 export enum RaceStatus {
@@ -125,4 +129,14 @@ export type FrontendCommandsToChannel = {
 export interface BackendBoatAvatar {
   name: string;
   finishTimeMs: number;
+}
+export type FishState = {
+  waittime: number;
+  isCaught: boolean;
+}
+export type FishStatesToUser = {
+  [username: string]: FishState
+}
+export type FishStatesToChannel = {
+  [channelUsername: string]: FishStatesToUser;
 }
