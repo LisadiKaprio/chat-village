@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import WalkWidgetView from '../views/WalkWidgetView.vue'
 import EventWidgetView from '../views/EventWidgetView.vue'
+import FishWidgetView from '../views/FishWidgetView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -22,6 +23,12 @@ const router = createRouter({
       props: true,
       name: 'event-widget',
       component: EventWidgetView,
+    },
+    {
+      path: '/fish-widget/:channel',
+      props: true,
+      name: 'fish-widget',
+      component: FishWidgetView,
     },
   ],
 })

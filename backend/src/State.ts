@@ -1,5 +1,5 @@
 import Db from './Db'
-import { EmoteReceived,  MessagesToChannel, Chatter, Chatters, Player, Players, PlayerState, OFFLINE_MINUTES, MINUTE, FrontendCommandsToChannel, FishStatesToChannel } from '../../common/src/Types'
+import { EmoteReceived,  MessagesToChannel, Chatter, Chatters, Player, Players, PlayerState, OFFLINE_MINUTES, MINUTE, FrontendCommandsToChannel, FishPlayersToChannel } from '../../common/src/Types'
 import { AvatarDecoration, AvatarDecorationId } from './Visuals'
 
 async function loadChatters(
@@ -103,7 +103,7 @@ export default class State {
 	public newEmotes: EmoteReceived[] = []
 	public allNewMessages: MessagesToChannel = {}
 	public allFrontendCommands: FrontendCommandsToChannel = {}
-	public allFishStates: FishStatesToChannel = {}
+	public allFishPlayers: FishPlayersToChannel = {}
 	public dailyItems: AvatarDecoration[] = []
 
 	async init (

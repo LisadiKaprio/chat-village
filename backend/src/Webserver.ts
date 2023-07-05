@@ -1,6 +1,6 @@
-import { BackendBoatAvatar, Players, RaceStatus, WebsocketMessageType } from '../../common/src/Types'
+import { BackendBoatAvatar, Players, PlayerState, RaceStatus, UserInfo, WebsocketMessageType } from '../../common/src/Types'
 import Db from './Db'
-import { getChannelId } from './functions'
+import { getChannelId, updatePlayerState } from './functions'
 import RaceConstructor from './Race'
 import State from './State'
 import WebSocket, { RawData, WebSocketServer } from 'ws'
@@ -33,12 +33,16 @@ function buildUsersInfo(
 		}
 	}
 
+	const allFishPlayers = state.allFishPlayers[channelName] ?? []
+	// console.log(JSON.stringify(state.allFishPlayers[channelName]))
+
 	return {
 		users: filteredPlayers,
+		fishPlayers: allFishPlayers,
 		emotes: filteredEmotes,
 		messages: state.allNewMessages[channelName],
 		commands: state.allFrontendCommands[channelName],
-	}
+	} as UserInfo
 }
 
 function buildRaceInfo(raceConstructor: RaceConstructor, channelName: string) {
@@ -52,18 +56,6 @@ function buildRaceInfo(raceConstructor: RaceConstructor, channelName: string) {
 			bet: raceConstructor.races[channelName].currentBet,
 			status: raceConstructor.races[channelName].status,
 			participants: raceConstructor.races[channelName].participants,
-		}
-	}
-}
-
-function buildFishInfo(state: State, channelName: string) {
-	if(!state.allFishStates[channelName]) {
-		return {
-			allFishStates: [],
-		}
-	} else {
-		return{
-			allFishStates: state.allFishStates[channelName],
 		}
 	}
 }
@@ -117,7 +109,6 @@ export default class Webserver {
 
 			let timeoutUsersInfo: NodeJS.Timeout | null = null
 			let timeoutRaceInfo: NodeJS.Timeout | null = null
-			let timeoutFishInfo: NodeJS.Timeout | null = null
 
 			const sendUsersInfo = () => {
 				const usersInfo = buildUsersInfo(channelName, channelId, state)
@@ -133,13 +124,6 @@ export default class Webserver {
 				timeoutRaceInfo = setTimeout(sendRaceInfo, 500)
 			}
 			sendRaceInfo()
-
-			const sendFishInfo = () => {
-				const fishInfo = buildFishInfo(state, channelName)
-				this.notifyOne(socket, WebsocketMessageType.BACKEND_FISH_WAIT_TIME_INFO, fishInfo)
-				timeoutFishInfo = setTimeout(sendFishInfo, 500)
-			}
-			sendFishInfo()
       
 			socket.on('message', async (rawData: RawData, _isBinary: boolean) => {
 				const { type, data } = JSON.parse(`${rawData}`)
@@ -148,13 +132,18 @@ export default class Webserver {
 					raceConstructor.races[channelName].status = RaceStatus.OFF
 					const { boatAvatars }: { boatAvatars: BackendBoatAvatar[] } = data
 					await raceConstructor.handleFinish(db, state, channelName, boatAvatars, twitch) 
+				} else if (type === WebsocketMessageType.FRONTEND_FISH_CATCHING_INFO) {
+					const { avatarIds }: { avatarIds: number[] } = data
+					for (const id of avatarIds) {
+						state.players[id].state = PlayerState.CATCHING
+						await updatePlayerState(db, id, PlayerState.CATCHING)
+					}
 				}
 			})
 
 			socket.on('close', () => {
 				if (timeoutUsersInfo) clearTimeout(timeoutUsersInfo)
 				if (timeoutRaceInfo) clearTimeout(timeoutRaceInfo)
-				if (timeoutFishInfo) clearTimeout(timeoutFishInfo)
 				this.channelSockets[channelName] = this.channelSockets[channelName].filter(s => s !== socket)
 				console.log(`${this.channelSockets[channelName].length} widgets are connected`)
 			})

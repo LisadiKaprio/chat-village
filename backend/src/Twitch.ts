@@ -1,7 +1,7 @@
 import tmi, { client } from 'tmi.js'
 import { Chance } from 'chance'
 import { getChannelId, searchPlayerOfExistingPlayer, updatePlayerState } from './functions'
-import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus, FishStatesToUser, FishState } from '../../common/src/Types'
+import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus, FishPlayers, FishPlayer } from '../../common/src/Types'
 import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageSeastars, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedPoints, MessageFailedGifting, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory, MessageEquipFailedEmptyInventory, MessageEquipSuccess, MessageBuyingFailedDuplicate, MessageInventory, MessageFishFailRace, MessageFishTooEarly } from '../../common/src/Messages'
 import { CommandParser } from './CommandParser'
 import { getRandom } from '../../common/src/Util'
@@ -600,33 +600,40 @@ export default class Twitch {
 				void client.say(channel, MessageFishFailRace(currentPlayer.display_name))
 				return
 			} else if (currentPlayer.state === PlayerState.FISHING) { // catch too early
-				if (!state.allFishStates[currentChannelUsername]) return
-				delete state.allFishStates[currentChannelUsername][currentPlayer.username as any]
-
 				state.players[currentPlayer.id].state = PlayerState.ACTIVE
 				await updatePlayerState(db, currentPlayer.id, PlayerState.ACTIVE)
+
+				if (!state.allFishPlayers[currentChannelUsername]) return
+				delete state.allFishPlayers[currentChannelUsername][currentPlayer.username as any]
 				
 				void client.say(channel, MessageFishTooEarly(currentPlayer.display_name))
 				return
 			} else if (currentPlayer.state === PlayerState.CATCHING) { // catch the fish
-				state.allFishStates[currentChannelUsername][currentPlayer.username as any].isCaught = true
-			}
-
-			if (state.allFishStates[currentChannelUsername]) { // TODO: maybe i can create a util function for that kind of situation?
-				state.allFishStates[currentChannelUsername][currentPlayer.username] = {
-					waittime: chance.floating({ min: MIN_FISH_WAIT_TIME_MS, max: MAX_FISH_WAIT_TIME_MS, fixed: FISH_WAIT_TIME_DECIMALS }),
-					isCaught: false,
-				}
-			} else {
-				state.allFishStates[currentChannelUsername] = {
-					[currentPlayer.username] : {
-						waittime: chance.floating({ min: MIN_FISH_WAIT_TIME_MS, max: MAX_FISH_WAIT_TIME_MS, fixed: FISH_WAIT_TIME_DECIMALS }),
-						isCaught: false,
-					}}
+				state.allFishPlayers[currentChannelUsername][currentPlayer.username as any].isCaught = true
+				// todo: how do i communicate with frontend that fish was caught?
 			}
 
 			state.players[currentPlayer.id].state = PlayerState.FISHING
 			await updatePlayerState(db, currentPlayer.id, PlayerState.FISHING)
+
+			if (state.allFishPlayers[currentChannelUsername]) { // TODO: maybe i can create a util function for that kind of situation?
+				state.allFishPlayers[currentChannelUsername][currentPlayer.username] = {
+					...currentPlayer,
+					state: PlayerState.FISHING,
+					fishWaitTime: chance.floating({ min: MIN_FISH_WAIT_TIME_MS, max: MAX_FISH_WAIT_TIME_MS, fixed: FISH_WAIT_TIME_DECIMALS }),
+					isCaught: false,
+				}
+			} else {
+				state.allFishPlayers[currentChannelUsername] = {
+					[currentPlayer.username] : {
+						...currentPlayer,
+						state: PlayerState.FISHING,
+						fishWaitTime: chance.floating({ min: MIN_FISH_WAIT_TIME_MS, max: MAX_FISH_WAIT_TIME_MS, fixed: FISH_WAIT_TIME_DECIMALS }),
+						isCaught: false,
+					}}
+			}
+
+			console.log(JSON.stringify(state.allFishPlayers[currentChannelUsername][currentPlayer.username]))
 		}
 	}
 

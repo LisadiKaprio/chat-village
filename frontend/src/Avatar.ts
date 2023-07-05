@@ -7,6 +7,7 @@ import { SkinId } from '../../common/src/Types.js'
 import { AvatarDecoration, AvatarDecorationId } from '../../common/src/Visuals.js'
 
 export const AVATAR_DISPLAY_SIZE = 150
+export const FISH_AVATAR_DISPLAY_SIZE = 150
 
 export enum BehaviourName {
   BONK = 'bonk',
@@ -16,6 +17,7 @@ export enum BehaviourName {
   IDLE = 'idle',
   SLEEP = 'sleep',
   TALK = 'talk',
+  SIT = 'sit'
 }
 
 export enum ActionType {
@@ -27,6 +29,7 @@ export enum ActionType {
   STAND = 'stand',
   TALK = 'talk',
   WALK = 'walk',
+  SIT = 'sit'
 }
 
 class Behaviour {
@@ -66,6 +69,9 @@ const BEHAVIOURS = {
     { type: ActionType.STAND },
     { type: ActionType.WALK, direction: 'right' },
     { type: ActionType.STAND },
+  ]),
+  sit: new Behaviour(BehaviourName.SIT, [
+    { type: ActionType.SIT },
   ]),
   talk: new Behaviour(BehaviourName.TALK, [{ type: ActionType.TALK }]),
   sleep: new Behaviour(BehaviourName.SLEEP, [{ type: ActionType.STAND }]),
@@ -133,7 +139,9 @@ class Avatar {
         hug: ANIMATIONS.hug,
         bonk: ANIMATIONS.bonk,
         bonked: ANIMATIONS.bonked,
+        sit: ANIMATIONS.walk,
       },
+      currentAnimation: config.currentAnimation
     })
 
     this.actionTime = config.actionTime ?? 24
@@ -146,7 +154,7 @@ class Avatar {
 
     // Behaviour is a series of actions or other behaviours
     // Motivation is a stack of behaviours that the caracter wants to do
-    this.idleBehaviour = BEHAVIOURS.idle
+    this.idleBehaviour = config.idleBehaviour || BEHAVIOURS.idle
 
     this.motivation = []
     this.currentBehaviour = config.currentBehaviour || this.idleBehaviour
@@ -277,8 +285,6 @@ class Avatar {
     }
 
     const action = this.currentBehaviour.actions[this.behaviourLoopIndex]
-    this.sprite.setAnimation('idle')
-    if (this.decoSprite) this.decoSprite.setAnimation('idle')
     if (action.type == ActionType.WALK) {
       this.sprite.setAnimation('walk')
       if (this.decoSprite) this.decoSprite.setAnimation('walk')
@@ -286,7 +292,13 @@ class Avatar {
       const direction = action.direction ?? 'left'
       this.direction = direction
     } else if (action.type == ActionType.STAND) {
+      this.sprite.setAnimation('idle')
+      if (this.decoSprite) this.decoSprite.setAnimation('idle')
       this.actionTime = Math.random() * this.standTime
+    }  else if (action.type == ActionType.SIT) {
+      this.sprite.setAnimation('walk')
+      if (this.decoSprite) this.decoSprite.setAnimation('walk')
+      this.actionTime = 9999
     } else if (action.type == ActionType.TALK) {
       // play out all the frames of animation, then animation advances to next behaviour
       this.sprite.setAnimation('talk')

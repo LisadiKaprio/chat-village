@@ -12,8 +12,8 @@ import { assertExists } from '../Helpers'
 import { World } from '../World'
 import { FRAMERATE, SECOND, ServerResponse, UPDATE_PERIOD } from '../types/Types'
 import dotenv from 'dotenv'
-import { WebsocketMessageType } from '../../../common/src/Types'
-import { FishField } from '../FishField'
+import { FishAvatarStatus, UserInfo, WebsocketMessageType } from '../../../common/src/Types'
+import { FishWorld } from '../FishWorld'
 
 @Component
 export default class FishWidget extends Vue {
@@ -23,29 +23,50 @@ export default class FishWidget extends Vue {
   @Prop({ type: String, default: null }) public channel!: string | null
   private route = useRoute()
   // public gameContainer = document.querySelector('.game-container')
-  public fishField: FIshField
+  public fishWorld: FishWorld
   private then: number
   private fpsInterval = (SECOND / FRAMERATE)
 
   public ws!: WebSocket
   public ws_host: string
 
-  public FISH_CANVAS_HEIGHT = 400
-  public FISH_CANVAS_WIDTH = 600
+  public FISH_CANVAS_HEIGHT = 230
+  public FISH_CANVAS_WIDTH = 550
 
   public async mounted (): Promise<void> {
+    assertExists(this.gameContainer)
+    assertExists(this.gameCanvas)
+    this.fishWorld = new FishWorld(this.gameContainer, this.gameCanvas)
+
     this.ws_host = import.meta.env.VITE_WS_HOST ?? 'localhost'
     this.ws = new WebSocket(`ws://${this.ws_host}:2502/${this.channel}`)
     this.ws.onmessage = (ev: any) => {
       const { type, data } = JSON.parse(ev.data)
-      if (type === WebsocketMessageType.BACKEND_FISH_WAIT_TIME_INFO) {
-        const { allFishStates } = data
-        this.fishField.feedFishData(allFishStates)
+      if (type === WebsocketMessageType.USER_INFO) {
+        const userInfo: UserInfo = data
+        this.fishWorld.feedNewData(userInfo.fishPlayers, userInfo.emotes, userInfo.messages, userInfo.commands)
       }
     }
-    assertExists(this.gameContainer)
-    assertExists(this.gameCanvas)
-    this.fishField = new FishField(this.gameContainer, this.gameCanvas)
+
+    let timeoutFishCatchMessage: NodeJS.Timeout
+    const sendFishCatchMessage = () => {
+      const isWebsocketStillConnecting = this.ws.readyState === 0
+      const catchingAvatars = Object.values(this.fishWorld.userAvatars).filter(avatar => avatar.fishStatus === FishAvatarStatus.CATCHING)
+      if (!catchingAvatars || isWebsocketStillConnecting) {
+        timeoutFishCatchMessage = setTimeout(sendFishCatchMessage, 2000);
+        return
+      }
+      const catchingAvatarIds = catchingAvatars.map(avatar => avatar.id)
+      this.ws.send(JSON.stringify({ type: WebsocketMessageType.FRONTEND_FISH_CATCHING_INFO, data: { avatarIds: catchingAvatarIds }}))
+      // console.log(catchingAvatars)fishStatus
+      for (const avatar of catchingAvatars) {
+        this.fishWorld.userAvatars[avatar.name].fishStatus = FishAvatarStatus.WAITING_FOR_CATCH
+        console.log('state changed to ' + this.fishWorld.userAvatars[avatar.name].fishStatus)
+      }
+      timeoutFishCatchMessage = setTimeout(sendFishCatchMessage, 2000)
+    }
+    sendFishCatchMessage()
+
     this.startDrawing()
   }
 
@@ -59,7 +80,7 @@ export default class FishWidget extends Vue {
     const elapsed = now - this.then
     if (elapsed > this.fpsInterval) {
       this.then = now - (elapsed % this.fpsInterval)
-      this.world.update()
+      this.fishWorld.update()
     }
     requestAnimationFrame(this.drawAtFramerate)
   }

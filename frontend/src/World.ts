@@ -15,16 +15,17 @@ import {
 import { Bubble, BubbleType } from './Bubble.js'
 import { Emote } from './Emote.js'
 import { assertExists } from './Helpers.js'
-import { Player, Players, EmoteReceived, Message, PlayerState, SkinId, FrontendCommand, CommandTrigger } from '../../common/src/Types'
+import { Player, Players, EmoteReceived, Message, PlayerState, SkinId, FrontendCommand, CommandTrigger, FishPlayers } from '../../common/src/Types'
 import { AVATAR_DECORATIONS, SKINS } from '../../common/src/Visuals'
 import { Sprite } from './Sprite'
 // import { ServerMessages } from './types/Types.js'
 
 const MESSAGES_ALL_OVER_THE_PLACE: boolean = false
-const EMOTE_DISPLAY_SIZE = 50
+const EMOTE_DISPLAY_SIZE = 200
 
 class World {
   constructor(gameContainer: HTMLElement, canvas: HTMLCanvasElement) {
+    this.isFishWorld = false
     this.element = gameContainer
     this.canvas = canvas
     const context = canvas.getContext('2d')
@@ -36,8 +37,26 @@ class World {
     this.renderedBubbles = []
   }
 
+  buildBg(): CanvasImageSource | null {
+    const tmpCanvas = document.createElement('canvas')
+    tmpCanvas.width = this.canvas.width
+    tmpCanvas.height = this.canvas.height
+    const tmpCtx = tmpCanvas.getContext('2d')
+
+    if(!this.bg) return null
+
+    // weirdly sprites can fail to render, which leaves the bg blank
+    // in that case return null
+    const drawn = this.bg.draw(tmpCtx)
+    // if (!drawn) {
+    //   return null
+    // }
+
+    return tmpCanvas
+  }
+
   feedNewData(
-    users: Players,
+    users: (Players | FishPlayers),
     emotes: EmoteReceived[],
     messages: Message[],
     commands: FrontendCommand[],
@@ -53,42 +72,38 @@ class World {
       }
     }
 
+    this.feedEmotesAndMessages(users, filteredMessages, emotes)
+
     for (const [_id, user] of Object.entries(users)) {
-      // create a new user avatar.
-      if (!this.userAvatars[user.username]) {
-        this.userAvatars[user.username] = createNewUserAvatar(
-          this,
-          user,
-          Math.random() * this.canvas.width,
-          this.canvas.height - AVATAR_DISPLAY_SIZE - 25, // name display size
-          user.skin
-        )
-      }
-      if (user.avatar_decoration && this.userAvatars[user.username].currentAvatarDecoration !== user.avatar_decoration) {
-        const avatarDecoration = AVATAR_DECORATIONS.find(d => d.id === user.avatar_decoration)
-        this.userAvatars[user.username].currentAvatarDecoration = user.avatar_decoration
-        this.userAvatars[user.username].decoSprite = new Sprite({
-          gameObject: this.userAvatars[user.username],
-          src: avatarDecoration.avatarSource,
-          mask: avatarDecoration.avatarMask,
-          color: this.userAvatars[user.username].color,
-          displaySize: AVATAR_DISPLAY_SIZE,
-          animations: this.userAvatars[user.username].sprite.animations,
-        })
-      }
+      if (!this.userAvatars[user.username]) this.userAvatars[user.username] = this.createNewUserAvatar(user)
 
-      this.userAvatars[user.username].isActive = (user.state === PlayerState.ACTIVE)
+      this.updateAvatarDecoration(user)
 
-      if (filteredMessages[user.username]) {
-        const avatar = this.userAvatars[user.username]
-        this.renderedEmotes.push(...createNewEmojis(filteredMessages[user.username].map(m => m.text), avatar.x, avatar.y))
+      // decide if avatar should be rendered
+      const isFishingOrCatching = user.state === PlayerState.FISHING || user.state === PlayerState.CATCHING;
+      this.userAvatars[user.username].isActive = isFishingOrCatching && this.isFishWorld || user.state === PlayerState.ACTIVE && !this.isFishWorld;
+    }
+
+    for (const [_name, avatar] of Object.entries(this.userAvatars)){
+      const userDisappeared = (!users[avatar.id] && !this.isFishWorld) || (!users[avatar.name] && this.isFishWorld)
+      if (userDisappeared) avatar.isActive = false
+    }
+
+    if (commands && !this.isFishWorld) this.handleCommands(commands)
+  }
+
+  feedEmotesAndMessages(users: Players, messages: PlayerMessages, emotes: EmoteReceived[]) {
+    for (const [_id, user] of Object.entries(users)) {
+      const avatar = this.userAvatars[user.username]
+
+      // handle emotes
+      if (messages[user.username]) {
+        this.renderedEmotes.push(...createNewEmojis(messages[user.username].map(m => m.text), avatar.x, avatar.y))
       }
 
       // handle user messages
-      if (filteredMessages[user.username] || emotes.some((emote) => emote.name == user.username)) {
-        const avatar = this.userAvatars[user.username]
-        avatar.changeBehaviour(BEHAVIOURS.idle)
-        avatar.pushMotivation(BEHAVIOURS.talk)
+      if (messages[user.username] || emotes.some((emote) => emote.name == user.username)) {
+        if (!this.isFishWorld) this.setTalkingAnimation(avatar)
         const xpSprite = {
           src: messageParticles,
           cutSize: 100,
@@ -102,37 +117,47 @@ class World {
             spriteInfo: xpSprite,
           }),
         )
-
-        // log the message in chat and add a message bubble
-        if (MESSAGES_ALL_OVER_THE_PLACE && filteredMessages[user.username]) {
-          for (const message of filteredMessages[user.username]) {
-            this.renderedBubbles.push(
-              createAdvancedBubble({
-                type: 'text',
-                text: message,
-                x: Math.random() * this.canvas.width,
-                y: Math.random() * this.canvas.height,
-                behaviourLoop: [
-                  { type: 'ascend', time: 100 },
-                  { type: 'dissolve', time: 30 },
-                ],
-              }),
-            )
-          }
-        }
       }
+
+      // spawn new emotes since last data pull
+      this.renderedEmotes.push(...createNewEmotes(emotes, this.userAvatars))
     }
+  }
 
-    for (const [_name, avatar] of Object.entries(this.userAvatars)){
-      if (!users[avatar.id]){
-        avatar.isActive = false
-      }
+  setTalkingAnimation(avatar: Avatar) {
+    avatar.changeBehaviour(BEHAVIOURS.idle)
+    avatar.pushMotivation(BEHAVIOURS.talk)
+  }
+
+  createNewUserAvatar(user: Player) {
+    const skinSrc = SKINS.find(s => s.id === user.skin).avatarSource
+    const avatar = new Avatar(this, {
+      id: user.id,
+      name: user.username,
+      display_name: user.display_name,
+      color: user.color,
+      x: Math.random() * this.canvas.width,
+      y: this.canvas.height - AVATAR_DISPLAY_SIZE - 25, // name display size
+      src: skinSrc,
+      displaySize: AVATAR_DISPLAY_SIZE,
+    })
+    return avatar
+  }
+
+  updateAvatarDecoration(user: Player) {
+    if (user.avatar_decoration && this.userAvatars[user.username].currentAvatarDecoration !== user.avatar_decoration) {
+      const avatarDecoration = AVATAR_DECORATIONS.find(d => d.id === user.avatar_decoration)
+      this.userAvatars[user.username].currentAvatarDecoration = user.avatar_decoration
+      this.userAvatars[user.username].decoSprite = new Sprite({
+        gameObject: this.userAvatars[user.username],
+        src: avatarDecoration.avatarSource,
+        mask: avatarDecoration.avatarMask,
+        color: this.userAvatars[user.username].color,
+        displaySize: AVATAR_DISPLAY_SIZE,
+        animations: this.userAvatars[user.username].sprite.animations,
+        currentAnimation: this.userAvatars[user.username].sprite.currentAnimation
+      })
     }
-
-    if (commands) this.handleCommands(commands)
-
-    // spawn new emotes since last data pull
-    this.renderedEmotes.push(...createNewEmotes(emotes, this.userAvatars))
   }
 
   handleCommands(commands: FrontendCommand[]) {
@@ -152,6 +177,7 @@ class World {
   update(_timestep?: number) {
     // clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+    if (this.bg) this.bg.draw(this.ctx)
 
     this.updateAvatars()
     this.updateEmotes()
@@ -163,10 +189,9 @@ class World {
     this.ctx.textAlign = 'center'
     this.ctx.font = '16px CherryBombOne-Regular'
     for (const userAvatar of Object.values(this.userAvatars)) {
-      if (userAvatar.isActive) {
-        userAvatar.update()
-        userAvatar.draw(this.ctx)
-      }
+      if (!userAvatar.isActive) break
+      userAvatar.update()
+      userAvatar.draw(this.ctx)
     }
   }
 
@@ -210,27 +235,6 @@ class World {
       }
     }
   }
-}
-
-function createNewUserAvatar(
-  world: World,
-  user: Player,
-  x: number,
-  y: number,
-  skin: SkinId
-) {
-  const skinSrc = SKINS.find(s => s.id === skin).avatarSource
-  const avatar = new Avatar(world, {
-    id: user.id,
-    name: user.username,
-    display_name: user.display_name,
-    color: user.color,
-    x: x,
-    y: y,
-    src: skinSrc,
-    displaySize: AVATAR_DISPLAY_SIZE,
-  })
-  return avatar
 }
 
 // function createTextBubble(origin: Avatar, contents: string) {
@@ -336,6 +340,9 @@ interface World {
   renderedEmotes: any[];
   renderedBubbles: any[];
   chat: ChatMessage[];
+  isFishWorld: boolean;
+  bg?: Sprite;
+  builtBg?: CanvasImageSource
 }
 
 interface ChatMessage {

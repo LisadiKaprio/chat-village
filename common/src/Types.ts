@@ -6,7 +6,8 @@ export enum WebsocketMessageType {
   USER_INFO = 'user-info',
   BACKEND_RACE_INFO = 'backend-race-info',
   FRONTEND_RACE_INFO = 'frontend-race-info',
-  BACKEND_FISH_WAIT_TIME_INFO = 'backend-fish-wait-time-info'
+  BACKEND_FISH_WAIT_TIME_INFO = 'backend-fish-wait-time-info',
+  FRONTEND_FISH_CATCHING_INFO = 'frontend-fish-catching-info',
 }
 
 export enum SkinId {
@@ -58,8 +59,23 @@ export enum RaceStatus {
   FINISHING = 'finishing',
 }
 
+export enum FishAvatarStatus {
+  FISHING = 'fishing',
+  CATCHING = 'catching',
+  WAITING_FOR_CATCH = 'waiting-for-catch',
+  SUCCESS = 'success'
+}
+
 export const MINUTE = 60_000 
 export const OFFLINE_MINUTES = 10
+
+export type UserInfo = {
+  users: Players;
+  fishPlayers: FishPlayers;
+  emotes: any;
+  messages: Message[];
+  commands: FrontendCommand[];
+}
 
 export type Chatter = {
   chatter_id: number;
@@ -130,13 +146,13 @@ export interface BackendBoatAvatar {
   name: string;
   finishTimeMs: number;
 }
-export type FishState = {
-  waittime: number;
+export type FishPlayer = Player & {
+  fishWaitTime: number;
   isCaught: boolean;
 }
-export type FishStatesToUser = {
-  [username: string]: FishState
+export type FishPlayers = {
+  [username: string]: FishPlayer
 }
-export type FishStatesToChannel = {
-  [channelUsername: string]: FishStatesToUser;
+export type FishPlayersToChannel = {
+  [channelUsername: string]: FishPlayers;
 }

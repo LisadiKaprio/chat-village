@@ -2,9 +2,9 @@ import { BackendBoatAvatar, RaceParticipant, RaceParticipants, RaceStatus } from
 import { BoatAvatar } from './BoatAvatar.js'
 import { SKINS } from '../../common/src/Visuals'
 import { assertExists } from './Helpers.js'
-import seaBg from './images/sea-bg.png'
 import { ANIMATIONS, Sprite } from './Sprite.js'
 
+import seaBg from './images/sea-bg.png'
 import boatMask from './images/boats/boat-MASK.png'
 
 export const BOAT_AVATAR_DISPLAY_SIZE = 50
