@@ -61,7 +61,6 @@ export default class FishWidget extends Vue {
       // console.log(catchingAvatars)fishStatus
       for (const avatar of catchingAvatars) {
         this.fishWorld.userAvatars[avatar.name].fishStatus = FishAvatarStatus.WAITING_FOR_CATCH
-        console.log('state changed to ' + this.fishWorld.userAvatars[avatar.name].fishStatus)
       }
       timeoutFishCatchMessage = setTimeout(sendFishCatchMessage, 2000)
     }

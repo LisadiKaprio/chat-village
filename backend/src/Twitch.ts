@@ -2,7 +2,7 @@ import tmi, { client } from 'tmi.js'
 import { Chance } from 'chance'
 import { getChannelId, searchPlayerOfExistingPlayer, updatePlayerState } from './functions'
 import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus, FishPlayers, FishPlayer } from '../../common/src/Types'
-import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageSeastars, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedPoints, MessageFailedGifting, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory, MessageEquipFailedEmptyInventory, MessageEquipSuccess, MessageBuyingFailedDuplicate, MessageInventory, MessageFishFailRace, MessageFishTooEarly } from '../../common/src/Messages'
+import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageSeastars, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedPoints, MessageFailedGifting, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory, MessageEquipFailedEmptyInventory, MessageEquipSuccess, MessageBuyingFailedDuplicate, MessageInventory, MessageFishFailRace, MessageFishTooEarly, MessageFishCatchLate, MessageFishCatchStandard, MessageFishCatchFailed, MessageFishCatchTreasure } from '../../common/src/Messages'
 import { CommandParser } from './CommandParser'
 import { getRandom } from '../../common/src/Util'
 import Db from './Db'
@@ -15,6 +15,7 @@ const BONK_PRICE = 10
 const HUG_PRICE = 5
 const IDLE_GAIN = 1
 const DAILY_ITEMS_AMOUNT = 3
+const MAX_FISH_PLAYERS = 6
 const MIN_FISH_WAIT_TIME_MS = 0.4 * MINUTE
 const MAX_FISH_WAIT_TIME_MS = 0.7 * MINUTE
 const FISH_WAIT_TIME_DECIMALS = 2
@@ -160,6 +161,10 @@ export default class Twitch {
 				const args = detectedCommand.args
 				const argUsers = detectedCommand.argPlayerUsernames
 
+				const isPlayerNotFishing: boolean = (currentPlayer.state !== PlayerState.FISHING && currentPlayer.state !== PlayerState.CATCHING) 
+				|| !state.allFishPlayers[currentChannelUsername] 
+				|| !state.allFishPlayers[currentChannelUsername][currentPlayer.username as any]
+
 				if (tags.mod || tags.badges?.broadcaster) { // mod commands
 					if (command === CommandTrigger.VOLCANO){
 						void this.#client.say(channel, SimpleMessages.VOLCANO)
@@ -208,7 +213,7 @@ export default class Twitch {
 				}
 				case CommandTrigger.BONK:
 				case CommandTrigger.HUG: {
-					await handleInteractionCommand(channel, this.#client, currentPlayer, command, argUsers, currentChannelId)
+					await handleInteractionCommand(channel, this.#client, currentPlayer, command, argUsers, currentChannelId, isPlayerNotFishing)
 					break
 				}
 				case CommandTrigger.BET: {
@@ -233,7 +238,7 @@ export default class Twitch {
 				}
 				case CommandTrigger.FISH:
 				case CommandTrigger.FISH_EXCL: {
-					await handleFishCommand(channel, this.#client, currentPlayer, this.chance)
+					await handleFishCommand(channel, this.#client, currentPlayer, this.chance, isPlayerNotFishing)
 					break
 				}
 				case CommandTrigger.DEBUG_ID: {
@@ -354,8 +359,14 @@ export default class Twitch {
 			await db.update('cv.chatters', { color: newColor }, { id: chatterId })
 		}
 
-		async function handleInteractionCommand(channel: any, client: tmi.Client, currentPlayer: Player, command: CommandTrigger, argUsers: string[], currentChannelId: number) {
+		async function handleInteractionCommand(channel: any, client: tmi.Client, currentPlayer: Player, command: CommandTrigger, argUsers: string[], currentChannelId: number, isPlayerNotFishing: boolean) {
 			const currentChannelUsername = channel.startsWith('#') ? channel.substr(1) : channel
+
+			if(!isPlayerNotFishing){
+				void client.say(channel, SimpleMessages.HUG_BONK_FISHING)
+				return
+			}
+
 			let price = 0
 			if (command === CommandTrigger.BONK) {
 				price = BONK_PRICE
@@ -593,13 +604,25 @@ export default class Twitch {
 			void client.say(channel, MessageEquipSuccess(currentPlayer.display_name))
 		}		
 
-		async function handleFishCommand(channel: any, client: tmi.Client, currentPlayer: Player, chance: Chance.Chance) {
+		async function handleFishCommand(channel: any, client: tmi.Client, currentPlayer: Player, chance: Chance.Chance, isPlayerNotFishing: boolean) {
 			const currentChannelUsername = channel.startsWith('#') ? channel.substr(1) : channel
 
 			if(currentPlayer.state === PlayerState.RACING) { // not possible
 				void client.say(channel, MessageFishFailRace(currentPlayer.display_name))
 				return
-			} else if (currentPlayer.state === PlayerState.FISHING) { // catch too early
+			}
+
+			if(Object.values(state.allFishPlayers).length >= MAX_FISH_PLAYERS && isPlayerNotFishing) {
+				void client.say(channel, SimpleMessages.FISHING_FULL)
+				return
+			}
+
+			if (isPlayerNotFishing) {
+				await initiateFishingForPlayer(currentPlayer, currentChannelUsername, chance)
+				return
+			}
+			
+			if (currentPlayer.state === PlayerState.FISHING) { // catch too early
 				state.players[currentPlayer.id].state = PlayerState.ACTIVE
 				await updatePlayerState(db, currentPlayer.id, PlayerState.ACTIVE)
 
@@ -609,10 +632,15 @@ export default class Twitch {
 				void client.say(channel, MessageFishTooEarly(currentPlayer.display_name))
 				return
 			} else if (currentPlayer.state === PlayerState.CATCHING) { // catch the fish
-				state.allFishPlayers[currentChannelUsername][currentPlayer.username as any].isCaught = true
+				state.allFishPlayers[currentChannelUsername][currentPlayer.username as any].hasCaught = true
+				console.log('setting to hasCaught')
+				await pickRewardForFishing(chance, client, currentPlayer, currentChannelUsername)
+				return
 				// todo: how do i communicate with frontend that fish was caught?
 			}
+		}
 
+		async function initiateFishingForPlayer (currentPlayer: Player, currentChannelUsername: string, chance: Chance.Chance) {
 			state.players[currentPlayer.id].state = PlayerState.FISHING
 			await updatePlayerState(db, currentPlayer.id, PlayerState.FISHING)
 
@@ -620,20 +648,47 @@ export default class Twitch {
 				state.allFishPlayers[currentChannelUsername][currentPlayer.username] = {
 					...currentPlayer,
 					state: PlayerState.FISHING,
+					catchStartDate: 0,
 					fishWaitTime: chance.floating({ min: MIN_FISH_WAIT_TIME_MS, max: MAX_FISH_WAIT_TIME_MS, fixed: FISH_WAIT_TIME_DECIMALS }),
-					isCaught: false,
+					hasCaught: false,
 				}
 			} else {
 				state.allFishPlayers[currentChannelUsername] = {
 					[currentPlayer.username] : {
 						...currentPlayer,
 						state: PlayerState.FISHING,
+						catchStartDate: 0,
 						fishWaitTime: chance.floating({ min: MIN_FISH_WAIT_TIME_MS, max: MAX_FISH_WAIT_TIME_MS, fixed: FISH_WAIT_TIME_DECIMALS }),
-						isCaught: false,
+						hasCaught: false,
 					}}
 			}
+		}
 
-			console.log(JSON.stringify(state.allFishPlayers[currentChannelUsername][currentPlayer.username]))
+		async function pickRewardForFishing (chance: Chance.Chance, client: tmi.Client, caughtPlayer: Player, channelUsername: string) {
+			const channel = `#${channelUsername}`
+
+			const caughtPoints = chance.weighted([
+				0, 
+				chance.integer({ min: 1, max: 9 }) * 5, 
+				chance.integer({ min: 12, max: 20 }) * 10,
+			], [
+				8, 
+				85, 
+				7,
+			])
+
+			if (caughtPoints > 0) await addPointsToPlayer(db, state.players[caughtPlayer.id].points, caughtPoints, caughtPlayer.id)
+			
+			
+			if (caughtPoints === 0) {
+				await client.say(channel, MessageFishCatchFailed(caughtPlayer.display_name, caughtPoints))
+			}
+			if (caughtPoints >= 1 && caughtPoints < 99) {
+				await client.say(channel, MessageFishCatchStandard(caughtPlayer.display_name, caughtPoints))
+			}
+			if (caughtPoints >= 99) {
+				await client.say(channel, MessageFishCatchTreasure(caughtPlayer.display_name, caughtPoints))
+			}
 		}
 	}
 
@@ -655,5 +710,10 @@ export default class Twitch {
 	async sayRaceFinishMessage(channelName: string, winnerName: string, pointsAdded: number, pointsDeducted: number) {
 		const channel = `#${channelName}`
 		await this.#client.say(channel, MessageRaceFinish(winnerName, pointsAdded, pointsDeducted))
+	}
+
+	async sayFishCatchLateMessage(channelName: string, fishPlayerName: string) {
+		const channel = `#${channelName}`
+		await this.#client.say(channel, MessageFishCatchLate(fishPlayerName))
 	}
 }

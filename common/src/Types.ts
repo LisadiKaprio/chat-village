@@ -68,6 +68,7 @@ export enum FishAvatarStatus {
 
 export const MINUTE = 60_000 
 export const OFFLINE_MINUTES = 10
+export const FISH_WAIT_MINUTES = 0.3
 
 export type UserInfo = {
   users: Players;
@@ -148,7 +149,8 @@ export interface BackendBoatAvatar {
 }
 export type FishPlayer = Player & {
   fishWaitTime: number;
-  isCaught: boolean;
+  catchStartDate: number;
+  hasCaught: boolean;
 }
 export type FishPlayers = {
   [username: string]: FishPlayer

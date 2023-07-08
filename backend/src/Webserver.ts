@@ -110,13 +110,13 @@ export default class Webserver {
 			let timeoutUsersInfo: NodeJS.Timeout | null = null
 			let timeoutRaceInfo: NodeJS.Timeout | null = null
 
-			const sendUsersInfo = () => {
+			const sendUsersInfo = async () => {
 				const usersInfo = buildUsersInfo(channelName, channelId, state)
 				this.notifyOne(socket, WebsocketMessageType.USER_INFO, usersInfo)
-				state.clearFrontendRelevantData(channelName)
+				await state.clearFrontendRelevantData(db, channelName)
 				timeoutUsersInfo = setTimeout(sendUsersInfo, 2000)
 			}
-			sendUsersInfo()
+			await sendUsersInfo()
 
 			const sendRaceInfo = () => {
 				const raceInfo = buildRaceInfo(raceConstructor, channelName)
@@ -135,6 +135,11 @@ export default class Webserver {
 				} else if (type === WebsocketMessageType.FRONTEND_FISH_CATCHING_INFO) {
 					const { avatarIds }: { avatarIds: number[] } = data
 					for (const id of avatarIds) {
+						if (state.players[id].state !== PlayerState.FISHING) break
+						
+						const fishPlayer = Object.values(state.allFishPlayers[channelName]).find(player => player.id === id)
+						if (fishPlayer) fishPlayer.catchStartDate = Date.now()
+
 						state.players[id].state = PlayerState.CATCHING
 						await updatePlayerState(db, id, PlayerState.CATCHING)
 					}

@@ -1,6 +1,9 @@
 import Db from './Db'
-import { EmoteReceived,  MessagesToChannel, Chatter, Chatters, Player, Players, PlayerState, OFFLINE_MINUTES, MINUTE, FrontendCommandsToChannel, FishPlayersToChannel } from '../../common/src/Types'
+import { EmoteReceived,  MessagesToChannel, Chatter, Chatters, Player, Players, PlayerState, OFFLINE_MINUTES, MINUTE, FrontendCommandsToChannel, FishPlayersToChannel, FISH_WAIT_MINUTES, FishPlayer } from '../../common/src/Types'
 import { AvatarDecoration, AvatarDecorationId } from './Visuals'
+import { updatePlayerState } from './functions'
+import { toNamespacedPath } from 'path'
+import Twitch from './Twitch'
 
 async function loadChatters(
 	db: Db,
@@ -106,23 +109,53 @@ export default class State {
 	public allFishPlayers: FishPlayersToChannel = {}
 	public dailyItems: AvatarDecoration[] = []
 
-	async init (
-		db: Db,
-	) {
-		await this.refresh(db)
+	async loadChattersAndPlayers (db: Db) {
+		this.chatters = await loadChatters(db)
+		this.players = await loadAndProcessPlayers(db, this)
 	}
 
-	clearFrontendRelevantData (channelUsername: string) {
+	async clearFrontendRelevantData (db: Db, channelUsername: string) {
 		this.newEmotes = this.newEmotes.filter(emote => emote.channel !== channelUsername)
 		this.allNewMessages[channelUsername] = []
 		this.allFrontendCommands[channelUsername] = []
+		
+		await this.clearFishPlayersWhoCaught(db, channelUsername)
+	}
+
+	async clearFishPlayersWhoCaught (db: Db, channelUsername: string) { 
+		if (!this.allFishPlayers[channelUsername]) return
+		const caughtPlayers = Object.values(this.allFishPlayers[channelUsername]).filter(fishPlayer => fishPlayer.hasCaught === true)
+		caughtPlayers.forEach(async (fishPlayer) => {
+			// TODO: wait a bit before doing so?..
+			await this.stopFishing(db, fishPlayer.username, channelUsername)
+		})
+	}
+
+	async stopFishing(db: Db, fishPlayerUsername: string, channelUsername: string) {
+		const playerId = this.allFishPlayers[channelUsername][fishPlayerUsername].id
+		delete this.allFishPlayers[channelUsername][fishPlayerUsername]
+
+		this.players[playerId].state = PlayerState.ACTIVE
+		await updatePlayerState(db, playerId, PlayerState.ACTIVE)
 	}
 
 	async refresh (
 		db: Db,
+		twitch: Twitch,
 	): Promise<void> {
-		this.chatters = await loadChatters(db)
-		this.players = await loadAndProcessPlayers(db, this)
+		await this.loadChattersAndPlayers(db)
+
+		for (const [channelUsername, _channelFishPlayers] of Object.entries(this.allFishPlayers)) {
+			for (const [name, fishPlayer] of Object.entries(this.allFishPlayers[channelUsername])) {
+				if (!this.allFishPlayers[channelUsername][name].catchStartDate) break
+				const timePassedSinceStartCatch = Date.now() - this.allFishPlayers[channelUsername][name].catchStartDate
+				if (timePassedSinceStartCatch >= FISH_WAIT_MINUTES * MINUTE) {
+					const fishPlayerDisplayName = fishPlayer.display_name
+					await this.stopFishing(db, name, channelUsername)
+					await twitch.sayFishCatchLateMessage(channelUsername, fishPlayerDisplayName)
+				}
+			}
+		}
 	}
   
 	async setPlayerOffline(

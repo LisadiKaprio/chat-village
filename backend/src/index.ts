@@ -24,7 +24,7 @@ async function main() {
 	console.log('Connected to database.')
 
 	const state = new State()
-	await state.init(db)
+	await state.loadChattersAndPlayers(db)
 
 	const raceConstructor = new RaceConstructor()
 
@@ -59,7 +59,7 @@ async function main() {
 	webserver.init(db, state, raceConstructor, twitch)
 
 	setInterval(async () => {
-		await state.refresh(db)
+		await state.refresh(db, twitch)
 		await raceConstructor.update(db, twitch, state)
 	}, 2 * 1000) // check every two seconds
 }

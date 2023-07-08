@@ -54,7 +54,7 @@ export default class RaceConstructor {
 				}
 				if (timePassedSinceInit >= race.minutesToWait * MINUTE) {
 					if(Object.keys(race.participants).length >= this.MIN_PARTICIPANTS) {
-						await this.startRace(db, race, channel, twitch)
+						await this.startRace(db, state, race, channel, twitch)
 					} else {
 						await twitch.sayRaceTooFewParticipantsMessage(channel, (this.MIN_PARTICIPANTS - Object.keys(race.participants).length))
 						for (const participant of Object.values(race.participants)){
@@ -84,9 +84,13 @@ export default class RaceConstructor {
 		}
 	}
 
-	async startRace(db: Db, race: Race, channelName: string, twitch: Twitch) {
+	async startRace(db: Db, state: State, race: Race, channelName: string, twitch: Twitch) {
 		race.status = RaceStatus.RACING
 		race.dateInit = 0
+		for(const participant of Object.values(race.participants)) {
+			if (!state.allFishPlayers[channelName] || !state.allFishPlayers[channelName][participant.username]) continue
+			await state.stopFishing(db, channelName, participant.username)
+		}
 		await updateManyPlayerState(db, Object.values(race.participants).map(p => p.id), PlayerState.RACING)
 		this.setBeginningSpeed(race)
 		await twitch.sayRaceStartMessage(channelName)

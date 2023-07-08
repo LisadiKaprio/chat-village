@@ -1,9 +1,9 @@
 import Db from './Db'
 import { Player, Players, PlayerState } from '../../common/src/Types'
 
-export async function updatePlayerState(db: Db, playerId: number, state: PlayerState): Promise<void> {
-	console.log(`setting player ${state}: ${playerId}`)
-	await db.update('cv.players', { state: state }, { id: playerId })    
+export async function updatePlayerState(db: Db, playerId: number, playerState: PlayerState): Promise<void> {
+	console.log(`setting player ${playerState}: ${playerId}`)
+	await db.update('cv.players', { state: playerState }, { id: playerId })    
 }
 
 export async function updateManyPlayerState(db: Db, playerIds: number[], state: PlayerState): Promise<void> {

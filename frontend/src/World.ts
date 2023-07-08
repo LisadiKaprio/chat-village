@@ -18,6 +18,7 @@ import { assertExists } from './Helpers.js'
 import { Player, Players, EmoteReceived, Message, PlayerState, SkinId, FrontendCommand, CommandTrigger, FishPlayers } from '../../common/src/Types'
 import { AVATAR_DECORATIONS, SKINS } from '../../common/src/Visuals'
 import { Sprite } from './Sprite'
+import { FishAvatar } from './FishAvatar'
 // import { ServerMessages } from './types/Types.js'
 
 const MESSAGES_ALL_OVER_THE_PLACE: boolean = false
@@ -84,12 +85,16 @@ class World {
       this.userAvatars[user.username].isActive = isFishingOrCatching && this.isFishWorld || user.state === PlayerState.ACTIVE && !this.isFishWorld;
     }
 
-    for (const [_name, avatar] of Object.entries(this.userAvatars)){
+    for (const [name, avatar] of Object.entries(this.userAvatars)){
       const userDisappeared = (!users[avatar.id] && !this.isFishWorld) || (!users[avatar.name] && this.isFishWorld)
-      if (userDisappeared) avatar.isActive = false
+      if (userDisappeared) this.userDisappears(name)
     }
 
     if (commands && !this.isFishWorld) this.handleCommands(commands)
+  }
+
+  userDisappears(name: string) {
+    delete this.userAvatars[name]
   }
 
   feedEmotesAndMessages(users: Players, messages: PlayerMessages, emotes: EmoteReceived[]) {
@@ -178,6 +183,8 @@ class World {
     // clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
     if (this.bg) this.bg.draw(this.ctx)
+    this.ctx.textAlign = 'center'
+    this.ctx.font = '16px CherryBombOne-Regular'
 
     this.updateAvatars()
     this.updateEmotes()
@@ -185,14 +192,15 @@ class World {
   }
 
   updateAvatars() {
-    // aligns all nicknames
-    this.ctx.textAlign = 'center'
-    this.ctx.font = '16px CherryBombOne-Regular'
     for (const userAvatar of Object.values(this.userAvatars)) {
-      if (!userAvatar.isActive) break
-      userAvatar.update()
-      userAvatar.draw(this.ctx)
+      this.updateSingleAvatar(userAvatar)
     }
+  }
+
+  updateSingleAvatar(userAvatar: Avatar | FishAvatar) {
+    if (!userAvatar.isActive) return
+    userAvatar.update()
+    userAvatar.draw(this.ctx)
   }
 
   updateEmotes() {
@@ -286,7 +294,7 @@ export function createNewEmojis(messages: string[], x: number, y: number) {
         y: y,
         src: `https://cdn.betterttv.net/assets/emoji/${emoji}.svg`,
         cutSize: 1300,
-        displaySize: EMOTE_DISPLAY_SIZE,
+        displaySize: (EMOTE_DISPLAY_SIZE / 3),
         speedPhysicsX: Math.random() * 6 - 3,
         speedPhysicsY: -(Math.random() * 5),
         dragPhysicsY: -0.02,

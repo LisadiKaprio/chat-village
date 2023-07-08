@@ -9,7 +9,9 @@ export enum SimpleMessages {
     RACE_GOING = "ResidentSleeper A race has already started! Let's see how it turns out first",
     INVALID_BUY_REQUEST = "What item did you want to buy? Choose an item from today\'s shop, then use \"!buy A\" or \"!buy bow\" OhMyDog",
     INVALID_EQUIP_REQUEST = "What item did you want to equip? Choose an item from your inventory (!inv), then use \"!equip 1\" or \"!equip bow\" OhMyDog",
-    RACE_START = "🎉 Race started!"
+    RACE_START = "🎉 Race started!",
+    FISHING_FULL = "SabaPing The beach is full! Try again when someone finishes fishing.",
+    HUG_BONK_FISHING = "SabaPing You're too busy fishing!"
 }
 
 const randomCompliment = (): string => {
@@ -195,4 +197,20 @@ export const MessageFishFailRace = (displayName: string): string => {
 
 export const MessageFishTooEarly = (displayName: string): string => {
     return `HotPokket  @${displayName} swings their fishing pole too early and catches nothing!`
+}
+
+export const MessageFishCatchLate = (displayName: string): string => {
+    return `BibleThump  @${displayName} didn't catch the fish on time! Next time pay more attention.`
+}
+
+export const MessageFishCatchFailed = (displayName: string, pointsCaught: number): string => {
+    return `🥾 @${displayName} has an empty boot on their hook! What a pointless catch!`
+}
+
+export const MessageFishCatchStandard = (displayName: string, pointsCaught: number): string => {
+    return `🐟 @${displayName} catches a fish with ${pointsCaught} seastars in its mouth! Good job!`
+}
+
+export const MessageFishCatchTreasure = (displayName: string, pointsCaught: number): string => {
+    return `HolidayPresent @${displayName} catches a gift box! Inside, there are ${pointsCaught} seastars. Congrats!`
 }
