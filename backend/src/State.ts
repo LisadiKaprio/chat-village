@@ -132,8 +132,16 @@ export default class State {
 	}
 
 	async stopFishing(db: Db, fishPlayerUsername: string, channelUsername: string) {
-		const playerId = this.allFishPlayers[channelUsername][fishPlayerUsername].id
-		delete this.allFishPlayers[channelUsername][fishPlayerUsername]
+		const currentChannelUsername = channelUsername.startsWith('#') ? channelUsername.substring(1) : channelUsername
+		console.log(currentChannelUsername)
+
+		if (!this.allFishPlayers[currentChannelUsername]) {
+			console.log('fish players not found for channel ' + currentChannelUsername)
+			return
+		}
+
+		const playerId = this.allFishPlayers[currentChannelUsername][fishPlayerUsername].id
+		delete this.allFishPlayers[currentChannelUsername][fishPlayerUsername]
 
 		this.players[playerId].state = PlayerState.ACTIVE
 		await updatePlayerState(db, playerId, PlayerState.ACTIVE)
