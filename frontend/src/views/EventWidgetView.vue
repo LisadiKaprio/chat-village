@@ -15,6 +15,10 @@
         <div>Type !bonk @user to bonk a user.</div>
         <div>You can hug/bonk without specifying who :)</div>
       </v-window-item>
+      <v-window-item :value="eventTabEnum.FISH_INFORMATION">
+        <div>Type fish to start fishing.</div> 
+        <div>Type fish to catch the fish when your character starts jumping!</div>
+      </v-window-item>
     </v-window>
     <canvas class="game-canvas" ref="gameCanvas" :style="!isRacing ? 'display: none' : ''" :height="windowHeight" :width="windowWidth"></canvas>
     <div v-if="isRacing" class="timer">{{ raceField.timer }} sec</div>
@@ -37,6 +41,7 @@ import { FRAMERATE, SECOND } from '../types/Types'
 export enum EventTab {
   RACE_INFORMATION = 'race information',
   INTERACTION_INFORMATION = 'interaction information',
+  FISH_INFORMATION = 'fish information',
 }
 
 @Component
