@@ -102,7 +102,7 @@ export default class Twitch {
 				return
 			}
     
-			const currentChannelUsername = channel.startsWith('#') ? channel.substr(1) : channel
+			const currentChannelUsername = channel.startsWith('#') ? channel.substring(1) : channel
 			const currentChannelId = await getChannelId(db, currentChannelUsername)
 			if (!currentChannelId) {
 				console.log(`Channel with id ${currentChannelId} not found in db!`)
@@ -360,7 +360,7 @@ export default class Twitch {
 		}
 
 		async function handleInteractionCommand(channel: any, client: tmi.Client, currentPlayer: Player, command: CommandTrigger, argUsers: string[], currentChannelId: number, isPlayerNotFishing: boolean) {
-			const currentChannelUsername = channel.startsWith('#') ? channel.substr(1) : channel
+			const currentChannelUsername = channel.startsWith('#') ? channel.substring(1) : channel
 
 			if(!isPlayerNotFishing){
 				void client.say(channel, SimpleMessages.HUG_BONK_FISHING)
@@ -415,7 +415,7 @@ export default class Twitch {
 		}
 
 		async function handleBetCommand(channel: any, client: tmi.Client, currentPlayer: Player, args: string[]) {
-			const currentChannelUsername = channel.startsWith('#') ? channel.substr(1) : channel
+			const currentChannelUsername = channel.startsWith('#') ? channel.substring(1) : channel
 			let currentBet = raceConstructor.BASE_BET
 			if (!raceConstructor.races[currentChannelUsername]) { // initiate race
 				if(+args[0] >= raceConstructor.BASE_BET) currentBet = +args[0]
@@ -605,7 +605,7 @@ export default class Twitch {
 		}		
 
 		async function handleFishCommand(channel: any, client: tmi.Client, currentPlayer: Player, chance: Chance.Chance, isPlayerNotFishing: boolean) {
-			const currentChannelUsername = channel.startsWith('#') ? channel.substr(1) : channel
+			const currentChannelUsername = channel.startsWith('#') ? channel.substring(1) : channel
 
 			if(currentPlayer.state === PlayerState.RACING) { // not possible
 				void client.say(channel, MessageFishFailRace(currentPlayer.display_name))

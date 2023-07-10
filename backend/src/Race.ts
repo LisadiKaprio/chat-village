@@ -89,7 +89,7 @@ export default class RaceConstructor {
 		race.dateInit = 0
 		for(const participant of Object.values(race.participants)) {
 			if (!state.allFishPlayers[channelName] || !state.allFishPlayers[channelName][participant.username]) continue
-			await state.stopFishing(db, channelName, participant.username)
+			await state.stopFishing(db, participant.username, channelName)
 		}
 		await updateManyPlayerState(db, Object.values(race.participants).map(p => p.id), PlayerState.RACING)
 		this.setBeginningSpeed(race)
