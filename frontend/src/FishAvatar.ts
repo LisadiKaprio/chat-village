@@ -7,8 +7,8 @@ import { FishAvatarStatus } from "../../common/src/Types";
 const FISHPOLE_X_OFFSET = -FISH_AVATAR_DISPLAY_SIZE/2
 const FISHPOLE_Y_OFFSET = FISH_AVATAR_DISPLAY_SIZE/10
 
-const SINE_A = 0.01
-const SINE_B = 6.5
+const SINE_A = 0.02
+const SINE_B = 9
 
 export interface FishAvatar extends Avatar {
   fishWaitTime: number;

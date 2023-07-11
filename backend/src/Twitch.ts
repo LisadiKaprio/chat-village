@@ -672,9 +672,9 @@ export default class Twitch {
 				chance.integer({ min: 1, max: 9 }) * 5, 
 				chance.integer({ min: 12, max: 20 }) * 10,
 			], [
-				8, 
-				85, 
-				7,
+				12, 
+				78, 
+				10,
 			])
 
 			if (caughtPoints > 0) await addPointsToPlayer(db, state.players[caughtPlayer.id].points, caughtPoints, caughtPlayer.id)
