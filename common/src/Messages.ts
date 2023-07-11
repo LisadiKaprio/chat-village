@@ -200,7 +200,7 @@ export const MessageFishTooEarly = (displayName: string): string => {
 }
 
 export const MessageFishCatchLate = (displayName: string): string => {
-    return `BibleThump  @${displayName} didn't catch the fish on time! Next time pay more attention.`
+    return `@${displayName} The fish flew off the hook!`
 }
 
 export const MessageFishCatchFailed = (displayName: string, pointsCaught: number): string => {
