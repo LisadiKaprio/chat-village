@@ -5,18 +5,50 @@ import RaceConstructor from './Race'
 import State from './State'
 import WebSocket, { RawData, WebSocketServer } from 'ws'
 import Twitch from './Twitch'
+import { Chance } from 'chance'
 const express = require('express')
 
-function buildUsersInfo(
-	channelName: string,
-	channelId: number,
-	state: State,
-) {
-	// why doesn't this work??? T_T
+const COOKIE_LIFETIME_MS = 356 * 24 * 60 * 60 * 1000
 
-	// const filteredPlayers = await getPlayersInChannel(db, channelName)
-	// console.log('filteredPlayers is ' + JSON.stringify(filteredPlayers))
+async function createSessionForUser (db: Db, chance: Chance.Chance, userLogin: string): Promise<string> {
+	const sessionId = chance.string({ length: 20, casing: 'lower', alpha: true, numeric: true })
+	
+	await db.delete('cv.user_sessions', { userLogin })
+	await db.insert('cv.user_sessions', { userLogin, sessionId })
+	
+	return sessionId
+}
 
+async function getAccessTokenByCode (code: string, clientId: string, clientSecret: string, clientRedirectUri: string) {
+	const tokenResponse = await fetch('https://id.twitch.tv/oauth2/token', {
+		method: 'POST',
+		body: `${new URLSearchParams({
+			client_id: clientId,
+			client_secret: clientSecret,
+			code,
+			grant_type: 'authorization_code',
+			redirect_uri: clientRedirectUri,
+		})}`,
+	})
+	const tokenData = await tokenResponse.json()
+	const accessToken = tokenData.access_token
+	return accessToken
+}
+
+async function getUserByAccessToken (accessToken: string, clientId: string) {
+	const usersResponse = await fetch('https://api.twitch.tv/helix/users', {
+		method: 'GET',
+		headers: {
+			Authorization: 'Bearer ' + accessToken,
+			'Client-Id': clientId,
+		},
+	})
+	const usersData = await usersResponse.json()
+	const user = usersData.data[0]
+	return user
+}
+
+function buildUsersInfo(channelName: string, channelId: number, state: State) {
 	const filteredPlayers: Players = {}
 	for (const id of state.activePlayers) {
 		if (state.players[id]) {
@@ -62,6 +94,7 @@ function buildRaceInfo(raceConstructor: RaceConstructor, channelName: string) {
 
 
 export default class Webserver {
+	chance = new Chance()
 	channelSockets: Record<string, WebSocket[]> = {}
 	ws_host: string = ''
 
@@ -154,10 +187,42 @@ export default class Webserver {
 			})
 		})
 
+		//http://localhost:5173/twitch/redirect_uri#access_token=(hgsiugh)&scope=user%3Aread%3Abroadcast&token_type=bearer
+
+		app.post('/twitch/redirect_uri', async (req: any, res: any) => {
+			console.log(':)')
+
+			const clientId = process.env.CLIENT_ID ?? ''
+			const clientSecret = process.env.CLIENT_SECRET ?? ''
+			const clientRedirectUri = process.env.CLIENT_REDIRECT_URI ?? ''
+			if (!process.env.CLIENT_ID || !process.env.CLIENT_SECRET || !process.env.CLIENT_REDIRECT_URI) {
+				console.log('LOGIN WARNING: client id, client secret or client redirect uri is missing from the env file')
+				return
+			}
+
+			const code = req.query.access_token || ''
+
+			console.log('access token is ' + code)
+		
+			const accessToken = await getAccessTokenByCode(code, clientId, clientSecret, clientRedirectUri)
+			const user = await getUserByAccessToken(accessToken, clientId)
+		
+			const userLogin = user.login
+			const sessionId = await createSessionForUser(db, this.chance, userLogin)
+			
+			// add cookie to the user response
+			const cookieName = 'auth'
+			res.cookie(cookieName, sessionId, { maxAge: COOKIE_LIFETIME_MS, httpOnly: true })
+		
+			// redirect user to the startpage
+			res.redirect('/')
+			console.log(userLogin)
+		})
+
 		app.listen(portExpress, () => {
 			console.log(`Web-Avatars listening on http://localhost:${portExpress}`)
 		})
 
-		app.use('/api', apiRouter)
+		app.use('/', apiRouter)
 	}
 }

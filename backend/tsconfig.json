@@ -18,6 +18,7 @@
     },
     "compilerOptions": {
       // typescript options here
+        "lib": ["dom"],
         "target": "esnext",
         "jsx": "preserve",
         "importHelpers": true,
