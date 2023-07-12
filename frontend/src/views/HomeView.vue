@@ -13,10 +13,10 @@ import dotenv from 'dotenv'
 export default class HomeView extends Vue {
   
   public get twitchUrl(): string {
-    const clientId = import.meta.env.CLIENT_ID ?? ''
-    const clientRedirectUri = import.meta.env.CLIENT_REDIRECT_URI ?? ''
+    const clientId = import.meta.env.CLIENT_ID ?? 'aj9tlcon6jociugd4o9k3co55dprnd'
+    const clientRedirectUri = import.meta.env.CLIENT_REDIRECT_URI ?? 'http://localhost:5173/twitch/redirect_uri'
 
-    return `https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=${clientId}&redirect_uri=${clientRedirectUri}&scope=user%3Aread%3Abroadcast`
+    return `https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${clientRedirectUri}&scope=user%3Aread%3Abroadcast`
   }
 
   public redirectToTwitch(): void {

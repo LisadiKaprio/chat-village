@@ -189,7 +189,7 @@ export default class Webserver {
 
 		//http://localhost:5173/twitch/redirect_uri#access_token=(hgsiugh)&scope=user%3Aread%3Abroadcast&token_type=bearer
 
-		app.post('/twitch/redirect_uri', async (req: any, res: any) => {
+		app.get('/twitch/redirect_uri', async (req: any, res: any) => {
 			console.log(':)')
 
 			const clientId = process.env.CLIENT_ID ?? ''
@@ -200,7 +200,7 @@ export default class Webserver {
 				return
 			}
 
-			const code = req.query.access_token || ''
+			const code = req.query.code || ''
 
 			console.log('access token is ' + code)
 		
