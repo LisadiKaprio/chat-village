@@ -3,8 +3,8 @@ import State from './State'
 import Webserver from './Webserver'
 import RaceConstructor from './Race'
 import Twitch from './Twitch'
-
-require('dotenv').config()
+import dotenv from 'dotenv'
+dotenv.config()
 
 async function main() {
 	// COMMUNICATION WITH THE DATABASE

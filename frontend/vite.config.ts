@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     proxy: {
-      '^/api/.*': {
+      '^/(api|twitch)/.*': {
         target: 'http://localhost:2501',
         changeOrigin: true,
         secure: false,

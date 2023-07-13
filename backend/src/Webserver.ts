@@ -6,7 +6,7 @@ import State from './State'
 import WebSocket, { RawData, WebSocketServer } from 'ws'
 import Twitch from './Twitch'
 import { Chance } from 'chance'
-const express = require('express')
+import express from 'express'
 
 const COOKIE_LIFETIME_MS = 356 * 24 * 60 * 60 * 1000
 
@@ -20,17 +20,19 @@ async function createSessionForUser (db: Db, chance: Chance.Chance, userLogin: s
 }
 
 async function getAccessTokenByCode (code: string, clientId: string, clientSecret: string, clientRedirectUri: string) {
-	const tokenResponse = await fetch('https://id.twitch.tv/oauth2/token', {
-		method: 'POST',
-		body: `${new URLSearchParams({
-			client_id: clientId,
-			client_secret: clientSecret,
-			code,
-			grant_type: 'authorization_code',
-			redirect_uri: clientRedirectUri,
-		})}`,
-	})
-	const tokenData = await tokenResponse.json()
+	const string = `client_id=${clientId}&client_secret=${clientSecret}&code=${code}&grant_type=authorization_code&redirect_uri=${clientRedirectUri}`
+	let tokenResponse: any = null
+	try{
+		tokenResponse = await fetch('https://id.twitch.tv/oauth2/token', {
+			method: 'POST',
+			body: string,
+		})
+	} catch (e) {
+		console.log(e)
+	}
+	console.log(tokenResponse.status)
+	const tokenData: any = tokenResponse.json()
+	console.log(JSON.stringify(tokenData))
 	const accessToken = tokenData.access_token
 	return accessToken
 }
@@ -43,7 +45,9 @@ async function getUserByAccessToken (accessToken: string, clientId: string) {
 			'Client-Id': clientId,
 		},
 	})
-	const usersData = await usersResponse.json()
+	console.log(JSON.stringify(usersResponse))
+	const usersData: any = await usersResponse.json()
+	console.log(JSON.stringify(usersData))
 	const user = usersData.data[0]
 	return user
 }
