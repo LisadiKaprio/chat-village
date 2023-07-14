@@ -1,6 +1,6 @@
-import { BackendBoatAvatar, Players, PlayerState, RaceStatus, UserInfo, WebsocketMessageType } from '../../common/src/Types'
+import { BackendBoatAvatar, Players, PlayerState, RaceStatus, UserInfo, WebsocketMessageType, WidgetName } from '../../common/src/Types'
 import Db from './Db'
-import { getChannelId, updatePlayerState } from './functions'
+import { getChannelId, getChannelUsernameByCookie, getWidgetId, updatePlayerState } from './functions'
 import RaceConstructor from './Race'
 import State from './State'
 import WebSocket, { RawData, WebSocketServer } from 'ws'
@@ -10,29 +10,31 @@ import express from 'express'
 
 const COOKIE_LIFETIME_MS = 356 * 24 * 60 * 60 * 1000
 
-async function createSessionForUser (db: Db, chance: Chance.Chance, userLogin: string): Promise<string> {
+async function createChannelEntryForUser (db: Db, _chance: Chance.Chance, channelUsername: string, channelDisplayName: string) {
+	await db.insert('cv.channels', { channel_username: channelUsername, channel_display_name: channelDisplayName })
+}
+
+async function createSessionForUser (db: Db, chance: Chance.Chance, channelUsername: string): Promise<string> {
 	const sessionId = chance.string({ length: 20, casing: 'lower', alpha: true, numeric: true })
 	
-	await db.delete('cv.user_sessions', { userLogin })
-	await db.insert('cv.user_sessions', { userLogin, sessionId })
+	await db.insert('cv.user_sessions', { channel_username: channelUsername, session_token: sessionId })
 	
 	return sessionId
 }
 
 async function getAccessTokenByCode (code: string, clientId: string, clientSecret: string, clientRedirectUri: string) {
-	const string = `client_id=${clientId}&client_secret=${clientSecret}&code=${code}&grant_type=authorization_code&redirect_uri=${clientRedirectUri}`
-	let tokenResponse: any = null
-	try{
-		tokenResponse = await fetch('https://id.twitch.tv/oauth2/token', {
-			method: 'POST',
-			body: string,
-		})
-	} catch (e) {
-		console.log(e)
-	}
-	console.log(tokenResponse.status)
-	const tokenData: any = tokenResponse.json()
-	console.log(JSON.stringify(tokenData))
+	const queryString = new URLSearchParams({
+		client_id: clientId,
+		client_secret: clientSecret,
+		code,
+		grant_type: 'authorization_code',
+		redirect_uri: clientRedirectUri,
+	})
+	const tokenResponse: null|Response = await fetch('https://id.twitch.tv/oauth2/token?' + queryString , {
+		method: 'POST',
+	})
+	const tokenData = await tokenResponse.json()
+	if (!tokenData) return 'no_access_token'
 	const accessToken = tokenData.access_token
 	return accessToken
 }
@@ -45,10 +47,9 @@ async function getUserByAccessToken (accessToken: string, clientId: string) {
 			'Client-Id': clientId,
 		},
 	})
-	console.log(JSON.stringify(usersResponse))
 	const usersData: any = await usersResponse.json()
-	console.log(JSON.stringify(usersData))
-	const user = usersData.data[0]
+	if (!usersData) return 'no_user_data'
+	const user = await usersData.data[0]
 	return user
 }
 
@@ -191,11 +192,19 @@ export default class Webserver {
 			})
 		})
 
-		//http://localhost:5173/twitch/redirect_uri#access_token=(hgsiugh)&scope=user%3Aread%3Abroadcast&token_type=bearer
+		// app.get('/api/widget-url-info/:channel', async (req: any, res: any) => {
+		// 	const channelUsername = req.params.channel
+		// 	const channelWalkWidgetId = await getWidgetId(db, channelUsername, WidgetName.WALK) 
+		// 	const channelEventWidgetId = await getWidgetId(db, channelUsername, WidgetName.EVENT) 
+		// 	const channelFishWidgetId = await getWidgetId(db, channelUsername, WidgetName.FISH) 
+		// 	res.send({
+		// 		walkWidgetId: channelWalkWidgetId,
+		// 		eventWidgetId: channelEventWidgetId,
+		// 		fishWidgetId: channelFishWidgetId,
+		// 	})
+		// })
 
 		app.get('/twitch/redirect_uri', async (req: any, res: any) => {
-			console.log(':)')
-
 			const clientId = process.env.CLIENT_ID ?? ''
 			const clientSecret = process.env.CLIENT_SECRET ?? ''
 			const clientRedirectUri = process.env.CLIENT_REDIRECT_URI ?? ''
@@ -205,22 +214,42 @@ export default class Webserver {
 			}
 
 			const code = req.query.code || ''
-
-			console.log('access token is ' + code)
-		
 			const accessToken = await getAccessTokenByCode(code, clientId, clientSecret, clientRedirectUri)
 			const user = await getUserByAccessToken(accessToken, clientId)
 		
 			const userLogin = user.login
+			const userDisplayName = user.display_name
 			const sessionId = await createSessionForUser(db, this.chance, userLogin)
+
+			const channelEntryId = await getChannelId(db, userLogin)
+			console.log(`Channel with id ${channelEntryId} and username ${userLogin} is attempting to log in...`)
+			if (!channelEntryId) await createChannelEntryForUser(db, this.chance, userLogin, userDisplayName)
 			
 			// add cookie to the user response
 			const cookieName = 'auth'
 			res.cookie(cookieName, sessionId, { maxAge: COOKIE_LIFETIME_MS, httpOnly: true })
 		
 			// redirect user to the startpage
-			res.redirect('/')
-			console.log(userLogin)
+			res.redirect('/settings')
+		})
+
+		app.get('/api/cookie', async (req: any, res: any) => {
+			const authCookie = req.Cookie ? req.Cookie['auth'] || null : null
+			console.log('authCookie' + authCookie)
+			const channelUsername = await getChannelUsernameByCookie(db, authCookie)
+			if (!channelUsername) {
+				res.status(401).send()
+			} else {
+				const channelWalkWidgetId = await getWidgetId(db, channelUsername, WidgetName.WALK) 
+				const channelEventWidgetId = await getWidgetId(db, channelUsername, WidgetName.EVENT) 
+				const channelFishWidgetId = await getWidgetId(db, channelUsername, WidgetName.FISH) 
+				res.send({
+					channelUsername: channelUsername,
+					walkWidgetId: channelWalkWidgetId,
+					eventWidgetId: channelEventWidgetId,
+					fishWidgetId: channelFishWidgetId,
+				})
+			}
 		})
 
 		app.listen(portExpress, () => {

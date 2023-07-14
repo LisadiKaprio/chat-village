@@ -1,5 +1,5 @@
 <template>
-  <div class="homepage">
+  <div class="home-page">
     <img src="..\images\cv-logo-800ms.gif">
     <v-btn color="purple" @click="redirectToTwitch()">Login with Twitch</v-btn>
   </div>
@@ -8,9 +8,27 @@
 <script lang="ts">
 import { Component, Prop, Vue, Ref } from 'vue-facing-decorator'
 import dotenv from 'dotenv'
+import router from '../router'
 
 @Component
 export default class HomeView extends Vue {
+  public async mounted() {
+    try {
+      const resp = await fetch(`/api/cookie`)
+      if (resp.status === 200) {
+        router.push('/settings')
+      }
+    } catch (error: unknown) {
+      if (
+        error instanceof TypeError &&
+        error.message.startsWith('NetworkError')
+      ) {
+        // TODO: a disconnect icon or loading message.
+      } else {
+        throw error
+      }
+    }
+  }
   
   public get twitchUrl(): string {
     const clientId = import.meta.env.CLIENT_ID ?? 'aj9tlcon6jociugd4o9k3co55dprnd'
@@ -26,7 +44,7 @@ export default class HomeView extends Vue {
 </script>
 
 <style>
-.homepage {
+.home-page {
   display: flex;
   flex-direction: column;
   align-items: center;

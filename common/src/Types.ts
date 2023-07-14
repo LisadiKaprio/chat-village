@@ -10,6 +10,12 @@ export enum WebsocketMessageType {
   FRONTEND_FISH_CATCHING_INFO = 'frontend-fish-catching-info',
 }
 
+export enum WidgetName {
+  WALK = 'walk',
+  EVENT = 'event',
+  FISH = 'fish',
+}
+
 export enum SkinId {
   BUNNY = 'bunny',
   CAT = 'cat',
