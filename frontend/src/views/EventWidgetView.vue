@@ -28,7 +28,8 @@
 <script lang="ts">
 import { ref } from 'vue'
 import { Component, Prop, Ref, Vue } from 'vue-facing-decorator'
-import { RaceStatus, WebsocketMessageType } from '../../../common/src/Types'
+import { RaceStatus, WebsocketMessageType, WidgetName } from '../../../common/src/Types'
+import { verifyWidgetId } from '../functions'
 import { assertExists } from '../Helpers'
 import { 
   CANVAS_MARGIN_VERTICAL,
@@ -48,6 +49,7 @@ export enum EventTab {
 export default class EventWidget extends Vue {
   @Ref('gameCanvas') private gameCanvas!: HTMLCanvasElement
   @Prop({ type: String, default: null }) public channel!: string | null
+  @Prop({ type: String, default: null }) public id!: string | null
   public raceField: RaceField
   private then: number
   private fpsInterval = (SECOND / FRAMERATE)
@@ -64,6 +66,7 @@ export default class EventWidget extends Vue {
   public TAB_SWITCH_MS = 30_000
 
   public async mounted (): Promise<void> {
+    await verifyWidgetId(WidgetName.EVENT, this.channel, this.id)
     assertExists(this.gameCanvas)
     this.raceField = new RaceField(this.gameCanvas)
     this.ws_host = import.meta.env.VITE_WS_HOST ?? 'localhost'
@@ -160,26 +163,8 @@ export default class EventWidget extends Vue {
 </script>
 
 <style>
-@font-face {
-  font-family: 'CherryBombOne-Regular';
-  src: url('../fonts/CherryBombOne-Regular.ttf');
-  font-weight: normal;
-  font-style: normal;
-}
-/* canvas{
-  width: 500px;
-  height: 500px;
-} */
-
-body {
-  font-family: 'CherryBombOne-Regular';
-  padding: 0;
-  margin: 0;
-  /* prevents unwanted scrolling */
-  overflow: hidden;
-}
-
 .event-widget {
+  font-family: 'CherryBombOne-Regular';
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -203,11 +188,5 @@ body {
   font-weight: bold;
   color: white;
   text-shadow: 1px 1px 3px black;
-}
-
-.game-container {
-  position: relative;
-  padding: 0;
-  margin: 0 auto;
 }
 </style>

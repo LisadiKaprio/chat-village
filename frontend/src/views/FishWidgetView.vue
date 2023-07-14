@@ -12,8 +12,9 @@ import { assertExists } from '../Helpers'
 import { World } from '../World'
 import { FRAMERATE, SECOND, ServerResponse, UPDATE_PERIOD } from '../types/Types'
 import dotenv from 'dotenv'
-import { FishAvatarStatus, UserInfo, WebsocketMessageType } from '../../../common/src/Types'
+import { FishAvatarStatus, UserInfo, WebsocketMessageType, WidgetName } from '../../../common/src/Types'
 import { FishWorld } from '../FishWorld'
+import { verifyWidgetId } from '../functions'
 
 @Component
 export default class FishWidget extends Vue {
@@ -21,6 +22,7 @@ export default class FishWidget extends Vue {
   @Ref('gameCanvas') private gameCanvas!: HTMLCanvasElement
   private interval: NodeJS.Timeout | null = null
   @Prop({ type: String, default: null }) public channel!: string | null
+  @Prop({ type: String, default: null }) public id!: string | null
   private route = useRoute()
   // public gameContainer = document.querySelector('.game-container')
   public fishWorld: FishWorld
@@ -34,6 +36,7 @@ export default class FishWidget extends Vue {
   public FISH_CANVAS_WIDTH = 550
 
   public async mounted (): Promise<void> {
+    await verifyWidgetId(WidgetName.FISH, this.channel, this.id)
     assertExists(this.gameContainer)
     assertExists(this.gameCanvas)
     this.fishWorld = new FishWorld(this.gameContainer, this.gameCanvas)
@@ -92,29 +95,5 @@ export default class FishWidget extends Vue {
   src: url('../fonts/CherryBombOne-Regular.ttf');
   font-weight: normal;
   font-style: normal;
-}
-/* canvas{
-  width: 500px;
-  height: 500px;
-} */
-
-body{
-  padding: 0;
-  margin: 0;
-  /* prevents unwanted scrolling */
-  overflow: hidden;
-}
-
-.game-container{
-  font-family: 'CherryBombOne-Regular';
-  position: relative;
-  padding: 0;
-  margin: 0 auto;
-  /* ideally, i want the game to snap 
-  to the bottom of the page
-  it doesn't do it yet, 
-  the body snaps to top and limits height 
-  to the height of the canvas... */
-  /* margin-top: 20px; */
 }
 </style>

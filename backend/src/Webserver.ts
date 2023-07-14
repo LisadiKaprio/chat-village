@@ -7,6 +7,7 @@ import WebSocket, { RawData, WebSocketServer } from 'ws'
 import Twitch from './Twitch'
 import { Chance } from 'chance'
 import express from 'express'
+import cookieParser from 'cookie-parser'
 
 const COOKIE_LIFETIME_MS = 356 * 24 * 60 * 60 * 1000
 
@@ -71,7 +72,6 @@ function buildUsersInfo(channelName: string, channelId: number, state: State) {
 	}
 
 	const allFishPlayers = state.allFishPlayers[channelName] ?? []
-	// console.log(JSON.stringify(state.allFishPlayers[channelName]))
 
 	return {
 		users: filteredPlayers,
@@ -121,6 +121,7 @@ export default class Webserver {
 	) {
 		// COMMUNICATION WITH THE FRONTEND
 		const app = express()
+		app.use(cookieParser())
 		const apiRouter = express.Router()
 		const portExpress = 2501
 
@@ -166,7 +167,6 @@ export default class Webserver {
 			socket.on('message', async (rawData: RawData, _isBinary: boolean) => {
 				const { type, data } = JSON.parse(`${rawData}`)
 				if (type === WebsocketMessageType.FRONTEND_RACE_INFO && raceConstructor.races[channelName] && raceConstructor.races[channelName].status !== RaceStatus.OFF ) {
-					console.log('received frontend race info')
 					raceConstructor.races[channelName].status = RaceStatus.OFF
 					const { boatAvatars }: { boatAvatars: BackendBoatAvatar[] } = data
 					await raceConstructor.handleFinish(db, state, channelName, boatAvatars, twitch) 
@@ -192,17 +192,15 @@ export default class Webserver {
 			})
 		})
 
-		// app.get('/api/widget-url-info/:channel', async (req: any, res: any) => {
-		// 	const channelUsername = req.params.channel
-		// 	const channelWalkWidgetId = await getWidgetId(db, channelUsername, WidgetName.WALK) 
-		// 	const channelEventWidgetId = await getWidgetId(db, channelUsername, WidgetName.EVENT) 
-		// 	const channelFishWidgetId = await getWidgetId(db, channelUsername, WidgetName.FISH) 
-		// 	res.send({
-		// 		walkWidgetId: channelWalkWidgetId,
-		// 		eventWidgetId: channelEventWidgetId,
-		// 		fishWidgetId: channelFishWidgetId,
-		// 	})
-		// })
+		app.get('/api/verify-widget-id/:widgetName/:channel/:id', async (req: any, res: any) => {
+			const channelWidgetId = await getWidgetId(db, req.params.channel, req.params.widgetName)
+			const isIdCorrect = req.params.id === channelWidgetId
+			if (isIdCorrect) {
+				res.status(200).send()
+			} else {
+				res.status(404).send()
+			}
+		})
 
 		app.get('/twitch/redirect_uri', async (req: any, res: any) => {
 			const clientId = process.env.CLIENT_ID ?? ''
@@ -234,15 +232,14 @@ export default class Webserver {
 		})
 
 		app.get('/api/cookie', async (req: any, res: any) => {
-			const authCookie = req.Cookie ? req.Cookie['auth'] || null : null
-			console.log('authCookie' + authCookie)
+			const authCookie = req.cookies ? req.cookies['auth'] || null : null
 			const channelUsername = await getChannelUsernameByCookie(db, authCookie)
 			if (!channelUsername) {
 				res.status(401).send()
 			} else {
 				const channelWalkWidgetId = await getWidgetId(db, channelUsername, WidgetName.WALK) 
 				const channelEventWidgetId = await getWidgetId(db, channelUsername, WidgetName.EVENT) 
-				const channelFishWidgetId = await getWidgetId(db, channelUsername, WidgetName.FISH) 
+				const channelFishWidgetId = await getWidgetId(db, channelUsername, WidgetName.FISH)
 				res.send({
 					channelUsername: channelUsername,
 					walkWidgetId: channelWalkWidgetId,

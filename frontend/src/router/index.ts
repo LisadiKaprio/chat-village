@@ -19,19 +19,19 @@ const router = createRouter({
       component: SettingsView,
     },
     {
-      path: '/walk-widget/:channel',
+      path: '/walk-widget/:channel/:id',
       props: true,
       name: 'walk-widget',
       component: WalkWidgetView,
     },
     {
-      path: '/event-widget/:channel',
+      path: '/event-widget/:channel/:id',
       props: true,
       name: 'event-widget',
       component: EventWidgetView,
     },
     {
-      path: '/fish-widget/:channel',
+      path: '/fish-widget/:channel/:id',
       props: true,
       name: 'fish-widget',
       component: FishWidgetView,

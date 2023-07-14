@@ -12,7 +12,9 @@ import { assertExists } from '../Helpers'
 import { World } from '../World'
 import { FRAMERATE, SECOND, ServerResponse, UPDATE_PERIOD } from '../types/Types'
 import dotenv from 'dotenv'
-import { WebsocketMessageType, UserInfo } from '../../../common/src/Types'
+import { WebsocketMessageType, UserInfo, WidgetName } from '../../../common/src/Types'
+import router from '../router'
+import { verifyWidgetId } from '../functions'
 
 @Component
 export default class WalkWidget extends Vue {
@@ -20,6 +22,7 @@ export default class WalkWidget extends Vue {
   @Ref('gameCanvas') private gameCanvas!: HTMLCanvasElement
   private interval: NodeJS.Timeout | null = null
   @Prop({ type: String, default: null }) public channel!: string | null
+  @Prop({ type: String, default: null }) public id!: string | null
   private route = useRoute()
   // public gameContainer = document.querySelector('.game-container')
   public world: World
@@ -30,6 +33,8 @@ export default class WalkWidget extends Vue {
   public ws_host: string
 
   public async mounted (): Promise<void> {
+    await verifyWidgetId(WidgetName.WALK, this.channel, this.id)
+
     this.ws_host = import.meta.env.VITE_WS_HOST ?? 'localhost'
     this.ws = new WebSocket(`ws://${this.ws_host}:2502/${this.channel}`)
     this.ws.onmessage = (ev: any) => {
@@ -82,29 +87,5 @@ export default class WalkWidget extends Vue {
   src: url('../fonts/CherryBombOne-Regular.ttf');
   font-weight: normal;
   font-style: normal;
-}
-/* canvas{
-  width: 500px;
-  height: 500px;
-} */
-
-body{
-  padding: 0;
-  margin: 0;
-  /* prevents unwanted scrolling */
-  overflow: hidden;
-}
-
-.game-container{
-  font-family: 'CherryBombOne-Regular';
-  position: relative;
-  padding: 0;
-  margin: 0 auto;
-  /* ideally, i want the game to snap 
-  to the bottom of the page
-  it doesn't do it yet, 
-  the body snaps to top and limits height 
-  to the height of the canvas... */
-  /* margin-top: 20px; */
 }
 </style>

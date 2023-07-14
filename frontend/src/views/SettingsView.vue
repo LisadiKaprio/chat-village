@@ -1,7 +1,7 @@
 <template>
   <div class="settings-page">
     <img src="..\images\cv-logo-800ms.gif">
-    Settings
+    Hi, {{ channelUsername }}!
     <v-card variant="tonal">
       <v-list max-width="400">
         <v-list-item
@@ -26,13 +26,17 @@
 import { Component, Prop, Vue, Ref } from 'vue-facing-decorator'
 import { WidgetName } from '../../../common/src/Types'
 import router from '../router'
+import { useToast } from 'vue-toastification';
 
 @Component
 export default class SettingsView extends Vue {
-  private channelUsername: string
+  private url: string
+  public channelUsername: string
   private walkWidgetId: string
   private eventWidgetId: string
   private fishWidgetId: string
+
+  private toast = useToast()
 
   public widgetNameEnum = WidgetName
 
@@ -63,19 +67,24 @@ export default class SettingsView extends Vue {
 
   public copyWidgetURL(widgetName: WidgetName) {
     this.toClipboard(this.generateWidgetURL(widgetName))
+    this.toast("Link copied to clipboard!")
   }
 
   private generateWidgetURL(widgetName: WidgetName) {
+    this.url = import.meta.env.URL ?? 'localhost:5173'
     let widgetId = ''
     switch (widgetName) {
       case WidgetName.WALK:
         widgetId = this.walkWidgetId
+        break
       case WidgetName.EVENT:
         widgetId = this.eventWidgetId
+        break
       case WidgetName.FISH:
         widgetId = this.fishWidgetId
+        break
     }
-    return `http://localhost:5173/${widgetName}-widget/${this.channelUsername}/${widgetId}`
+    return `${this.url}/${widgetName}-widget/${this.channelUsername}/${widgetId}`
   }
 
   private toClipboard (s: string): void {
@@ -91,7 +100,14 @@ export default class SettingsView extends Vue {
 </script>
 
 <style>
+@font-face {
+  font-family: 'CherryBombOne-Regular';
+  src: url('../fonts/CherryBombOne-Regular.ttf');
+  font-weight: normal;
+  font-style: normal;
+}
 .settings-page {
+  font-family: 'CherryBombOne-Regular';
   display: flex;
   flex-direction: column;
   align-items: center;
