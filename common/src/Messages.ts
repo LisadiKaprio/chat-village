@@ -2,8 +2,6 @@ import { AvatarDecoration, AvatarDecorationId } from "./Visuals"
 import { BackendBoatAvatar, CommandTrigger } from "./Types"
 import { getRandom } from "./Util"
 
-const EMPTY_MESSAGE = 'Instructions unclear'
-
 export enum SimpleMessages {
     VOLCANO = "GlitchLit A devastating eruption engulfs the avatars, leaving only ash and memories behind. The chat village mourns, yearning for new faces to fill its void.",
     RACE_GOING = "ResidentSleeper A race has already started! Let's see how it turns out first",
@@ -11,7 +9,8 @@ export enum SimpleMessages {
     INVALID_EQUIP_REQUEST = "What item did you want to equip? Choose an item from your inventory (!inv), then use \"!equip 1\" or \"!equip bow\" OhMyDog",
     RACE_START = "🎉 Race started!",
     FISHING_FULL = "SabaPing The beach is full! Try again when someone finishes fishing.",
-    HUG_BONK_FISHING = "SabaPing You're too busy fishing!"
+    HUG_BONK_FISHING = "SabaPing You're too busy fishing!",
+    EMPTY_MESSAGE = 'Instructions unclear'
 }
 
 const randomCompliment = (): string => {
@@ -47,7 +46,7 @@ export const MessageInteraction = (chatterName: string, targetName: string, pric
             `💙 In a sweet embrace, ${chatterName} and ${targetName} share a heartfelt moment :) ${price} seastars well spent!`,
             `💙 The air fills with warmth as ${chatterName} wraps their arms around ${targetName}, pouring their heart into a tight hug Kreygasm ${price} seastars well spent!`
         ])
-    } else return EMPTY_MESSAGE
+    } else return SimpleMessages.EMPTY_MESSAGE
 }
 
 export const MessageInteractionFailed = (chatterName: string, command: CommandTrigger): string => {
@@ -55,7 +54,7 @@ export const MessageInteractionFailed = (chatterName: string, command: CommandTr
         return `:( Uh-oh! ${chatterName}'s bonk attempt falls flat as they're short on seastars. Engage in more chat conversations to gather seastars for a mighty bonk!`
     } else if (command === CommandTrigger.HUG) {
         return `💔 Hugs require seastars, and ${chatterName} didn't have enough. Keep participating in conversations to gather seastars for heartwarming embraces! MingLee`
-    } else return EMPTY_MESSAGE
+    } else return SimpleMessages.EMPTY_MESSAGE
 }
 
 export const MessageInteractionEmpty = (chatterName: string, command: CommandTrigger): string => {
@@ -63,7 +62,7 @@ export const MessageInteractionEmpty = (chatterName: string, command: CommandTri
         return `🔨 Fueled by the thrill of the moment, ${chatterName} swings their weapon... but alas, the empty air provides no resistance. Their eager bonk misses its target, leaving them feeling bewildered and disheartened.`
     } else if (command === CommandTrigger.HUG) {
         return `BibleThump ${chatterName} extends their arms for a warm embrace, but... nobody's home! FeelsLonelyMan`
-    } else return EMPTY_MESSAGE
+    } else return SimpleMessages.EMPTY_MESSAGE
 }
 
 export const MessageInteractionRandom = (chatterName: string, targetName: string, price: number, command: CommandTrigger): string => {
@@ -83,7 +82,7 @@ export const MessageInteractionRandom = (chatterName: string, targetName: string
             `🧡 ${chatterName} reaches out, eyes closed, and unexpectedly wraps ${targetName} in a tight embrace :) ${price} seastars well spent!`,
             `🧡 With a mischievous glimmer in their eyes, ${chatterName} chooses ${targetName} as the recipient of an impromptu hug Kreygasm ${price} seastars well spent!`
         ])
-    } else return EMPTY_MESSAGE
+    } else return SimpleMessages.EMPTY_MESSAGE
 }
 
 export const MessageSeastars = (displayName: string, seastarCount?: number): string => {
@@ -154,12 +153,20 @@ export const MessageRaceTooFewParticipants = (participantsAmount: number): strin
     return `UWot The race was canceled! Come on, people, we only needed ${participantsAmount} more players to join! `
 }
 
-export const MessageGiftedPoints = (gifterDisplayName: string, targetDisplayName: string, points: number): string => {
+export const MessageGiftedStars = (gifterDisplayName: string, targetDisplayName: string, points: number): string => {
     return `GivePLZ ⭐ @${gifterDisplayName} just gifted @${targetDisplayName} ${points} seastars! What a kind soul!`
 }
 
-export const MessageFailedGifting = (gifterDisplayName: string, points: number): string => {
+export const MessageGiftedItem = (gifterDisplayName: string, targetDisplayName: string, itemName: string): string => {
+    return `GivePLZ ⭐ @${gifterDisplayName} just gifted @${targetDisplayName} their ${itemName} ! What a kind soul!`
+}
+
+export const MessageFailedGiftingStars = (gifterDisplayName: string, points: number): string => {
     return `BibleThump @${gifterDisplayName} You don't have ${points} seastars yet, so you can't gift that much!`
+}
+
+export const MessageNooneGiftingItem = (gifterDisplayName: string): string => {
+    return `BibleThump @${gifterDisplayName} There's noone who has space for your item! It was trashed instead.`
 }
 
 export const MessageDailyShop = (dailyItems: AvatarDecoration[]): string => {
@@ -213,4 +220,8 @@ export const MessageFishCatchStandard = (displayName: string, pointsCaught: numb
 
 export const MessageFishCatchTreasure = (displayName: string, pointsCaught: number): string => {
     return `HolidayPresent @${displayName} catches a gift box! Inside, there are ${pointsCaught} seastars. Congrats!`
+}
+
+export const MessageInventoryFull = (displayName: string): string => {
+    return `@${displayName} your inventory is full! Please gift one of your items to make room for more!`
 }

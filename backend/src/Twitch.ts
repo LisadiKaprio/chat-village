@@ -2,7 +2,7 @@ import tmi from 'tmi.js'
 import { Chance } from 'chance'
 import { getChannelId, searchPlayerOfExistingPlayer, updatePlayerState } from './functions'
 import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus } from '../../common/src/Types'
-import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageSeastars, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedPoints, MessageFailedGifting, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory, MessageEquipFailedEmptyInventory, MessageEquipSuccess, MessageBuyingFailedDuplicate, MessageInventory, MessageFishFailRace, MessageFishTooEarly, MessageFishCatchLate, MessageFishCatchStandard, MessageFishCatchFailed, MessageFishCatchTreasure } from '../../common/src/Messages'
+import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageSeastars, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedStars, MessageFailedGiftingStars, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory, MessageEquipFailedEmptyInventory, MessageEquipSuccess, MessageBuyingFailedDuplicate, MessageInventory, MessageFishFailRace, MessageFishTooEarly, MessageFishCatchLate, MessageFishCatchStandard, MessageFishCatchFailed, MessageFishCatchTreasure, MessageGiftedItem, MessageNooneGiftingItem, MessageInventoryFull } from '../../common/src/Messages'
 import { CommandParser } from './CommandParser'
 import { getRandom } from '../../common/src/Util'
 import Db from './Db'
@@ -14,6 +14,7 @@ const BONK_PRICE = 10
 const HUG_PRICE = 5
 const IDLE_GAIN = 1
 const DAILY_ITEMS_AMOUNT = 3
+const MAX_INVENTORY_ITEMS = 3
 const MAX_FISH_PLAYERS = 6
 const MIN_FISH_WAIT_TIME_MS = 0.4 * MINUTE
 const MAX_FISH_WAIT_TIME_MS = 0.7 * MINUTE
@@ -67,6 +68,28 @@ export async function addAvatarDecorationToPlayerInventory(db: Db, deco: AvatarD
 		return
 	}
 	await db.update('cv.players', { inventory: JSON.stringify(updatedInventory) }, { id: playerId })
+}
+
+export async function removeAvatarDecorationFromPlayerInventory(db: Db, deco: AvatarDecorationId, playerId: number): Promise<void> {
+	const row = await db._get(`
+    select
+        cv.players.inventory
+    from
+        cv.players
+    where
+        cv.players.id = $1
+    `, [playerId])
+	const currentInventory: AvatarDecorationId[] = row.inventory
+	const updatedInventory: AvatarDecorationId[] = currentInventory.filter(id => id !== deco)
+	if (!updatedInventory) {
+		console.log(`Could not update inventory of player ${playerId}!`)
+		return
+	}
+	await db.update('cv.players', { inventory: JSON.stringify(updatedInventory) }, { id: playerId })
+}
+
+export async function removeAvatarDecorationFromPlayerEquipment(db: Db, playerId: number): Promise<void> {
+	await db.update('cv.players', { avatar_decoration: null }, { id: playerId })
 }
 
 export default class Twitch {
@@ -220,7 +243,7 @@ export default class Twitch {
 					break
 				}
 				case CommandTrigger.GIFT: {
-					await handleGiftingStars(channel, this.#client, currentPlayer, args, argUsers, currentChannelUsername)
+					await handleGiftingCommand(channel, this.#client, currentPlayer, args, argUsers, currentChannelUsername)
 					break
 				}
 				case CommandTrigger.SHOP: {
@@ -451,37 +474,84 @@ export default class Twitch {
 			await deductPointsFromPlayer(db, currentPlayer.points, currentBet, currentPlayer.id)		
 		}
 
-		async function handleGiftingStars(channel: any, client: tmi.Client, currentPlayer: Player, args: string[], argUsers: string[], channelName: string) {
+		function determineItemToGift(args: string[], currentPlayer: Player): AvatarDecoration | undefined {
+			let inventoryItems = currentPlayer.inventory.map(itemId => AVATAR_DECORATIONS.find(deco => deco.id === itemId)) as AvatarDecoration[]
+			const equipped = AVATAR_DECORATIONS.find(deco => deco.id === currentPlayer.avatar_decoration)
+			if (equipped) inventoryItems = inventoryItems.concat(equipped)
+			const itemMentionedInCommand = inventoryItems.find(item => args.join(' ').toLowerCase().includes(item.name.toLowerCase()))
+			return itemMentionedInCommand
+		}
+
+		async function handleGiftingStars (args: string[], currentPlayer: Player, client: tmi.Client, channel: any, argUsers: string[], channelName: string, targetPlayer: Player) {
 			let pointsToGift = 1
-			if(+args[0] >= 2) {
+			if (+args[0] >= 2) {
 				pointsToGift = +args[0]
-			} else if(+args[1] >= 2) {
+			} else if (+args[1] >= 2) {
 				pointsToGift = +args[1]
 			}
 
 			if (currentPlayer.points < pointsToGift) {
-				void client.say(channel, MessageFailedGifting(currentPlayer.display_name, pointsToGift))
+				void client.say(channel, MessageFailedGiftingStars(currentPlayer.display_name, pointsToGift))
 				return
 			}
 			
-			const targetPlayer = await determinePlayerObject(argUsers, channelName, currentPlayer.username)
+			await deductPointsFromPlayer(db, currentPlayer.points, pointsToGift, currentPlayer.id)
+			await addPointsToPlayer(db, targetPlayer.points, pointsToGift, targetPlayer.id)
+			void client.say(channel, MessageGiftedStars(currentPlayer.display_name, targetPlayer.display_name, pointsToGift))
+			
+		}
+
+		async function handleGiftingCommand(channel: any, client: tmi.Client, currentPlayer: Player, args: string[], argUsers: string[], channelName: string) {
+			const itemToGift = determineItemToGift(args, currentPlayer)
+			
+			let targetPlayer = await determinePlayerObject(argUsers, channelName, currentPlayer.username, false)
 			if (!targetPlayer) {
 				console.log('Error: No target player for gifting stars could be determined.')
 				return
 			}
-			console.log(JSON.stringify(targetPlayer))
-			
-			await deductPointsFromPlayer(db, currentPlayer.points, pointsToGift, currentPlayer.id)
-			console.log(`targetPlayer.points is ${targetPlayer.points}`)
-			console.log(`pointsToGift is ${pointsToGift}`)
-			console.log(`targetPlayer.id is ${targetPlayer.id}`)
-			await addPointsToPlayer(db, targetPlayer.points, pointsToGift, targetPlayer.id)
-			void client.say(channel, MessageGiftedPoints(currentPlayer.display_name, targetPlayer.display_name, pointsToGift))
+
+			if (!itemToGift) {
+				await handleGiftingStars (args, currentPlayer, client, channel, argUsers, channelName, targetPlayer)
+				return
+			}
+
+			const willBeDiscarded = Object.values(state.players).every(player => player.inventory.length >= MAX_INVENTORY_ITEMS)
+			if (willBeDiscarded) {
+				await removeAvatarDecorationFromPlayerInventory(db, itemToGift.id, currentPlayer.id)
+				void client.say(channel, MessageNooneGiftingItem(currentPlayer.display_name))
+				return
+			}
+
+			if (targetPlayer.inventory.length >= MAX_INVENTORY_ITEMS) {
+				targetPlayer = await determinePlayerObject(argUsers, channelName, currentPlayer.username, true)
+			}
+
+			if(!targetPlayer){
+				void client.say(channel, SimpleMessages.EMPTY_MESSAGE)
+				return
+			}
+
+			if (itemToGift.id === currentPlayer.avatar_decoration) {
+				await removeAvatarDecorationFromPlayerEquipment(db, currentPlayer.id)
+			} else {
+				await removeAvatarDecorationFromPlayerInventory(db, itemToGift.id, currentPlayer.id)
+			}
+
+			if (!targetPlayer.avatar_decoration){
+				await equipNewAvatarDecorationToPlayer(db, itemToGift.id, targetPlayer.id)
+			} else {
+				await addAvatarDecorationToPlayerInventory(db, itemToGift.id, targetPlayer.id)
+			}
+
+			void client.say(channel, MessageGiftedItem(currentPlayer.display_name, targetPlayer.display_name, itemToGift.name))
 		}
 
-		async function determinePlayerObject(argUsers: string[], channelName: string, playerUsername: string): Promise<Player | undefined> {
+		async function determinePlayerObject(argUsers: string[], channelName: string, playerUsername: string, checkInventorySize: boolean): Promise<Player | undefined> {
 			const channelPlayersObject = await getPlayersInChannel(db, channelName)
-			const players = Object.values(channelPlayersObject).filter(p => p.username !== playerUsername)
+			let players = Object.values(channelPlayersObject).filter(p => p.username !== playerUsername)
+			if (checkInventorySize) {
+				players = Object.values(players).filter(p => p.inventory.length < MAX_INVENTORY_ITEMS)
+			}
 			if(!argUsers || !argUsers[0]) {
 				return getRandom([...Object.values(players)] as NonEmptyArray<Player>)
 			}
@@ -542,6 +612,10 @@ export default class Twitch {
 			if (!itemToBuy) {
 				void client.say(channel, SimpleMessages.INVALID_BUY_REQUEST)
 				return
+			}
+
+			if (currentPlayer.inventory.length >= MAX_INVENTORY_ITEMS) {
+				void client.say(channel, MessageInventoryFull(currentPlayer.display_name))
 			}
 
 			if (currentPlayer.inventory.includes(itemToBuy.id)) {
