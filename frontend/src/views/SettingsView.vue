@@ -71,7 +71,7 @@ export default class SettingsView extends Vue {
   }
 
   private generateWidgetURL(widgetName: WidgetName) {
-    this.url = import.meta.env.URL ?? 'localhost:5173'
+    this.url = import.meta.env.VITE_URL ?? 'localhost:5173'
     let widgetId = ''
     switch (widgetName) {
       case WidgetName.WALK:
