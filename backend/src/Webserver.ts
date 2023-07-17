@@ -253,6 +253,15 @@ export default class Webserver {
 			console.log(`Web-Avatars listening on http://localhost:${portExpress}`)
 		})
 
-		app.use('/', apiRouter)
+		if(process.env.PUB_DIR){
+			app.use('/', express.static(process.env.PUB_DIR))
+			app.all('*', (req: any, res) => {
+				if(!process.env.INDEX_HTML) return
+				res.sendFile(process.env.INDEX_HTML)
+			})
+		} else {
+			console.log(`PUB_DIR for frontend build needed in env file`)
+			app.use('/', apiRouter)
+		}
 	}
 }
