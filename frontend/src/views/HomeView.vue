@@ -51,6 +51,7 @@ export default class HomeView extends Vue {
   font-style: normal;
 }
 .home-page {
+  font-family: 'CherryBombOne-Regular';
   display: flex;
   flex-direction: column;
   align-items: center;

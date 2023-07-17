@@ -67,7 +67,7 @@ export default class SettingsView extends Vue {
 
   public copyWidgetURL(widgetName: WidgetName) {
     this.toClipboard(this.generateWidgetURL(widgetName))
-    this.toast("Link copied to clipboard!")
+    // this.toast("Link copied to clipboard!")
   }
 
   private generateWidgetURL(widgetName: WidgetName) {
