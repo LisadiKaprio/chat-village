@@ -69,8 +69,8 @@ export default class EventWidget extends Vue {
     await verifyWidgetId(WidgetName.EVENT, this.channel, this.id)
     assertExists(this.gameCanvas)
     this.raceField = new RaceField(this.gameCanvas)
-    this.ws_host = import.meta.env.VITE_WS_HOST ?? 'localhost'
-    this.ws = new WebSocket(`ws://${this.ws_host}:2502/${this.channel}`)
+    this.ws_host = import.meta.env.VITE_WS_HOST ?? 'ws://localhost:2502'
+    this.ws = new WebSocket(`${this.ws_host}/ws/${this.channel}`)
     this.ws.onmessage = (ev: any) => {
       const { type, data } = JSON.parse(ev.data)
       if (type === WebsocketMessageType.BACKEND_RACE_INFO) {

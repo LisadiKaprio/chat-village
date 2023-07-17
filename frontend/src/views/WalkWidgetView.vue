@@ -35,8 +35,8 @@ export default class WalkWidget extends Vue {
   public async mounted (): Promise<void> {
     await verifyWidgetId(WidgetName.WALK, this.channel, this.id)
 
-    this.ws_host = import.meta.env.VITE_WS_HOST ?? 'localhost'
-    this.ws = new WebSocket(`ws://${this.ws_host}:2502/${this.channel}`)
+    this.ws_host = import.meta.env.VITE_WS_HOST ?? 'ws://localhost:2502'
+    this.ws = new WebSocket(`${this.ws_host}/ws/${this.channel}`)
     this.ws.onmessage = (ev: any) => {
       const { type, data } = JSON.parse(ev.data)
       if (type === WebsocketMessageType.USER_INFO) {

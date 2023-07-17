@@ -131,7 +131,7 @@ export default class Webserver {
 			port: portWebsocket,
 		})
 		server.on('connection', async (socket: WebSocket, req: any) => {
-			const channelName = req.url.startsWith('/') ? req.url.substring(1).toLowerCase() : req.url.toLowerCase()
+			const channelName = req.url.startsWith('/ws/') ? req.url.substring(4).toLowerCase() : req.url.toLowerCase()
 			const channelId = await getChannelId(db, channelName)
 
 			// TODO: on disconnect remove the socket from the array
