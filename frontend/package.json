@@ -4,8 +4,8 @@
 	"private": true,
 	"scripts": {
 		"dev": "vite",
-		"build:copyassets": "cpx \"src/assets/**/*.{png,jpg,jpeg,svg,webp,mp3}\" dist/assets",
-		"build": "run-p type-check build-only build:copyassets",
+		"build:copyassets": "cpx \"src/images/**/*.{png,jpg,jpeg,svg,webp,mp3}\" dist/src/images",
+		"build": "run-p build-only && npm run build:copyassets",
 		"preview": "vite preview",
 		"test:unit": "vitest",
 		"build-only": "vite build",
