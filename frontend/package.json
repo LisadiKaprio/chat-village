@@ -19,7 +19,8 @@
 		"vue": "^3.3.2",
 		"vue-facing-decorator": "^2.1.20",
 		"vue-router": "^4.2.0",
-		"vue-toastification": "^2.0.0-rc.5"
+		"vue-toastification": "^2.0.0-rc.5",
+		"vuetify": "^3.3.9"
 	},
 	"devDependencies": {
 		"@rushstack/eslint-patch": "^1.2.0",
