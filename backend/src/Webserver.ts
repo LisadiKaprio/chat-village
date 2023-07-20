@@ -122,6 +122,9 @@ export default class Webserver {
 		// COMMUNICATION WITH THE FRONTEND
 		const app = express()
 		app.use(cookieParser())
+
+		if (process.env.IMAGES_DIR) app.use('../../src/images/', express.static(process.env.IMAGES_DIR))
+
 		const apiRouter = express.Router()
 		const portExpress = 2501
 
