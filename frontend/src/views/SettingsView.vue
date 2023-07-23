@@ -9,16 +9,17 @@
         ></v-list-item>
         <v-list-item lines="three"
           title="2. Insert the URL, define the dimensions."
-          subtitle="Walk Widget can have whatever dimensions you want, while Event Widget is hardcoded to 400x400, and Fish Widget is hardcoded to 550x320."
+          subtitle="Walk Widget can have whatever dimensions you want. Event Widget is hardcoded to 400x400, and Fish Widget is hardcoded to 550x320."
         ></v-list-item>
-        <v-list-item
-          title="3. Check the 'Use custom frame rate' checkbox, and set the FPS to 60."
+        <v-list-item lines="two"
+          title="3. Optionally, set frame rate to 60"
+          subtitle="Check the 'Use custom frame rate' checkbox in the browser source settings, and set the FPS to 60."
         ></v-list-item>
       </v-list>
     </v-card>
     <v-btn variant="text" @click="copyWidgetURL(widgetNameEnum.WALK)">🐰 Copy your Walk Widget URL</v-btn>
-    <v-btn variant="text" @click="copyWidgetURL(widgetNameEnum.EVENT)">🚤 Copy your Event Widget URL</v-btn>
-    <v-btn variant="text" @click="copyWidgetURL(widgetNameEnum.FISH)">🎣 Copy your Fish Widget URL</v-btn>
+    <v-btn variant="text" @click="copyWidgetURL(widgetNameEnum.EVENT)">🚤 Copy your Event Widget URL (400x400)</v-btn>
+    <v-btn variant="text" @click="copyWidgetURL(widgetNameEnum.FISH)">🎣 Copy your Fish Widget URL (550x320)</v-btn>
   </div>
 </template>
 
@@ -67,7 +68,7 @@ export default class SettingsView extends Vue {
 
   public copyWidgetURL(widgetName: WidgetName) {
     this.toClipboard(this.generateWidgetURL(widgetName))
-    // this.toast("Link copied to clipboard!")
+    // this.toast.success("Link copied to clipboard!")
   }
 
   private generateWidgetURL(widgetName: WidgetName) {
