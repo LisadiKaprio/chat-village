@@ -8,7 +8,7 @@ import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import Toast, { POSITION } from "vue-toastification";
+import Notifications from '@kyvg/vue3-notification'
 
 
 const vuetify = createVuetify({
@@ -20,9 +20,6 @@ const app = createApp(App)
 
 app.use(router)
 app.use(vuetify)
-app.use(Toast, {
-    // Setting the global default position
-    position: POSITION.TOP_CENTER
-});
+app.use(Notifications)
 
 app.mount('#app')

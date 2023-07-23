@@ -27,7 +27,6 @@
 import { Component, Prop, Vue, Ref } from 'vue-facing-decorator'
 import { WidgetName } from '../../../common/src/Types'
 import router from '../router'
-import { useToast } from 'vue-toastification';
 
 @Component
 export default class SettingsView extends Vue {
@@ -36,8 +35,6 @@ export default class SettingsView extends Vue {
   private walkWidgetId: string
   private eventWidgetId: string
   private fishWidgetId: string
-
-  private toast = useToast()
 
   public widgetNameEnum = WidgetName
 
@@ -68,7 +65,7 @@ export default class SettingsView extends Vue {
 
   public copyWidgetURL(widgetName: WidgetName) {
     this.toClipboard(this.generateWidgetURL(widgetName))
-    // this.toast.success("Link copied to clipboard!")
+    this.$notify(`${widgetName} widget link copied to clipboard!`);
   }
 
   private generateWidgetURL(widgetName: WidgetName) {

@@ -13,13 +13,13 @@
 		"lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
 	},
 	"dependencies": {
+		"@kyvg/vue3-notification": "^2.9.1",
 		"@zutatensuppe/emoji-detect": "^1.0.6",
 		"cpx2": "^5.0.0",
 		"dotenv": "^16.1.4",
 		"vue": "^3.3.2",
 		"vue-facing-decorator": "^2.1.20",
 		"vue-router": "^4.2.0",
-		"vue-toastification": "^2.0.0-rc.5",
 		"vuetify": "^3.3.9"
 	},
 	"devDependencies": {
