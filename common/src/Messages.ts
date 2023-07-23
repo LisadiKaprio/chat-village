@@ -158,7 +158,7 @@ export const MessageGiftedStars = (gifterDisplayName: string, targetDisplayName:
 }
 
 export const MessageGiftedItem = (gifterDisplayName: string, targetDisplayName: string, itemName: string): string => {
-    return `GivePLZ ⭐ @${gifterDisplayName} just gifted @${targetDisplayName} their ${itemName} ! What a kind soul!`
+    return `GivePLZ ⭐ @${gifterDisplayName} just gifted @${targetDisplayName} their ${itemName.toLowerCase()} ! What a kind soul!`
 }
 
 export const MessageFailedGiftingStars = (gifterDisplayName: string, points: number): string => {
@@ -207,7 +207,7 @@ export const MessageFishTooEarly = (displayName: string): string => {
 }
 
 export const MessageFishCatchLate = (displayName: string): string => {
-    return `@${displayName} The fish flew off the hook!`
+    return `🐟💦 @${displayName} The fish flew off the hook!`
 }
 
 export const MessageFishCatchFailed = (displayName: string, pointsCaught: number): string => {
