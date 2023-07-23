@@ -50,7 +50,8 @@ export async function getChannelId(db: Db, channelUsername: string): Promise<num
     where
         cv.channels.channel_username = $1
     `, [channelUsername])
-	return row.id
+	if (row && row.id) return row.id
+	else return null
 }
 
 export function searchUsernameOfExistingPlayer(query: string, players: Players): string | undefined {
