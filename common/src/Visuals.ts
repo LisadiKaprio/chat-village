@@ -16,6 +16,12 @@ export enum AvatarDecorationId {
   BOW = 'bow',
   BERET = 'beret',
   SQUARE_GLASSES = 'square-glasses',
+  ANGEL = 'angel',
+  DEMON = 'demon',
+  SPROUT = 'sprout',
+  HOODIE_ORANGE = 'hoodie-orange',
+  HOODIE_PINEAPPLE = 'hoodie-pineapple',
+  HOODIE_TOMATO = 'hoodie-tomato',
 }
 
 export const AVATAR_DECORATIONS: NonEmptyArray<AvatarDecoration> = [
@@ -38,6 +44,42 @@ export const AVATAR_DECORATIONS: NonEmptyArray<AvatarDecoration> = [
       name: 'Square Glasses',
       price: 100,
       avatarSource: '../../src/images/deco/square-glasses.png',
+    },
+    {
+      id: AvatarDecorationId.ANGEL,
+      name: 'Angel Wings',
+      price: 200,
+      avatarSource: '../../src/images/deco/angel.png',
+    },
+    {
+      id: AvatarDecorationId.DEMON,
+      name: 'Demon Wings',
+      price: 200,
+      avatarSource: '../../src/images/deco/demon.png',
+    },
+    {
+      id: AvatarDecorationId.SPROUT,
+      name: 'Sprout',
+      price: 75,
+      avatarSource: '../../src/images/deco/sprout.png',
+    },
+    {
+      id: AvatarDecorationId.HOODIE_ORANGE,
+      name: 'Orange Onesie',
+      price: 300,
+      avatarSource: '../../src/images/deco/hoodie-orange.png',
+    },
+    {
+      id: AvatarDecorationId.HOODIE_PINEAPPLE,
+      name: 'Pineapple Onesie',
+      price: 300,
+      avatarSource: '../../src/images/deco/hoodie-pineapple.png',
+    },
+    {
+      id: AvatarDecorationId.HOODIE_TOMATO,
+      name: 'Tomato Onesie',
+      price: 300,
+      avatarSource: '../../src/images/deco/hoodie-tomato.png',
     },
 ]
 
