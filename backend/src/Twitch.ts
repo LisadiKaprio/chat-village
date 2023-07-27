@@ -1,7 +1,7 @@
 import tmi from 'tmi.js'
 import { Chance } from 'chance'
 import { getChannelId, searchPlayerOfExistingPlayer, updatePlayerState } from './functions'
-import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus } from '../../common/src/Types'
+import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus, FrontendCommand } from '../../common/src/Types'
 import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageSeastars, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedStars, MessageFailedGiftingStars, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory, MessageEquipFailedEmptyInventory, MessageEquipSuccess, MessageBuyingFailedDuplicate, MessageInventory, MessageFishFailRace, MessageFishTooEarly, MessageFishCatchLate, MessageFishCatchStandard, MessageFishCatchFailed, MessageFishCatchTreasure, MessageGiftedItem, MessageNooneGiftingItem, MessageInventoryFull } from '../../common/src/Messages'
 import { CommandParser } from './CommandParser'
 import { getRandom } from '../../common/src/Util'
@@ -425,14 +425,14 @@ export default class Twitch {
 					args: [],
 					argPlayerUsernames: argUsers,
 					playerUsername: currentPlayer.username,
-				})
+				} as FrontendCommand)
 			} else {
 				state.allFrontendCommands[currentChannelUsername] = [{
 					command: command,
 					args: [],
 					argPlayerUsernames: argUsers,
 					playerUsername: currentPlayer.username,
-				}]
+				} as FrontendCommand]
 			}
 		}
 
