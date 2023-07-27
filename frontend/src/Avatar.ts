@@ -5,6 +5,8 @@ import { createAdvancedBubble, World } from './World.js'
 import heartParticles from './images/bubble/heartParticles.png'
 import { SkinId } from '../../common/src/Types.js'
 import { AvatarDecoration, AvatarDecorationId } from '../../common/src/Visuals.js'
+import { Chance } from 'chance'
+
 
 export const AVATAR_DISPLAY_SIZE = 150
 export const FISH_AVATAR_DISPLAY_SIZE = 150
@@ -92,8 +94,10 @@ interface Avatar {
   decoSprite: Sprite;
   actionTime: number;
   speed: number;
-  walkingTime: number;
-  standTime: number;
+  minWalkingTime: number;
+  maxWalkingTime: number;
+  minStandTime: number;
+  maxStandTime: number;
   direction: 'left' | 'right';
   idleBehaviour: Behaviour;
   motivation: Behaviour[];
@@ -101,6 +105,7 @@ interface Avatar {
   behaviourLoopIndex: number;
   isActive: boolean;
   lastChatTime: number;
+  chance: Chance.Chance;
 }
 
 interface Behaviour {
@@ -118,6 +123,7 @@ interface Action {
 }
 class Avatar {
   constructor(world: World, config: any) {
+    this.chance = new Chance()
     this.id = config.id
     this.name = config.name ?? 'NoName'
     this.display_name = config.display_name ?? 'NoName'
@@ -147,8 +153,10 @@ class Avatar {
     this.actionTime = config.actionTime ?? 24
     this.speed = config.speed || 1.0
 
-    this.walkingTime = config.walkingTime || 300
-    this.standTime = config.standTime || 500
+    this.minWalkingTime = config.minWalkingTime || 100
+    this.maxWalkingTime = config.maxWalkingTime || 800
+    this.minStandTime = config.minStandTime || 100
+    this.maxStandTime = config.maxStandTime || 500
     // default direction
     this.direction = 'left'
 
@@ -288,13 +296,13 @@ class Avatar {
     if (action.type == ActionType.WALK) {
       this.sprite.setAnimation('walk')
       if (this.decoSprite) this.decoSprite.setAnimation('walk')
-      this.actionTime = Math.random() * this.walkingTime
+      this.actionTime = this.chance.integer({ min: this.minWalkingTime, max: this.maxWalkingTime });
       const direction = action.direction ?? 'left'
       this.direction = direction
     } else if (action.type == ActionType.STAND) {
       this.sprite.setAnimation('idle')
       if (this.decoSprite) this.decoSprite.setAnimation('idle')
-      this.actionTime = Math.random() * this.standTime
+      this.actionTime = this.chance.integer({ min: this.minStandTime, max: this.maxStandTime });
     }  else if (action.type == ActionType.SIT) {
       this.sprite.setAnimation('walk')
       if (this.decoSprite) this.decoSprite.setAnimation('walk')
