@@ -218,6 +218,11 @@ class Avatar {
   draw(ctx: CanvasRenderingContext2D) {
     this.sprite.draw(ctx)
     if (this.decoSprite) {
+      //todo: clean up same things from before in this whole file
+      this.decoSprite.currentAnimation = this.sprite.currentAnimation
+      this.decoSprite.mirrored = this.sprite.mirrored
+      this.decoSprite.currentAnimationFrame = this.sprite.currentAnimationFrame
+      this.decoSprite.animationFrameProgress = this.sprite.animationFrameProgress
       this.decoSprite.draw(ctx)
     }
     ctx.fillStyle = this.color
