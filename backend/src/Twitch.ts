@@ -89,7 +89,8 @@ export async function removeAvatarDecorationFromPlayerInventory(db: Db, deco: Av
 }
 
 export async function removeAvatarDecorationFromPlayerEquipment(db: Db, playerId: number): Promise<void> {
-	await db.update('cv.players', { avatar_decoration: null }, { id: playerId })
+	// await db.run('cv.players', { avatar_decoration: null }, { id: playerId })
+	await db.run('UPDATE cv.players SET avatar_decoration = NULL WHERE id = $1', [playerId])
 }
 
 export default class Twitch {

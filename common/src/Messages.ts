@@ -94,11 +94,15 @@ export const MessageInventory = (displayName: string, inventory: AvatarDecoratio
         return `🎒 @${displayName} Your inventory is empty! Currently equipped: ${equipment.name}.`
     } else if (inventory.length === 0 && !equipment) {
         return `🎒 @${displayName} Your inventory is empty, and you don't have anything equipped! Check out the "!shop" :)`
+    } else if (equipment) {
+        const formattedStrings = inventory.map((item, index) => `(${index + 1}) ${item.name}`);
+        const inventoryString = formattedStrings.join(' ');
+        return `🎒 @${displayName} You've got: ${inventoryString}! Currently equipped: ${equipment?.name}`
+    } else if (!equipment) {
+        const formattedStrings = inventory.map((item, index) => `(${index + 1}) ${item.name}`);
+        const inventoryString = formattedStrings.join(' ');
+        return `🎒 @${displayName} You've got: ${inventoryString}! To equip something, use "!equip"`
     }
-
-    const formattedStrings = inventory.map((item, index) => `(${index + 1}) ${item.name}`);
-    const inventoryString = formattedStrings.join(' ');
-    return `🎒 @${displayName} You've got: ${inventoryString}! Currently equipped: ${equipment?.name}`
 }
 
 export const MessageFailedInitBet = (displayName: string, price: number): string => {

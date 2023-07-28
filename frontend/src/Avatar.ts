@@ -106,6 +106,7 @@ interface Avatar {
   isActive: boolean;
   lastChatTime: number;
   chance: Chance.Chance;
+  lastInteractionTime: number;
 }
 
 interface Behaviour {
@@ -169,6 +170,7 @@ class Avatar {
     this.behaviourLoopIndex = 0
 
     this.isActive = true
+    this.lastInteractionTime = Date.now()
   }
 
   update() {

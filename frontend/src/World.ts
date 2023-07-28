@@ -130,6 +130,7 @@ class World {
   }
 
   setTalkingAnimation(avatar: Avatar) {
+    avatar.lastInteractionTime = Date.now()
     avatar.changeBehaviour(BEHAVIOURS.idle)
     avatar.pushMotivation(BEHAVIOURS.talk)
   }
@@ -162,6 +163,7 @@ class World {
         animations: this.userAvatars[user.username].sprite.animations,
         currentAnimation: this.userAvatars[user.username].sprite.currentAnimation
       })
+      this.userAvatars[user.username].lastInteractionTime = Date.now()
     }
   }
 
@@ -195,11 +197,19 @@ class World {
     for (const userAvatar of Object.values(this.userAvatars)) {
       this.updateSingleAvatar(userAvatar)
     }
+    const avatarsToDraw = Object.values(this.userAvatars).sort((small, big) => small.lastInteractionTime - big.lastInteractionTime)
+    for (const userAvatar of avatarsToDraw) {
+      this.drawSingleAvatar(userAvatar)
+    }
   }
 
   updateSingleAvatar(userAvatar: Avatar | FishAvatar) {
     if (!userAvatar.isActive) return
     userAvatar.update()
+  }
+
+  drawSingleAvatar(userAvatar: Avatar | FishAvatar) {
+    if (!userAvatar.isActive) return
     userAvatar.draw(this.ctx)
   }
 
@@ -234,7 +244,12 @@ class World {
     const userAvatar = this.userAvatars[playerUsername]
     const behaviours = []
     const targetAvatar = this.userAvatars[targetUsername]
+    userAvatar.lastInteractionTime = Date.now()
+    if (!targetAvatar) {
+      console.log(`!!! Attention: no target avatar ${targetUsername} in walk widget >:(`)
+    }
     if (targetAvatar) {
+      targetAvatar.lastInteractionTime = Date.now()
       behaviours.push(new Behaviour(behaviourName, [{ type: action, who: targetAvatar }]))
     }
     if (behaviours.length > 0) {
