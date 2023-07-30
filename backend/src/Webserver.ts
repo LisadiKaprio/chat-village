@@ -154,7 +154,7 @@ export default class Webserver {
 
 			const sendUsersInfo = async () => {
 				const usersInfo = buildUsersInfo(channelName, channelId, state)
-				this.notifyOne(socket, WebsocketMessageType.USER_INFO, usersInfo)
+				this.notify(channelName, WebsocketMessageType.USER_INFO, usersInfo)
 				await state.clearFrontendRelevantData(db, channelName)
 				timeoutUsersInfo = setTimeout(sendUsersInfo, 2000)
 			}
