@@ -72,6 +72,7 @@ class FishWorld extends World{
     for (const spot of this.sittingSpots){
       if(!spot.sittingAvatarName) continue
       this.updateSingleAvatar(this.userAvatars[spot.sittingAvatarName])
+      this.drawSingleAvatar(this.userAvatars[spot.sittingAvatarName])
     }
   }
 
