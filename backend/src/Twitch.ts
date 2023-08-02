@@ -699,7 +699,7 @@ export default class Twitch {
 
 			if(argUsers && argUsers[0] && isPlayerNotFishing) {
 				const fishingPlayer = await getPlayerByUsername(argUsers[0], currentChannelId)
-				if (fishingPlayer) {
+				if (fishingPlayer && fishingPlayer.state === PlayerState.CATCHING) {
 					state.allFishPlayers[currentChannelUsername][fishingPlayer.username as any].hasCaught = true
 					console.log('setting to hasCaught')
 					await pickRewardForFishing(chance, client, currentPlayer, currentChannelUsername)
