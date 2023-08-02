@@ -195,17 +195,12 @@ export default class Twitch {
 						return
 					} else if (command === CommandTrigger.REVIVE) {
 						if (!argUsers || !argUsers[0]) {
-							console.log('Error: What user should be revived?')
+							console.log('Error: What chatter should be revived?')
 							return
 						}
-						const targetChatterId = await getChatterId(argUsers[0])
-						if (!targetChatterId) {
-							console.log('Error: Chatter id not found.')
-							return
-						}
-						const targetPlayer = await getPlayer(currentChannelId, targetChatterId)
+						const targetPlayer = await getPlayerByUsername(argUsers[0], currentChannelId)
 						if (!targetPlayer) {
-							console.log(`Error: Player in channel ${currentChannelUsername} not found.`)
+							console.log('Error: What player should be revived?')
 							return
 						}
 						state.players[targetPlayer.id].state = PlayerState.ACTIVE
@@ -261,7 +256,7 @@ export default class Twitch {
 				}
 				case CommandTrigger.FISH:
 				case CommandTrigger.FISH_EXCL: {
-					await handleFishCommand(channel, this.#client, currentPlayer, this.chance, isPlayerNotFishing)
+					await handleFishCommand(channel, this.#client, currentPlayer, this.chance, isPlayerNotFishing, argUsers, currentChannelId)
 					break
 				}
 				case CommandTrigger.DEBUG_ID: {
@@ -349,6 +344,16 @@ export default class Twitch {
             p.channel_id = $1
             and p.chatter_id = $2
           `, [channelId, chatterId])
+		}
+
+		async function getPlayerByUsername(username: string, channelId: number): Promise<Player | null> {
+			const targetChatterId = await getChatterId(username)
+			if (!targetChatterId) {
+				console.log('Error: Chatter id not found.')
+				return null
+			}
+			const targetPlayer = await getPlayer(channelId, targetChatterId)
+			return targetPlayer
 		}
     
 		async function createNewChatter(username: string, display_name: string, color: string): Promise<void> {
@@ -679,7 +684,7 @@ export default class Twitch {
 			void client.say(channel, MessageEquipSuccess(currentPlayer.display_name))
 		}		
 
-		async function handleFishCommand(channel: any, client: tmi.Client, currentPlayer: Player, chance: Chance.Chance, isPlayerNotFishing: boolean) {
+		async function handleFishCommand(channel: any, client: tmi.Client, currentPlayer: Player, chance: Chance.Chance, isPlayerNotFishing: boolean, argUsers: string[], currentChannelId: number) {
 			const currentChannelUsername = channel.startsWith('#') ? channel.substring(1) : channel
 
 			if(currentPlayer.state === PlayerState.RACING) { // not possible
@@ -690,6 +695,16 @@ export default class Twitch {
 			if(Object.values(state.allFishPlayers).length >= MAX_FISH_PLAYERS && isPlayerNotFishing) {
 				void client.say(channel, SimpleMessages.FISHING_FULL)
 				return
+			}
+
+			if(argUsers && argUsers[0] && isPlayerNotFishing) {
+				const fishingPlayer = await getPlayerByUsername(argUsers[0], currentChannelId)
+				if (fishingPlayer) {
+					state.allFishPlayers[currentChannelUsername][fishingPlayer.username as any].hasCaught = true
+					console.log('setting to hasCaught')
+					await pickRewardForFishing(chance, client, currentPlayer, currentChannelUsername)
+					return
+				}
 			}
 
 			if (isPlayerNotFishing) {
