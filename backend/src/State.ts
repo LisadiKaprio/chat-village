@@ -149,18 +149,18 @@ export default class State {
 
 	async refresh (
 		db: Db,
-		twitch: Twitch,
+		_twitch: Twitch,
 	): Promise<void> {
 		await this.loadChattersAndPlayers(db)
 
 		for (const [channelUsername, _channelFishPlayers] of Object.entries(this.allFishPlayers)) {
-			for (const [name, fishPlayer] of Object.entries(this.allFishPlayers[channelUsername])) {
+			for (const [name, _fishPlayer] of Object.entries(this.allFishPlayers[channelUsername])) {
 				if (!this.allFishPlayers[channelUsername][name].catchStartDate) break
 				const timePassedSinceStartCatch = Date.now() - this.allFishPlayers[channelUsername][name].catchStartDate
 				if (timePassedSinceStartCatch >= FISH_WAIT_MINUTES * MINUTE) {
-					const fishPlayerDisplayName = fishPlayer.display_name
+					// const fishPlayerDisplayName = fishPlayer.display_name
 					await this.stopFishing(db, name, channelUsername)
-					await twitch.sayFishCatchLateMessage(channelUsername, fishPlayerDisplayName)
+					// await twitch.sayFishCatchLateMessage(channelUsername, fishPlayerDisplayName)
 				}
 			}
 		}

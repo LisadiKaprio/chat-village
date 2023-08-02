@@ -617,6 +617,7 @@ export default class Twitch {
 
 			if (currentPlayer.inventory.length >= MAX_INVENTORY_ITEMS) {
 				void client.say(channel, MessageInventoryFull(currentPlayer.display_name))
+				return
 			}
 
 			if (currentPlayer.inventory.includes(itemToBuy.id)) {

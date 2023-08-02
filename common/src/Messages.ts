@@ -98,7 +98,7 @@ export const MessageInventory = (displayName: string, inventory: AvatarDecoratio
         const formattedStrings = inventory.map((item, index) => `(${index + 1}) ${item.name}`);
         const inventoryString = formattedStrings.join(' ');
         return `🎒 @${displayName} You've got: ${inventoryString}! Currently equipped: ${equipment?.name}`
-    } else if (!equipment) {
+    } else {
         const formattedStrings = inventory.map((item, index) => `(${index + 1}) ${item.name}`);
         const inventoryString = formattedStrings.join(' ');
         return `🎒 @${displayName} You've got: ${inventoryString}! To equip something, use "!equip"`
