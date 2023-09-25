@@ -99,6 +99,9 @@ class World {
 
   feedEmotesAndMessages(users: Players, messages: PlayerMessages, emotes: EmoteReceived[]) {
     for (const [_id, user] of Object.entries(users)) {
+      if(user.state !== PlayerState.ACTIVE) {
+        continue
+      }
       const avatar = this.userAvatars[user.username]
 
       // handle emotes
@@ -151,6 +154,11 @@ class World {
   }
 
   updateAvatarDecoration(user: Player) {
+    if (!user.avatar_decoration && this.userAvatars[user.username].currentAvatarDecoration) {
+      this.userAvatars[user.username].currentAvatarDecoration = null
+      this.userAvatars[user.username].decoSprite = null
+      this.userAvatars[user.username].lastInteractionTime = Date.now()
+    }
     if (user.avatar_decoration && this.userAvatars[user.username].currentAvatarDecoration !== user.avatar_decoration) {
       const avatarDecoration = AVATAR_DECORATIONS.find(d => d.id === user.avatar_decoration)
       this.userAvatars[user.username].currentAvatarDecoration = user.avatar_decoration

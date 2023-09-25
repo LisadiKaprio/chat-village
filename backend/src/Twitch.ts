@@ -480,11 +480,17 @@ export default class Twitch {
 			await deductPointsFromPlayer(db, currentPlayer.points, currentBet, currentPlayer.id)		
 		}
 
+		function checkItemMentionedInCommand(item: AvatarDecoration, args: string[]): boolean {
+			if (!item.name) return false
+			if(args.join(' ').toLowerCase().includes(item.name.toLowerCase())) return true
+			else return false
+		}
+
 		function determineItemToGift(args: string[], currentPlayer: Player): AvatarDecoration | undefined {
 			let inventoryItems = currentPlayer.inventory.map(itemId => AVATAR_DECORATIONS.find(deco => deco.id === itemId)) as AvatarDecoration[]
 			const equipped = AVATAR_DECORATIONS.find(deco => deco.id === currentPlayer.avatar_decoration)
 			if (equipped) inventoryItems = inventoryItems.concat(equipped)
-			const itemMentionedInCommand = inventoryItems.find(item => args.join(' ').toLowerCase().includes(item.name.toLowerCase()))
+			const itemMentionedInCommand = inventoryItems.find(item => checkItemMentionedInCommand(item, args))
 			return itemMentionedInCommand
 		}
 

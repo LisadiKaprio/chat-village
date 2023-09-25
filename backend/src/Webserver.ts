@@ -85,6 +85,7 @@ function buildUsersInfo(channelName: string, channelId: number, state: State) {
 function buildRaceInfo(raceConstructor: RaceConstructor, channelName: string) {
 	if(!raceConstructor.races[channelName]) {
 		return {
+			bet: 0,
 			status: RaceStatus.OFF,
 			participants: {},
 		}

@@ -78,6 +78,7 @@ export default class EventWidget extends Vue {
         this.currentBet = bet
         this.raceField.status = status
         if ( status !== RaceStatus.OFF ) this.raceField.participants = participants
+        else this.raceField.participants = []
       }
     }
 

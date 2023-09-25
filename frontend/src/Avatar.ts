@@ -87,11 +87,11 @@ interface Avatar {
   x: number;
   y: number;
   skin: SkinId;
-  currentAvatarDecoration: AvatarDecorationId;
+  currentAvatarDecoration: AvatarDecorationId | null;
   toRemove: boolean;
   color: string;
   sprite: Sprite;
-  decoSprite: Sprite;
+  decoSprite: Sprite | null;
   actionTime: number;
   speed: number;
   minWalkingTime: number;
