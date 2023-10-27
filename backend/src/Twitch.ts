@@ -481,7 +481,7 @@ export default class Twitch {
 		}
 
 		function checkItemMentionedInCommand(item: AvatarDecoration, args: string[]): boolean {
-			if (!item.name) return false
+			if (!item || !item.name) return false
 			if(args.join(' ').toLowerCase().includes(item.name.toLowerCase())) return true
 			else return false
 		}
