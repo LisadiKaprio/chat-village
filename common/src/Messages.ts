@@ -173,6 +173,14 @@ export const MessageNooneGiftingItem = (gifterDisplayName: string): string => {
     return `BibleThump @${gifterDisplayName} There's noone who has space for your item! It was trashed instead.`
 }
 
+export const MessageFailedInventoryGiftItem = (gifterDisplayName: string, gifteeDisplayName: string): string => {
+    return `:O @${gifterDisplayName} ${gifteeDisplayName} has a full inventory already! `
+}
+
+export const MessageAlreadyHasGiftItem = (gifterDisplayName: string, gifteeDisplayName: string, item: string): string => {
+    return `:O @${gifterDisplayName} ${gifteeDisplayName} already has ${item}! Try gifting something else to them!`
+}
+
 export const MessageDailyShop = (dailyItems: AvatarDecoration[]): string => {
     if (dailyItems.length<=2) return `PizzaTime Today, you can purchase: ${dailyItems}`
     return `PizzaTime Today, you can buy: (A) ${dailyItems[0].name} (${dailyItems[0].price} seastars); (B) ${dailyItems[1].name} (${dailyItems[1].price} seastars); (C) ${dailyItems[2].name} (${dailyItems[2].price} seastars);`

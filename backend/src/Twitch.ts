@@ -2,7 +2,7 @@ import tmi from 'tmi.js'
 import { Chance } from 'chance'
 import { getChannelId, searchPlayerOfExistingPlayer, updatePlayerState } from './functions'
 import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus, FrontendCommand } from '../../common/src/Types'
-import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageSeastars, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedStars, MessageFailedGiftingStars, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory, MessageEquipFailedEmptyInventory, MessageEquipSuccess, MessageBuyingFailedDuplicate, MessageInventory, MessageFishFailRace, MessageFishTooEarly, MessageFishCatchLate, MessageFishCatchStandard, MessageFishCatchFailed, MessageFishCatchTreasure, MessageGiftedItem, MessageNooneGiftingItem, MessageInventoryFull } from '../../common/src/Messages'
+import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageSeastars, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedStars, MessageFailedGiftingStars, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory, MessageEquipFailedEmptyInventory, MessageEquipSuccess, MessageBuyingFailedDuplicate, MessageInventory, MessageFishFailRace, MessageFishTooEarly, MessageFishCatchLate, MessageFishCatchStandard, MessageFishCatchFailed, MessageFishCatchTreasure, MessageGiftedItem, MessageNooneGiftingItem, MessageInventoryFull, MessageAlreadyHasGiftItem, MessageFailedInventoryGiftItem } from '../../common/src/Messages'
 import { CommandParser } from './CommandParser'
 import { getRandom } from '../../common/src/Util'
 import Db from './Db'
@@ -516,6 +516,8 @@ export default class Twitch {
 		async function handleGiftingCommand(channel: any, client: tmi.Client, currentPlayer: Player, args: string[], argUsers: string[], channelName: string) {
 			const itemToGift = determineItemToGift(args, currentPlayer)
 			
+			// determining target player while disregarding their inventory
+			// in case we want to just gift stars instead of item
 			let targetPlayer = await determinePlayerObject(argUsers, channelName, currentPlayer.username, false)
 			if (!targetPlayer) {
 				console.log('Error: No target player for gifting stars could be determined.')
@@ -535,11 +537,22 @@ export default class Twitch {
 			}
 
 			if (targetPlayer.inventory.length >= MAX_INVENTORY_ITEMS) {
-				targetPlayer = await determinePlayerObject(argUsers, channelName, currentPlayer.username, true)
+				void client.say(channel, MessageFailedInventoryGiftItem(currentPlayer.display_name, targetPlayer.display_name))
+				return
 			}
 
 			if(!targetPlayer){
-				void client.say(channel, SimpleMessages.EMPTY_MESSAGE)
+				// determining target player while checking their inventory size
+				targetPlayer = await determinePlayerObject(argUsers, channelName, currentPlayer.username, true)
+				if (!targetPlayer) {
+					void client.say(channel, SimpleMessages.EMPTY_MESSAGE)
+					return
+				}
+			}
+
+			if(targetPlayer.inventory.find(item => item == itemToGift.id) || targetPlayer.avatar_decoration === itemToGift.id){
+				// target player already has this item
+				void client.say(channel, MessageAlreadyHasGiftItem(currentPlayer.display_name, targetPlayer.display_name, itemToGift.name))
 				return
 			}
 
@@ -564,10 +577,11 @@ export default class Twitch {
 			if (checkInventorySize) {
 				players = Object.values(players).filter(p => p.inventory.length < MAX_INVENTORY_ITEMS)
 			}
-			if(!argUsers || !argUsers[0]) {
-				return getRandom([...Object.values(players)] as NonEmptyArray<Player>)
+			if (!players) return undefined
+			if(argUsers && argUsers[0]) {
+				return searchPlayerOfExistingPlayer(argUsers[0], players)
 			}
-			return searchPlayerOfExistingPlayer(argUsers[0], players)
+			return getRandom([...Object.values(players)] as NonEmptyArray<Player>)
 		}
 
 		async function checkDailyItems(channel: any, client: tmi.Client, chance: Chance.Chance) {
