@@ -1,0 +1,1 @@
+ALTER TABLE cv.channels ADD show_gif_event_widget INTEGER NOT NULL DEFAULT 1;

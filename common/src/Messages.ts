@@ -237,3 +237,26 @@ export const MessageFishCatchTreasure = (displayName: string, pointsCaught: numb
 export const MessageInventoryFull = (displayName: string): string => {
     return `@${displayName} your inventory is full! Please gift one of your items to make room for more!`
 }
+
+export const MessageFailedDance = (displayName: string, price: number): string => {
+    return `BibleThump @${displayName} You don't have enough seastars (${price}) to start your dance party!`
+}
+
+export const MessageDance = (displayName: string): string => {
+    return getRandom([
+        `DinoDance @${displayName} starts a cha cha cha!`,
+        `DinoDance @${displayName} initiates a boogie woogie!`,
+        `DinoDance @${displayName} sparks a swing dance showdown!`,
+        `DinoDance @${displayName} ignites a hip-hop dance-off!`,
+        `DinoDance @${displayName} leads a breakdance battle!`,
+        `DinoDance @${displayName} begins a waltz marathon!`,
+        `DinoDance @${displayName} challenges everyone to a line dance fiesta!`,
+        `DinoDance @${displayName} turns up the heat with a flamenco flare!`,
+        `DinoDance @${displayName} launches a disco spectacle!`,
+        `DinoDance @${displayName} starts a dreamy slow dance under the stars!`,
+        `DinoDance @${displayName} invites everyone to a romantic moonlit waltz!`,
+        `DinoDance @${displayName} invites everyone to a mesmerizing Hula dance celebration!`,
+        `DinoDance @${displayName} starts a lively Samba carnival!`,
+        `DinoDance @${displayName} brings on a shimmy-shimmy-shake!`,
+    ])
+}

@@ -1,8 +1,8 @@
 import tmi from 'tmi.js'
 import { Chance } from 'chance'
 import { getChannelId, searchPlayerOfExistingPlayer, updatePlayerState } from './functions'
-import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus, FrontendCommand } from '../../common/src/Types'
-import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageSeastars, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedStars, MessageFailedGiftingStars, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory, MessageEquipFailedEmptyInventory, MessageEquipSuccess, MessageBuyingFailedDuplicate, MessageInventory, MessageFishFailRace, MessageFishTooEarly, MessageFishCatchLate, MessageFishCatchStandard, MessageFishCatchFailed, MessageFishCatchTreasure, MessageGiftedItem, MessageNooneGiftingItem, MessageInventoryFull, MessageAlreadyHasGiftItem, MessageFailedInventoryGiftItem } from '../../common/src/Messages'
+import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus, FrontendCommand, BASE_DANCE_PRICE } from '../../common/src/Types'
+import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageSeastars, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedStars, MessageFailedGiftingStars, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory, MessageEquipFailedEmptyInventory, MessageEquipSuccess, MessageBuyingFailedDuplicate, MessageInventory, MessageFishFailRace, MessageFishTooEarly, MessageFishCatchLate, MessageFishCatchStandard, MessageFishCatchFailed, MessageFishCatchTreasure, MessageGiftedItem, MessageNooneGiftingItem, MessageInventoryFull, MessageAlreadyHasGiftItem, MessageFailedInventoryGiftItem, MessageFailedDance, MessageDance } from '../../common/src/Messages'
 import { CommandParser } from './CommandParser'
 import { getRandom } from '../../common/src/Util'
 import Db from './Db'
@@ -261,6 +261,10 @@ export default class Twitch {
 				}
 				case CommandTrigger.DEBUG_ID: {
 					void this.#client.say(channel, `@${currentPlayer.display_name} Your player ID is ${currentPlayer.id}`)
+					break
+				}
+				case CommandTrigger.DANCE: {
+					await handleDanceCommand(channel, this.#client, currentPlayer, args)
 					break
 				}
 				default: {
@@ -798,6 +802,17 @@ export default class Twitch {
 			}
 			if (caughtPoints >= 99) {
 				await client.say(channel, MessageFishCatchTreasure(caughtPlayer.display_name, caughtPoints))
+			}
+		}
+
+		async function handleDanceCommand(channel: any, client: tmi.Client, currentPlayer: Player, args: string[]) {
+			let currentPayment = BASE_DANCE_PRICE
+			if(+args[0] > BASE_DANCE_PRICE) currentPayment = +args[0]
+			if (currentPlayer.points < currentPayment) { // not enough points
+				void client.say(channel, MessageFailedDance(currentPlayer.display_name, currentPayment))
+				return
+			} else {
+				void client.say(channel, MessageDance(currentPlayer.display_name))
 			}
 		}
 	}

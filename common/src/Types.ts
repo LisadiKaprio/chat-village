@@ -56,6 +56,7 @@ export enum CommandTrigger {
   EQUIP = '!equip',
   FISH = 'fish',
   FISH_EXCL = '!fish',
+  DANCE = '!dance'
 }
 
 export enum RaceStatus {
@@ -75,6 +76,7 @@ export enum FishAvatarStatus {
 export const MINUTE = 60_000 
 export const OFFLINE_MINUTES = 10
 export const FISH_WAIT_MINUTES = 0.3
+export const BASE_DANCE_PRICE = 100
 
 export type UserInfo = {
   users: Players;
