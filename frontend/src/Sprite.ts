@@ -4,9 +4,10 @@ export { Sprite, Animation, ANIMATIONS }
 import { ImageUtil } from './ImageUtil'
 
 class Animation {
-  constructor(config: { frames?: Frame[]; doesLoop?: boolean }) {
+  constructor(config: { frames?: Frame[]; doesLoop?: boolean; doesMirror?: boolean }) {
     this.frames = config.frames ?? []
     this.doesLoop = config.doesLoop ?? true
+    this.doesMirror = config.doesMirror ?? false
   }
 }
 
@@ -73,6 +74,9 @@ class Sprite {
     this.currentAnimationFrame += 1
 
     if (this.frame == undefined) {
+      if (this.animations[this.currentAnimation].doesMirror) {
+        this.mirrored = !this.mirrored
+      }
       if (this.animations[this.currentAnimation].doesLoop) {
         this.currentAnimationFrame = 0
       } else {
@@ -202,12 +206,21 @@ const ANIMATIONS = {
     ],
     doesLoop: false,
   }),
+  dance: new Animation({
+    frames: [
+      [1, 3],
+      [1, 1],
+    ],
+    doesLoop: true,
+    doesMirror: true,
+  }),
 }
 
 type Frame = [number, number];
 interface Animation {
   frames: Frame[];
   doesLoop: boolean;
+  doesMirror: boolean;
 }
 export type Animations = {
   [animation: string]: Animation;

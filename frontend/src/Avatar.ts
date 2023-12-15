@@ -19,7 +19,8 @@ export enum BehaviourName {
   IDLE = 'idle',
   SLEEP = 'sleep',
   TALK = 'talk',
-  SIT = 'sit'
+  SIT = 'sit',
+  DANCE = 'dance'
 }
 
 export enum ActionType {
@@ -31,7 +32,8 @@ export enum ActionType {
   STAND = 'stand',
   TALK = 'talk',
   WALK = 'walk',
-  SIT = 'sit'
+  SIT = 'sit',
+  DANCE = 'dance'
 }
 
 class Behaviour {
@@ -77,6 +79,7 @@ const BEHAVIOURS = {
   ]),
   talk: new Behaviour(BehaviourName.TALK, [{ type: ActionType.TALK }]),
   sleep: new Behaviour(BehaviourName.SLEEP, [{ type: ActionType.STAND }]),
+  dance: new Behaviour(BehaviourName.DANCE, [{ type: ActionType.DANCE }])
 }
 
 interface Avatar {
@@ -147,6 +150,7 @@ class Avatar {
         bonk: ANIMATIONS.bonk,
         bonked: ANIMATIONS.bonked,
         sit: ANIMATIONS.walk,
+        dance: ANIMATIONS.dance,
       },
       currentAnimation: config.currentAnimation
     })
@@ -306,6 +310,9 @@ class Avatar {
       this.actionTime = this.chance.integer({ min: this.minStandTime, max: this.maxStandTime });
     }  else if (action.type == ActionType.SIT) {
       this.sprite.setAnimation('walk')
+      this.actionTime = 9999
+    } else if (action.type == ActionType.DANCE) {
+      this.sprite.setAnimation('dance')
       this.actionTime = 9999
     } else if (action.type == ActionType.TALK) {
       // play out all the frames of animation, then animation advances to next behaviour

@@ -15,7 +15,7 @@ import {
 import { Bubble, BubbleType } from './Bubble.js'
 import { Emote } from './Emote.js'
 import { assertExists } from './Helpers.js'
-import { Player, Players, EmoteReceived, Message, PlayerState, SkinId, FrontendCommand, CommandTrigger, FishPlayers } from '../../common/src/Types'
+import { Player, Players, EmoteReceived, Message, PlayerState, SkinId, FrontendCommand, CommandTrigger, FishPlayers, BASE_DANCE_DISTANCE_PIXELS } from '../../common/src/Types'
 import { AVATAR_DECORATIONS, SKINS } from '../../common/src/Visuals'
 import { Sprite } from './Sprite'
 import { FishAvatar } from './FishAvatar'
@@ -83,6 +83,8 @@ class World {
       // decide if avatar should be rendered
       const isFishingOrCatching = user.state === PlayerState.FISHING || user.state === PlayerState.CATCHING;
       this.userAvatars[user.username].isActive = isFishingOrCatching && this.isFishWorld || user.state === PlayerState.ACTIVE && !this.isFishWorld;
+
+      this.checkAndHandleDancing(user)
     }
 
     for (const [name, avatar] of Object.entries(this.userAvatars)){
@@ -95,6 +97,23 @@ class World {
 
   userDisappears(name: string) {
     delete this.userAvatars[name]
+  }
+
+  checkAndHandleDancing(user: Player) {
+    if(!user.dance_stop_date) return
+    const isDancing = !!(new Date(user.dance_stop_date).getTime())
+    const currentAvatar = this.userAvatars[user.username]
+    if (isDancing && currentAvatar.currentBehaviour.name !== BehaviourName.DANCE) {
+      console.log('dancing')
+      currentAvatar.changeBehaviour(BEHAVIOURS.dance)
+      currentAvatar.lastInteractionTime = Date.now()
+    } else if (!isDancing && currentAvatar.currentBehaviour.name === BehaviourName.DANCE) {
+      console.log('stopped dancing')
+      currentAvatar.changeBehaviour(BEHAVIOURS.idle)
+    }
+
+    const avatarsInDanceArea = Object.values(this.userAvatars).filter(otherAvatar => Math.abs(otherAvatar.x - currentAvatar.x) <= BASE_DANCE_DISTANCE_PIXELS)
+    
   }
 
   feedEmotesAndMessages(users: Players, messages: PlayerMessages, emotes: EmoteReceived[]) {
@@ -111,7 +130,11 @@ class World {
 
       // handle user messages
       if (messages[user.username] || emotes.some((emote) => emote.name == user.username)) {
-        if (!this.isFishWorld) this.setTalkingAnimation(avatar)
+        if (!this.isFishWorld) {
+          avatar.changeBehaviour(BEHAVIOURS.idle)
+          avatar.lastInteractionTime = Date.now()
+          avatar.pushMotivation(BEHAVIOURS.talk)
+        }
         const xpSprite = {
           src: messageParticles,
           cutSize: 100,
@@ -130,12 +153,6 @@ class World {
       // spawn new emotes since last data pull
       this.renderedEmotes.push(...createNewEmotes(emotes, this.userAvatars))
     }
-  }
-
-  setTalkingAnimation(avatar: Avatar) {
-    avatar.lastInteractionTime = Date.now()
-    avatar.changeBehaviour(BEHAVIOURS.idle)
-    avatar.pushMotivation(BEHAVIOURS.talk)
   }
 
   createNewUserAvatar(user: Player) {
