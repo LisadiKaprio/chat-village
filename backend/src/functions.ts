@@ -1,5 +1,5 @@
 import Db from './Db'
-import { Player, Players, PlayerState, WidgetName } from '../../common/src/Types'
+import { MINUTE, Player, Players, PlayerState, WidgetName } from '../../common/src/Types'
 
 export async function updatePlayerState(db: Db, playerId: number, playerState: PlayerState): Promise<void> {
 	console.log(`setting player ${playerState}: ${playerId}`)
@@ -74,4 +74,14 @@ export function searchPlayerOfExistingPlayer(query: string, players: Players): P
 			return userTags
 		}
 	}
+}
+
+export async function setDateToStopDance(db: Db, playerId: number, minutesToDance: number): Promise<void> {
+	const msToDance = minutesToDance * MINUTE
+	const currentDate = new Date().getTime()
+	await db.update('cv.players', { dance_stop_date: JSON.stringify(new Date(currentDate + msToDance)) }, { id: playerId })
+}
+
+export async function resetDateToStopDance(db: Db, playerId: number): Promise<void> {
+	await db.update('cv.players', { dance_stop_date: JSON.stringify(new Date(0)) }, { id: playerId })
 }

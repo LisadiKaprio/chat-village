@@ -77,6 +77,7 @@ export const MINUTE = 60_000
 export const OFFLINE_MINUTES = 10
 export const FISH_WAIT_MINUTES = 0.3
 export const BASE_DANCE_PRICE = 100
+export const BASE_DANCE_DURATION_MINUTES = 0.25
 
 export type UserInfo = {
   users: Players;
@@ -105,6 +106,7 @@ export type Player = Chatter & {
   inventory: AvatarDecorationId[];
   // currentBoatDecoration: BoatDecoration;
   last_chatted: string; // json date
+  dance_stop_date: string; // json date
 }
 export type Players = {
   [id: number]: Player;
@@ -155,6 +157,7 @@ export interface BackendBoatAvatar {
   name: string;
   finishTimeMs: number;
 }
+
 export type FishPlayer = Player & {
   fishWaitTime: number;
   catchStartDate: number;
@@ -165,4 +168,15 @@ export type FishPlayers = {
 }
 export type FishPlayersToChannel = {
   [channelUsername: string]: FishPlayers;
+}
+
+export type DancePlayer = Player & {
+  danceWaitTime: number;
+  danceStartDate: number;
+}
+export type DancePlayers = {
+  [username: string]: DancePlayer
+}
+export type DancePlayersToChannel = {
+  [channelUsername: string]: DancePlayers;
 }

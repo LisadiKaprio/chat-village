@@ -9,7 +9,7 @@ export enum SimpleMessages {
     INVALID_EQUIP_REQUEST = "What item did you want to equip? Choose an item from your inventory (!inv), then use \"!equip 1\" or \"!equip bow\" OhMyDog",
     RACE_START = "🎉 Race started!",
     FISHING_FULL = "SabaPing The beach is full! Try again when someone finishes fishing.",
-    HUG_BONK_FISHING = "SabaPing You're too busy fishing!",
+    CURRENTLY_BUSY_FISHING = "SabaPing You're too busy fishing!",
     EMPTY_MESSAGE = 'Instructions unclear'
 }
 

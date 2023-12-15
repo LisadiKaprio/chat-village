@@ -1,8 +1,7 @@
 import Db from './Db'
 import { EmoteReceived,  MessagesToChannel, Chatter, Chatters, Player, Players, PlayerState, OFFLINE_MINUTES, MINUTE, FrontendCommandsToChannel, FishPlayersToChannel, FISH_WAIT_MINUTES, FishPlayer } from '../../common/src/Types'
 import { AvatarDecoration, AvatarDecorationId } from './Visuals'
-import { updatePlayerState } from './functions'
-import { toNamespacedPath } from 'path'
+import { resetDateToStopDance, updatePlayerState } from './functions'
 import Twitch from './Twitch'
 
 async function loadChatters(
@@ -45,6 +44,7 @@ async function loadAndProcessPlayers(
     p.points,
     p.state,
     p.last_chatted,
+    p.dance_stop_date,
 	p.avatar_decoration,
 	p.inventory
   from
@@ -83,6 +83,7 @@ export async function getPlayersInChannel(
     p.points,
     p.state,
     p.last_chatted,
+    p.dance_stop_date,
 	p.avatar_decoration,
 	p.inventory
   from
@@ -153,11 +154,26 @@ export default class State {
 	): Promise<void> {
 		await this.loadChattersAndPlayers(db)
 
+		for (const player of Object.values(this.players)) {
+			if(!player.dance_stop_date) {
+				console.log(`Attention! No dance stop date found for ${player.username}!`)
+				break
+			}
+
+			const dateToStopDance = new Date (player.dance_stop_date)
+			if (dateToStopDance.getTime() === 0) break 
+			
+			if (dateToStopDance.getTime() <= Date.now()) {
+				await resetDateToStopDance(db, player.id)
+				console.log(`${player.username} stopped dancing.`)
+			}
+		}
+
 		for (const [channelUsername, _channelFishPlayers] of Object.entries(this.allFishPlayers)) {
 			for (const [name, _fishPlayer] of Object.entries(this.allFishPlayers[channelUsername])) {
 				if (!this.allFishPlayers[channelUsername][name].catchStartDate) break
 				const timePassedSinceStartCatch = Date.now() - this.allFishPlayers[channelUsername][name].catchStartDate
-				if (timePassedSinceStartCatch >= FISH_WAIT_MINUTES * MINUTE) {
+				if (timePassedSinceStartCatch >= FISH_WAIT_MINUTES * MINUTE) { // time passed since fish got on hook
 					// const fishPlayerDisplayName = fishPlayer.display_name
 					await this.stopFishing(db, name, channelUsername)
 					// await twitch.sayFishCatchLateMessage(channelUsername, fishPlayerDisplayName)

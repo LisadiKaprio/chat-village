@@ -1,7 +1,7 @@
 import tmi from 'tmi.js'
 import { Chance } from 'chance'
-import { getChannelId, searchPlayerOfExistingPlayer, updatePlayerState } from './functions'
-import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus, FrontendCommand, BASE_DANCE_PRICE } from '../../common/src/Types'
+import { getChannelId, searchPlayerOfExistingPlayer, setDateToStopDance, updatePlayerState } from './functions'
+import { Player, PlayerState, Message, CommandTrigger, NonEmptyArray, MINUTE, SkinId, RaceStatus, FrontendCommand, BASE_DANCE_PRICE, BASE_DANCE_DURATION_MINUTES } from '../../common/src/Types'
 import { SimpleMessages, MessageInteraction, MessageInteractionEmpty, MessageInteractionFailed, MessageInteractionRandom, MessageSeastars, MessageFailedInitBet, MessageInitBet, MessageFailedRaceJoin, MessageRaceFinish, MessageRaceTooFewParticipants, MessageWarningRaceStart, MessageGiftedStars, MessageFailedGiftingStars, MessageDailyShop, MessageBuyingFailedPrice, MessageBuyingSuccessEquipped, MessageBuyingSuccessInventory, MessageEquipFailedEmptyInventory, MessageEquipSuccess, MessageBuyingFailedDuplicate, MessageInventory, MessageFishFailRace, MessageFishTooEarly, MessageFishCatchLate, MessageFishCatchStandard, MessageFishCatchFailed, MessageFishCatchTreasure, MessageGiftedItem, MessageNooneGiftingItem, MessageInventoryFull, MessageAlreadyHasGiftItem, MessageFailedInventoryGiftItem, MessageFailedDance, MessageDance } from '../../common/src/Messages'
 import { CommandParser } from './CommandParser'
 import { getRandom } from '../../common/src/Util'
@@ -264,7 +264,7 @@ export default class Twitch {
 					break
 				}
 				case CommandTrigger.DANCE: {
-					await handleDanceCommand(channel, this.#client, currentPlayer, args)
+					await handleDanceCommand(channel, this.#client, currentPlayer, args, isPlayerNotFishing)
 					break
 				}
 				default: {
@@ -395,7 +395,7 @@ export default class Twitch {
 			const currentChannelUsername = channel.startsWith('#') ? channel.substring(1) : channel
 
 			if(!isPlayerNotFishing){
-				void client.say(channel, SimpleMessages.HUG_BONK_FISHING)
+				void client.say(channel, SimpleMessages.CURRENTLY_BUSY_FISHING)
 				return
 			}
 
@@ -805,13 +805,21 @@ export default class Twitch {
 			}
 		}
 
-		async function handleDanceCommand(channel: any, client: tmi.Client, currentPlayer: Player, args: string[]) {
+		async function handleDanceCommand(channel: any, client: tmi.Client, currentPlayer: Player, args: string[], isPlayerNotFishing: boolean) {
+			if(!isPlayerNotFishing){
+				void client.say(channel, SimpleMessages.CURRENTLY_BUSY_FISHING)
+				return
+			}
 			let currentPayment = BASE_DANCE_PRICE
 			if(+args[0] > BASE_DANCE_PRICE) currentPayment = +args[0]
 			if (currentPlayer.points < currentPayment) { // not enough points
 				void client.say(channel, MessageFailedDance(currentPlayer.display_name, currentPayment))
 				return
 			} else {
+				const currentDanceDurationMultiplier = currentPayment / BASE_DANCE_PRICE
+				const danceDuration = BASE_DANCE_DURATION_MINUTES * currentDanceDurationMultiplier
+				await setDateToStopDance(db, currentPlayer.id, danceDuration)
+				await deductPointsFromPlayer(db, currentPlayer.points, currentPayment, currentPlayer.id)
 				void client.say(channel, MessageDance(currentPlayer.display_name))
 			}
 		}
