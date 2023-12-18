@@ -78,7 +78,7 @@ export const OFFLINE_MINUTES = 10
 export const FISH_WAIT_MINUTES = 0.3
 export const BASE_DANCE_PRICE = 100
 export const BASE_DANCE_DURATION_MINUTES = 0.25
-export const BASE_DANCE_DISTANCE_PIXELS = 400
+export const BASE_DANCE_DISTANCE_PIXELS = 200
 
 export type UserInfo = {
   users: Players;

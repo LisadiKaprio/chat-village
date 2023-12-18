@@ -84,7 +84,7 @@ class World {
       const isFishingOrCatching = user.state === PlayerState.FISHING || user.state === PlayerState.CATCHING;
       this.userAvatars[user.username].isActive = isFishingOrCatching && this.isFishWorld || user.state === PlayerState.ACTIVE && !this.isFishWorld;
 
-      this.checkAndHandleDancing(user)
+      this.checkDancing(user)
     }
 
     for (const [name, avatar] of Object.entries(this.userAvatars)){
@@ -99,21 +99,24 @@ class World {
     delete this.userAvatars[name]
   }
 
-  checkAndHandleDancing(user: Player) {
+  checkDancing(user: Player) {
     if(!user.dance_stop_date) return
+
     const isDancing = !!(new Date(user.dance_stop_date).getTime())
     const currentAvatar = this.userAvatars[user.username]
-    if (isDancing && currentAvatar.currentBehaviour.name !== BehaviourName.DANCE) {
-      console.log('dancing')
-      currentAvatar.changeBehaviour(BEHAVIOURS.dance)
+    if(currentAvatar.isDancing != isDancing) {
       currentAvatar.lastInteractionTime = Date.now()
-    } else if (!isDancing && currentAvatar.currentBehaviour.name === BehaviourName.DANCE) {
-      console.log('stopped dancing')
-      currentAvatar.changeBehaviour(BEHAVIOURS.idle)
+      currentAvatar.sprite.setAnimation('dance')
     }
+    currentAvatar.isDancing = isDancing
 
-    const avatarsInDanceArea = Object.values(this.userAvatars).filter(otherAvatar => Math.abs(otherAvatar.x - currentAvatar.x) <= BASE_DANCE_DISTANCE_PIXELS)
-    
+    const avatarsInDanceArea = Object.values(this.userAvatars).filter(otherAvatar => otherAvatar !== currentAvatar && Math.abs(otherAvatar.x - currentAvatar.x) <= BASE_DANCE_DISTANCE_PIXELS)
+    const nearDancingAvatar = avatarsInDanceArea.some(avatar => avatar.isDancing)
+    if (nearDancingAvatar && !isDancing) {
+      currentAvatar.isInDanceArea = true
+      currentAvatar.sprite.setAnimation('dance')
+    }
+    else currentAvatar.isInDanceArea = false
   }
 
   feedEmotesAndMessages(users: Players, messages: PlayerMessages, emotes: EmoteReceived[]) {

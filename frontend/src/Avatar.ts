@@ -33,7 +33,6 @@ export enum ActionType {
   TALK = 'talk',
   WALK = 'walk',
   SIT = 'sit',
-  DANCE = 'dance'
 }
 
 class Behaviour {
@@ -67,11 +66,7 @@ class Behaviour {
 
 const BEHAVIOURS = {
   idle: new Behaviour(BehaviourName.IDLE, [
-    { type: ActionType.WALK, direction: 'right' },
-    { type: ActionType.STAND },
-    { type: ActionType.WALK, direction: 'left' },
-    { type: ActionType.STAND },
-    { type: ActionType.WALK, direction: 'right' },
+    { type: ActionType.WALK },
     { type: ActionType.STAND },
   ]),
   sit: new Behaviour(BehaviourName.SIT, [
@@ -79,7 +74,6 @@ const BEHAVIOURS = {
   ]),
   talk: new Behaviour(BehaviourName.TALK, [{ type: ActionType.TALK }]),
   sleep: new Behaviour(BehaviourName.SLEEP, [{ type: ActionType.STAND }]),
-  dance: new Behaviour(BehaviourName.DANCE, [{ type: ActionType.DANCE }])
 }
 
 interface Avatar {
@@ -110,6 +104,8 @@ interface Avatar {
   lastChatTime: number;
   chance: Chance.Chance;
   lastInteractionTime: number;
+  isDancing: boolean;
+  isInDanceArea: boolean;
 }
 
 interface Behaviour {
@@ -175,6 +171,8 @@ class Avatar {
 
     this.isActive = true
     this.lastInteractionTime = Date.now()
+    this.isDancing = false
+    this.isInDanceArea = false
   }
 
   update() {
@@ -183,7 +181,7 @@ class Avatar {
       this.advanceBehaviour()
     }
     const action = this.currentBehaviour.actions[this.behaviourLoopIndex]
-    if (action.type == ActionType.WALK) {
+    if (action.type === ActionType.WALK) {
       if (this.x >= this.world.canvas.width - AVATAR_DISPLAY_SIZE) {
         this.direction = 'left'
       }
@@ -192,10 +190,10 @@ class Avatar {
       }
       if (this.direction == 'left') {
         this.x -= this.speed
-        this.sprite.mirrored = false
+        if (!this.isDancing && !this.isInDanceArea) this.sprite.mirrored = false
       } else if (this.direction == 'right') {
         this.x += this.speed
-        this.sprite.mirrored = true
+        if (!this.isDancing && !this.isInDanceArea) this.sprite.mirrored = true
       }
     } else if (action.type == ActionType.GO) {
       const speedMultiplier = 2.0
@@ -301,20 +299,18 @@ class Avatar {
 
     const action = this.currentBehaviour.actions[this.behaviourLoopIndex]
     if (action.type == ActionType.WALK) {
-      this.sprite.setAnimation('walk')
+      console.log(`${this.name}: walky`)
+      if (!this.isDancing && !this.isInDanceArea) this.sprite.setAnimation('walk')
       this.actionTime = this.chance.integer({ min: this.minWalkingTime, max: this.maxWalkingTime });
-      const direction = action.direction ?? 'left'
+      const direction = this.chance.pickone(['left', 'right'])
       this.direction = direction
     } else if (action.type == ActionType.STAND) {
-      this.sprite.setAnimation('idle')
+      if (!this.isDancing && !this.isInDanceArea) this.sprite.setAnimation('idle')
       this.actionTime = this.chance.integer({ min: this.minStandTime, max: this.maxStandTime });
     }  else if (action.type == ActionType.SIT) {
       this.sprite.setAnimation('walk')
       this.actionTime = 9999
-    } else if (action.type == ActionType.DANCE) {
-      this.sprite.setAnimation('dance')
-      this.actionTime = 9999
-    } else if (action.type == ActionType.TALK) {
+    }  else if (action.type == ActionType.TALK) {
       // play out all the frames of animation, then animation advances to next behaviour
       this.sprite.setAnimation('talk')
       this.actionTime = 9999
@@ -390,7 +386,7 @@ class Avatar {
     if (Math.abs(distance) > padding + 10) {
       // need to go closer to who we want to hug.
       // TODO: if too close maybe need to step away a little bit.
-      this.sprite.setAnimation('walk')
+      if(this.currentBehaviour.name !== BehaviourName.DANCE) this.sprite.setAnimation('walk')
       this.sprite.mirrored = this.direction !== 'left' ?? false
       this.actionTime = 100
       this.currentBehaviour.insert(this.behaviourLoopIndex, {
