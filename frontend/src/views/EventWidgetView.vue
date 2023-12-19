@@ -3,21 +3,25 @@
     <img src="..\images\cv-logo-800ms.gif">
     <v-window class="information-window information-text mt-0 mx-6" v-model="tab" v-if="!isRacing">
       <v-window-item :value="eventTabEnum.RACE_INFORMATION">
-        <div >Type !join to enter a race.</div> 
+        <div >🚤 Type !join to enter a race.</div> 
         <div >
-          <template v-if="participantsJoined === 0">Type !join 200 to make a higher initial bet.</template>
-          <template v-else>Current bet: {{ currentBet }} seastars</template>
+          <template v-if="participantsJoined === 0">💸 Type !join 200 to make a higher initial bet.</template>
+          <template v-else>⭐ Current bet: {{ currentBet }} seastars</template>
         </div>
-        <div>{{ participantsJoined === 0 ? 'Be the first one to start the race NOW!' : `${participantsJoined} player(s) already joined the race.` }}</div> 
+        <div>{{ participantsJoined === 0 ? '😎 Be the first one to start the race NOW!' : `🏃‍♂️ ${participantsJoined} player(s) already joined the race.` }}</div> 
       </v-window-item>
       <v-window-item :value="eventTabEnum.INTERACTION_INFORMATION">
-        <div>Type !hug @user to hug a user.</div> 
-        <div>Type !bonk @user to bonk a user.</div>
-        <div>You can hug/bonk without specifying who :)</div>
+        <div>🤗 Type !hug @user to hug.</div> 
+        <div>🔨 Type !bonk @user to bonk a.</div>
+        <div>😘 You can hug/bonk without specifying who :)</div>
       </v-window-item>
       <v-window-item :value="eventTabEnum.FISH_INFORMATION">
-        <div>Type fish to start fishing.</div> 
-        <div>Type fish to catch the fish when your character starts jumping!</div>
+        <div>🐠 Type fish to start fishing.</div> 
+        <div>🦘 Type fish to catch the fish when your character starts jumping!</div>
+      </v-window-item>
+      <v-window-item :value="eventTabEnum.DANCE_INFORMATION">
+        <div>💃 Type !dance to start dancing.</div> 
+        <div>👯‍♀️ Type !dance 300 to spend more seastars and dance longer!</div>
       </v-window-item>
     </v-window>
     <canvas class="game-canvas" ref="gameCanvas" :style="!isRacing ? 'display: none' : ''" :height="windowHeight" :width="windowWidth"></canvas>
@@ -26,7 +30,6 @@
 </template>
 
 <script lang="ts">
-import { ref } from 'vue'
 import { Component, Prop, Ref, Vue } from 'vue-facing-decorator'
 import { RaceStatus, WebsocketMessageType, WidgetName } from '../../../common/src/Types'
 import { verifyWidgetId } from '../functions'
@@ -43,6 +46,7 @@ export enum EventTab {
   RACE_INFORMATION = 'race information',
   INTERACTION_INFORMATION = 'interaction information',
   FISH_INFORMATION = 'fish information',
+  DANCE_INFORMATION = 'dance information',
 }
 
 @Component
@@ -63,7 +67,7 @@ export default class EventWidget extends Vue {
 
   public tab = EventTab.RACE_INFORMATION
   public tabInterval: NodeJS.Timeout | null = null
-  public TAB_SWITCH_MS = 30_000
+  public TAB_SWITCH_MS = 20_000
 
   public async mounted (): Promise<void> {
     await verifyWidgetId(WidgetName.EVENT, this.channel, this.id)

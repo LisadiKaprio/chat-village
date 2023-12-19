@@ -4,12 +4,14 @@ import { ANIMATIONS, Sprite } from './Sprite.js'
 import { createAdvancedBubble, World } from './World.js'
 import heartParticles from './images/bubble/heartParticles.png'
 import { SkinId } from '../../common/src/Types.js'
-import { AvatarDecoration, AvatarDecorationId } from '../../common/src/Visuals.js'
+import { AvatarDecorationId } from '../../common/src/Visuals.js'
 import { Chance } from 'chance'
 
 
 export const AVATAR_DISPLAY_SIZE = 150
 export const FISH_AVATAR_DISPLAY_SIZE = 150
+export const DANCE_INTENSITY = 0.01
+export const DANCE_HEIGHT = 15
 
 export enum BehaviourName {
   BONK = 'bonk',
@@ -83,6 +85,7 @@ interface Avatar {
   world: World;
   x: number;
   y: number;
+  initialPositionY: number;
   skin: SkinId;
   currentAvatarDecoration: AvatarDecorationId | null;
   toRemove: boolean;
@@ -174,6 +177,7 @@ class Avatar {
     this.lastInteractionTime = Date.now()
     this.isDancing = false
     this.isInDanceArea = false
+    this.initialPositionY = this.y
   }
 
   update() {
@@ -224,6 +228,9 @@ class Avatar {
       this.decoSprite.animationFrameProgress = this.sprite.animationFrameProgress
       this.decoSprite.draw(ctx)
     }
+    if (this.isDancing || this.isInDanceArea) {
+      this.progressBounce(DANCE_INTENSITY, DANCE_HEIGHT)
+    }
     ctx.fillStyle = this.color
     ctx.strokeStyle = 'black'
     ctx.strokeText(
@@ -242,6 +249,11 @@ class Avatar {
     // Animation that doesn't loop has ended
     // motivation doesn't necessarily has to end?
     this.popMotivation()
+  }
+
+  resetAnimationAndVerticalPosition() {
+    this.sprite.setAnimation(this.currentBehaviour.actions[this.behaviourLoopIndex].defaultAnimation)
+    this.y = this.initialPositionY
   }
 
   pushMotivation(behaviour: Behaviour) {
@@ -342,14 +354,15 @@ class Avatar {
       this.sprite.setAnimation('hug')
       this.actionTime = 500
     } else if (action.type == ActionType.BONK) {
-      if (!this.getCloser(action.who!)) {
-        if (action.who!.canSwapBehaviour()) {
+      if (!action.who) return
+      if (!this.getCloser(action.who)) {
+        if (action.who.canSwapBehaviour()) {
           // close enough for a hug, change animation of this and the other
           this.sprite.setAnimation('bonk')
           this.actionTime = 300
-          this.sprite.mirrored = this.x < action.who!.x
+          this.sprite.mirrored = this.x < action.who.x
           // sets sprite mirrored here, doesn't reset it
-          action.who!.changeBehaviour(
+          action.who.changeBehaviour(
             new Behaviour(BehaviourName.BONKED, [
               { type: ActionType.BONKED, mirrored: this.sprite.mirrored },
             ]),
@@ -417,5 +430,9 @@ class Avatar {
         spriteInfo: iconSprite,
       }),
     )
+  }
+
+  progressBounce(intensity: number, height: number) {
+    this.y = this.initialPositionY - height + Math.sin(Date.now() * intensity) * height
   }
 }

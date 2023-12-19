@@ -108,7 +108,7 @@ class World {
       currentAvatar.lastInteractionTime = Date.now()
       currentAvatar.sprite.setAnimation('dance')
     } else if (currentAvatar.isDancing && !isDancing) {
-      currentAvatar.sprite.setAnimation(currentAvatar.currentBehaviour.actions[currentAvatar.behaviourLoopIndex].defaultAnimation)
+      currentAvatar.resetAnimationAndVerticalPosition()
     }
     currentAvatar.isDancing = isDancing
 
@@ -119,7 +119,7 @@ class World {
       currentAvatar.sprite.setAnimation('dance')
     } else if (!nearDancingAvatar && !isDancing && currentAvatar.isInDanceArea) {
       currentAvatar.isInDanceArea = false
-      currentAvatar.sprite.setAnimation(currentAvatar.currentBehaviour.actions[currentAvatar.behaviourLoopIndex].defaultAnimation)
+      currentAvatar.resetAnimationAndVerticalPosition()
     }
 
   }
