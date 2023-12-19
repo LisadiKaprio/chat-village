@@ -66,8 +66,8 @@ class Behaviour {
 
 const BEHAVIOURS = {
   idle: new Behaviour(BehaviourName.IDLE, [
-    { type: ActionType.WALK, defaultAnimation: 'walk'},
-    { type: ActionType.STAND, defaultAnimation: 'idle'},
+    { type: ActionType.WALK, defaultAnimation: 'walk' },
+    { type: ActionType.STAND, defaultAnimation: 'idle' },
   ]),
   sit: new Behaviour(BehaviourName.SIT, [
     { type: ActionType.SIT, defaultAnimation: 'idle' },
@@ -225,7 +225,7 @@ class Avatar {
       this.decoSprite.draw(ctx)
     }
     ctx.fillStyle = this.color
-    ctx.strokeStyle = 'black' 
+    ctx.strokeStyle = 'black'
     ctx.strokeText(
       this.display_name,
       this.x + this.sprite.displaySize / 2,
@@ -308,27 +308,28 @@ class Avatar {
     } else if (action.type == ActionType.STAND) {
       if (!this.isDancing && !this.isInDanceArea) this.sprite.setAnimation('idle')
       this.actionTime = this.chance.integer({ min: this.minStandTime, max: this.maxStandTime })
-    }  else if (action.type == ActionType.SIT) {
+    } else if (action.type == ActionType.SIT) {
       this.sprite.setAnimation('walk')
       this.actionTime = 9999
-    }  else if (action.type == ActionType.TALK) {
+    } else if (action.type == ActionType.TALK) {
       // play out all the frames of animation, then animation advances to next behaviour
       this.sprite.setAnimation('talk')
       this.actionTime = 9999
     } else if (action.type == ActionType.HUG) {
-      if (!this.getCloser(action.who!)) {
-        if (action.who!.canSwapBehaviour()) {
+      if (!action.who) return
+      if (!this.getCloser(action.who)) {
+        if (action.who.canSwapBehaviour()) {
           // close enough for a hug, change animation of this and the other
           this.sprite.setAnimation('hug')
           this.actionTime = 500
-          this.sprite.mirrored = this.x < action.who!.x
+          this.sprite.mirrored = this.x < action.who.x
           // sets sprite mirrored here, doesn't reset it
-          action.who!.changeBehaviour(
+          action.who.changeBehaviour(
             new Behaviour(BehaviourName.HUGGED, [
               { type: ActionType.HUGGED, mirrored: !this.sprite.mirrored },
             ]),
           )
-          this.showIcon((this.x + action.who!.x) / 2)
+          this.showIcon((this.x + action.who.x) / 2)
         } else {
           this.actionTime = 25
           this.currentBehaviour.insert(this.behaviourLoopIndex, {

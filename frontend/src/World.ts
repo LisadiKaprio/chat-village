@@ -104,24 +104,22 @@ class World {
 
     const isDancing = !!(new Date(user.dance_stop_date).getTime())
     const currentAvatar = this.userAvatars[user.username]
-    if (currentAvatar.isDancing != isDancing) {
+    if (!currentAvatar.isDancing && isDancing) {
       currentAvatar.lastInteractionTime = Date.now()
       currentAvatar.sprite.setAnimation('dance')
+    } else if (currentAvatar.isDancing && !isDancing) {
+      currentAvatar.sprite.setAnimation(currentAvatar.currentBehaviour.actions[currentAvatar.behaviourLoopIndex].defaultAnimation)
     }
     currentAvatar.isDancing = isDancing
 
-    // if (currentAvatar.isDancing) {
-
-    // }
-
     const avatarsInDanceArea = Object.values(this.userAvatars).filter(otherAvatar => otherAvatar !== currentAvatar && Math.abs(otherAvatar.x - currentAvatar.x) <= BASE_DANCE_DISTANCE_PIXELS)
     const nearDancingAvatar = avatarsInDanceArea.some(avatar => avatar.isDancing)
-    if (nearDancingAvatar && !isDancing) {
+    if (nearDancingAvatar && !isDancing && !currentAvatar.isInDanceArea) {
       currentAvatar.isInDanceArea = true
       currentAvatar.sprite.setAnimation('dance')
-    }
-    else {
+    } else if (!nearDancingAvatar && !isDancing && currentAvatar.isInDanceArea) {
       currentAvatar.isInDanceArea = false
+      currentAvatar.sprite.setAnimation(currentAvatar.currentBehaviour.actions[currentAvatar.behaviourLoopIndex].defaultAnimation)
     }
 
   }
