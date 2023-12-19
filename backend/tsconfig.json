@@ -1,54 +1,53 @@
 {
-    // This is an alias to @tsconfig/node16: https://github.com/tsconfig/bases
-    "extends": "ts-node/node16/tsconfig.json",
-  
-    // Most ts-node options can be specified here using their programmatic names.
-    "ts-node": {
-      // It is faster to skip typechecking.
-      // Remove if you want ts-node to do typechecking.
-      "transpileOnly": true,
-  
-      "files": true,
-  
-      "compilerOptions": {
-        // compilerOptions specified here will override those declared below,
-        // but *only* in ts-node.  Useful if you want ts-node and tsc to use
-        // different options with a single tsconfig.json.
-      }
-    },
+  // Most ts-node options can be specified here using their programmatic names.
+  "ts-node": {
+    // It is faster to skip typechecking.
+    // Remove if you want ts-node to do typechecking.
+    "transpileOnly": true,
+    "files": true,
     "compilerOptions": {
-      // typescript options here
-        "lib": ["dom"],
-        "target": "esnext",
-        "jsx": "preserve",
-        "importHelpers": true,
-        "moduleResolution": "node",
-        "experimentalDecorators": true,
-        "skipLibCheck": true,
-        "resolveJsonModule": true,
-        "esModuleInterop": true,
-        "allowSyntheticDefaultImports": true,
-        "sourceMap": true,
-        "rootDirs": [
-          "src",
-          "../common/src"
-        ]
-    },
-    "include": [
-      "src/**/*.ts",
-      "src/**/*.tsx",
-      "src/**/*.vue",
-      "tests/**/*.ts",
-      "tests/**/*.tsx",
-      "./**/*.ts", 
-      "./**/*.d.ts"
+      // compilerOptions specified here will override those declared below,
+      // but *only* in ts-node.  Useful if you want ts-node and tsc to use
+      // different options with a single tsconfig.json.
+    }
+  },
+  "compilerOptions": {
+    // typescript options here
+    "lib": [
+      "dom"
     ],
-    "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    },
-    "references": [
-      { "path": "../common" }
+    "target": "esnext",
+    "jsx": "preserve",
+    "importHelpers": true,
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": true,
+    "rootDirs": [
+      "src",
+      "../common/src"
     ]
-  }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "./**/*.ts",
+    "./**/*.d.ts"
+  ],
+  "paths": {
+    "@/*": [
+      "src/*"
+    ]
+  },
+  "references": [
+    {
+      "path": "../common"
+    }
+  ]
+}
