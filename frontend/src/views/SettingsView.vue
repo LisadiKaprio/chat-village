@@ -65,7 +65,7 @@ export default class SettingsView extends Vue {
 
   public copyWidgetURL(widgetName: WidgetName) {
     this.toClipboard(this.generateWidgetURL(widgetName))
-    this.$notify(`${widgetName} widget link copied to clipboard!`);
+    this.$notify(`${widgetName} widget link copied to clipboard!`)
   }
 
   private generateWidgetURL(widgetName: WidgetName) {
@@ -86,13 +86,13 @@ export default class SettingsView extends Vue {
   }
 
   private toClipboard (s: string): void {
-    const el = document.createElement('textarea');
-    el.value = s;
-    el.setAttribute('readonly', '');
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
+    const el = document.createElement('textarea')
+    el.value = s
+    el.setAttribute('readonly', '')
+    document.body.appendChild(el)
+    el.select()
+    document.execCommand('copy')
+    document.body.removeChild(el)
   }
 }
 </script>

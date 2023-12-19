@@ -95,8 +95,8 @@ export default class EventWidget extends Vue {
     this.startDrawing()
     
     this.tabInterval = setInterval(() => {
-      this.switchInfoTab();
-    }, this.TAB_SWITCH_MS);
+      this.switchInfoTab()
+    }, this.TAB_SWITCH_MS)
   }
 
   public switchInfoTab() {
@@ -104,10 +104,10 @@ export default class EventWidget extends Vue {
       this.tab = EventTab.RACE_INFORMATION
       return
     }
-    const enumValues = Object.values(EventTab);
-    const currentIndex = enumValues.indexOf(this.tab);
-    const nextIndex = (currentIndex + 1) % enumValues.length;
-    this.tab = enumValues[nextIndex];
+    const enumValues = Object.values(EventTab)
+    const currentIndex = enumValues.indexOf(this.tab)
+    const nextIndex = (currentIndex + 1) % enumValues.length
+    this.tab = enumValues[nextIndex]
   }
 
   public get participantsJoined(): number {
@@ -133,7 +133,7 @@ export default class EventWidget extends Vue {
   
   public get windowHeight(): number {
     if (!this.raceField || this.raceField.status === RaceStatus.OFF) return 0
-    if(this.raceField && this.raceField.participants) {
+    if (this.raceField && this.raceField.participants) {
       const playerSpace = PLAYER_SPACE_VERTICAL * Object.keys(this.raceField.participants).length
       return playerSpace + (CANVAS_MARGIN_VERTICAL * 2)
     } else return 0

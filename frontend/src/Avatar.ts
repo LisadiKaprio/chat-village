@@ -66,14 +66,14 @@ class Behaviour {
 
 const BEHAVIOURS = {
   idle: new Behaviour(BehaviourName.IDLE, [
-    { type: ActionType.WALK },
-    { type: ActionType.STAND },
+    { type: ActionType.WALK, defaultAnimation: 'walk'},
+    { type: ActionType.STAND, defaultAnimation: 'idle'},
   ]),
   sit: new Behaviour(BehaviourName.SIT, [
-    { type: ActionType.SIT },
+    { type: ActionType.SIT, defaultAnimation: 'idle' },
   ]),
-  talk: new Behaviour(BehaviourName.TALK, [{ type: ActionType.TALK }]),
-  sleep: new Behaviour(BehaviourName.SLEEP, [{ type: ActionType.STAND }]),
+  talk: new Behaviour(BehaviourName.TALK, [{ type: ActionType.TALK, defaultAnimation: 'talk' }]),
+  sleep: new Behaviour(BehaviourName.SLEEP, [{ type: ActionType.STAND, defaultAnimation: 'idle' }]),
 }
 
 interface Avatar {
@@ -116,6 +116,7 @@ interface Behaviour {
 interface Action {
   type: ActionType;
   direction?: 'left' | 'right';
+  defaultAnimation?: string;
   x?: number;
   y?: number;
   who?: Avatar;
@@ -148,7 +149,7 @@ class Avatar {
         sit: ANIMATIONS.walk,
         dance: ANIMATIONS.dance,
       },
-      currentAnimation: config.currentAnimation
+      currentAnimation: config.currentAnimation,
     })
 
     this.actionTime = config.actionTime ?? 24
@@ -228,7 +229,7 @@ class Avatar {
     ctx.strokeText(
       this.display_name,
       this.x + this.sprite.displaySize / 2,
-      this.y + this.sprite.displaySize + 10
+      this.y + this.sprite.displaySize + 10,
     )
     ctx.fillText(
       this.display_name,
@@ -301,12 +302,12 @@ class Avatar {
     if (action.type == ActionType.WALK) {
       console.log(`${this.name}: walky`)
       if (!this.isDancing && !this.isInDanceArea) this.sprite.setAnimation('walk')
-      this.actionTime = this.chance.integer({ min: this.minWalkingTime, max: this.maxWalkingTime });
+      this.actionTime = this.chance.integer({ min: this.minWalkingTime, max: this.maxWalkingTime })
       const direction = this.chance.pickone(['left', 'right'])
       this.direction = direction
     } else if (action.type == ActionType.STAND) {
       if (!this.isDancing && !this.isInDanceArea) this.sprite.setAnimation('idle')
-      this.actionTime = this.chance.integer({ min: this.minStandTime, max: this.maxStandTime });
+      this.actionTime = this.chance.integer({ min: this.minStandTime, max: this.maxStandTime })
     }  else if (action.type == ActionType.SIT) {
       this.sprite.setAnimation('walk')
       this.actionTime = 9999
@@ -386,7 +387,7 @@ class Avatar {
     if (Math.abs(distance) > padding + 10) {
       // need to go closer to who we want to hug.
       // TODO: if too close maybe need to step away a little bit.
-      if(this.currentBehaviour.name !== BehaviourName.DANCE) this.sprite.setAnimation('walk')
+      if (this.currentBehaviour.name !== BehaviourName.DANCE) this.sprite.setAnimation('walk')
       this.sprite.mirrored = this.direction !== 'left' ?? false
       this.actionTime = 100
       this.currentBehaviour.insert(this.behaviourLoopIndex, {

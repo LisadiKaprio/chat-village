@@ -1,10 +1,10 @@
 export { FishWorld }
-import { EmoteReceived, FishAvatarStatus, FishPlayer, FishPlayers, FrontendCommand, Message, Player, Players } from '../../common/src/Types.js';
-import { SKINS } from '../../common/src/Visuals.js';
+import { EmoteReceived, FishAvatarStatus, FishPlayer, FishPlayers, FrontendCommand, Message, Player, Players } from '../../common/src/Types.js'
+import { SKINS } from '../../common/src/Visuals.js'
 import { FishAvatar } from './FishAvatar.js'
 import { Avatar, BEHAVIOURS, FISH_AVATAR_DISPLAY_SIZE } from './Avatar.js'
 import { World } from './World'
-import { ANIMATIONS, Sprite } from './Sprite.js';
+import { ANIMATIONS, Sprite } from './Sprite.js'
 
 import fishWorldBg from './images/fish-world/fish-world.png'
 
@@ -34,23 +34,23 @@ class FishWorld extends World{
     })
     this.sittingSpots = [{
       x: 70,
-      sittingAvatarName: null
+      sittingAvatarName: null,
     },{
       x: 130,
-      sittingAvatarName: null
+      sittingAvatarName: null,
     },{
       x: 190,
-      sittingAvatarName: null
+      sittingAvatarName: null,
     },{
       x: 250,
-      sittingAvatarName: null
+      sittingAvatarName: null,
     },{
       x: 310,
-      sittingAvatarName: null
+      sittingAvatarName: null,
     },{
       x: 375,
-      sittingAvatarName: null
-    },]
+      sittingAvatarName: null,
+    }]
   }
 
   feedNewData(
@@ -70,7 +70,7 @@ class FishWorld extends World{
 
   updateAvatars() {
     for (const spot of this.sittingSpots){
-      if(!spot.sittingAvatarName) continue
+      if (!spot.sittingAvatarName) continue
       this.updateSingleAvatar(this.userAvatars[spot.sittingAvatarName])
       this.drawSingleAvatar(this.userAvatars[spot.sittingAvatarName])
     }
@@ -82,13 +82,13 @@ class FishWorld extends World{
   }
 
   pickSittingSpotIndex(): number {
-    const availableSpots = this.sittingSpots.filter(spot => spot.sittingAvatarName === null);
+    const availableSpots = this.sittingSpots.filter(spot => spot.sittingAvatarName === null)
     if (!availableSpots){
       console.log('All sitting spots are occupied!')
       return 0
     }
-    const spot = availableSpots[Math.floor(Math.random() * availableSpots.length)];
-    return this.sittingSpots.indexOf(spot);
+    const spot = availableSpots[Math.floor(Math.random() * availableSpots.length)]
+    return this.sittingSpots.indexOf(spot)
   }
 
   createNewUserAvatar(user: FishPlayer) {

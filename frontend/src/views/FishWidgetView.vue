@@ -56,7 +56,7 @@ export default class FishWidget extends Vue {
       const isWebsocketStillConnecting = this.ws.readyState === 0
       const catchingAvatars = Object.values(this.fishWorld.userAvatars).filter(avatar => avatar.fishStatus === FishAvatarStatus.CATCHING)
       if (!catchingAvatars || isWebsocketStillConnecting) {
-        timeoutFishCatchMessage = setTimeout(sendFishCatchMessage, 2000);
+        timeoutFishCatchMessage = setTimeout(sendFishCatchMessage, 2000)
         return
       }
       const catchingAvatarIds = catchingAvatars.map(avatar => avatar.id)

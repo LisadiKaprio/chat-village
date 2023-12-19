@@ -1,5 +1,5 @@
-import { WidgetName } from "../../common/src/Types"
-import router from "./router"
+import { WidgetName } from '../../common/src/Types'
+import router from './router'
 
 export async function verifyWidgetId(currentWidgetName: WidgetName, channel: string, id: string) {
     try {

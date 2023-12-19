@@ -38,7 +38,7 @@ export default class HomeView extends Vue {
   }
 
   public redirectToTwitch(): void {
-      window.location.href = this.twitchUrl;
+      window.location.href = this.twitchUrl
   }
 }
 </script>

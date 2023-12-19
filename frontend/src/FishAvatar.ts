@@ -1,9 +1,9 @@
-import { Avatar, FISH_AVATAR_DISPLAY_SIZE } from "./Avatar";
-import { World } from "./World";
-import { ANIMATIONS, Sprite } from "./Sprite";
+import { Avatar, FISH_AVATAR_DISPLAY_SIZE } from './Avatar'
+import { World } from './World'
+import { ANIMATIONS, Sprite } from './Sprite'
 
 import fishpole from './images/fish-world/fishpole.png'
-import { FishAvatarStatus } from "../../common/src/Types";
+import { FishAvatarStatus } from '../../common/src/Types'
 const FISHPOLE_X_OFFSET = -FISH_AVATAR_DISPLAY_SIZE/2
 const FISHPOLE_Y_OFFSET = FISH_AVATAR_DISPLAY_SIZE/10
 

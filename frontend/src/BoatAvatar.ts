@@ -1,6 +1,6 @@
 import { ANIMATIONS, Sprite } from './Sprite.js'
 import { CANVAS_MARGIN_HORIZONTAL, RaceField } from './RaceField.js'
-import { BackendBoatAvatar } from '../../common/src/Types.js';
+import { BackendBoatAvatar } from '../../common/src/Types.js'
 
 export interface BoatAvatar {
   name: string;
@@ -40,7 +40,7 @@ export class BoatAvatar {
   update(globalStartDate: number) {
     if (this.finishTimeMs !== 0) return
     this.x += this.speed
-    if(this.x >= (this.raceField.distance + CANVAS_MARGIN_HORIZONTAL)) {
+    if (this.x >= (this.raceField.distance + CANVAS_MARGIN_HORIZONTAL)) {
       this.finishTimeMs = Date.now() - globalStartDate
       console.log('finished in ' + this.finishTimeMs)
     }
@@ -53,7 +53,7 @@ export class BoatAvatar {
   backendBoatAvatar(): BackendBoatAvatar {
     return {
       name: this.name,
-      finishTimeMs: this.finishTimeMs
+      finishTimeMs: this.finishTimeMs,
     }
   }
   

@@ -74,10 +74,10 @@ export class RaceField {
       //   return null
       // }
 
-      tmpCtx.lineWidth = HORIZONTAL_LINE_WIDTH;
-      tmpCtx.strokeStyle = "white";
+      tmpCtx.lineWidth = HORIZONTAL_LINE_WIDTH
+      tmpCtx.strokeStyle = 'white'
       tmpCtx.font = '30px CherryBombOne-Regular'
-      tmpCtx.fillStyle = "rgba(255, 255, 255, 0.75)"
+      tmpCtx.fillStyle = 'rgba(255, 255, 255, 0.75)'
       this.drawLine(tmpCtx, CANVAS_MARGIN_HORIZONTAL, CANVAS_MARGIN_VERTICAL, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL, CANVAS_MARGIN_VERTICAL)
       this.drawLine(tmpCtx, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL - BOAT_AVATAR_DISPLAY_SIZE, CANVAS_MARGIN_VERTICAL, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL - BOAT_AVATAR_DISPLAY_SIZE, 500 - CANVAS_MARGIN_VERTICAL)
       for (const avatar of Object.values(this.avatars)) {
@@ -85,7 +85,7 @@ export class RaceField {
           avatar.display_name,
           USERNAME_HORIZONTAL_MARGIN,
           avatar.y + (PLAYER_SPACE_VERTICAL / 2) + PLAYER_MARGIN_TOP + (PLAYER_SPACE_VERTICAL / 4),
-          this.distance
+          this.distance,
         )
         this.drawLine(tmpCtx, CANVAS_MARGIN_HORIZONTAL, avatar.y + PLAYER_SPACE_VERTICAL + PLAYER_MARGIN_BOTTOM - HORIZONTAL_LINE_WIDTH, CANVAS_WIDTH - CANVAS_MARGIN_HORIZONTAL, avatar.y + PLAYER_SPACE_VERTICAL + PLAYER_MARGIN_BOTTOM - HORIZONTAL_LINE_WIDTH)
       }
@@ -93,11 +93,11 @@ export class RaceField {
     }
 
     startRace() {
-      const entries = Object.entries(this.participants);
-      this.globalStartDate = Date.now();
+      const entries = Object.entries(this.participants)
+      this.globalStartDate = Date.now()
       for (let i = 0; i < entries.length; i++) {
-        const [name, participant] = entries[i];
-        this.avatars[name] = this.createNewBoatAvatar(this, participant, i);
+        const [name, participant] = entries[i]
+        this.avatars[name] = this.createNewBoatAvatar(this, participant, i)
       }
     }
 
@@ -136,9 +136,9 @@ export class RaceField {
       }}
 
     drawLine(ctx: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number) {
-      ctx.moveTo(startX, startY);
-      ctx.lineTo(endX, endY);
-      ctx.stroke();
+      ctx.moveTo(startX, startY)
+      ctx.lineTo(endX, endY)
+      ctx.stroke()
     }
     
     createNewBoatAvatar(raceField: RaceField, participant: RaceParticipant, index: number) {
@@ -164,6 +164,6 @@ export class RaceField {
       for (const avatar of Object.values(this.avatars)) {
         arrayToReturn.push(avatar.backendBoatAvatar())
       }
-      return arrayToReturn.sort((a, b) => a.finishTimeMs - b.finishTimeMs);
+      return arrayToReturn.sort((a, b) => a.finishTimeMs - b.finishTimeMs)
     }
 }

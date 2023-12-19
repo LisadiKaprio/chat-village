@@ -44,7 +44,7 @@ class World {
     tmpCanvas.height = this.canvas.height
     const tmpCtx = tmpCanvas.getContext('2d')
 
-    if(!this.bg) return null
+    if (!this.bg) return null
 
     // weirdly sprites can fail to render, which leaves the bg blank
     // in that case return null
@@ -63,7 +63,7 @@ class World {
     commands: FrontendCommand[],
   ) {
     const filteredMessages: PlayerMessages = {}
-    if(messages){
+    if (messages) {
       for (const message of messages) {
         if (filteredMessages[message.name]) {
           filteredMessages[message.name].push(message)
@@ -81,13 +81,13 @@ class World {
       this.updateAvatarDecoration(user)
 
       // decide if avatar should be rendered
-      const isFishingOrCatching = user.state === PlayerState.FISHING || user.state === PlayerState.CATCHING;
-      this.userAvatars[user.username].isActive = isFishingOrCatching && this.isFishWorld || user.state === PlayerState.ACTIVE && !this.isFishWorld;
+      const isFishingOrCatching = user.state === PlayerState.FISHING || user.state === PlayerState.CATCHING
+      this.userAvatars[user.username].isActive = isFishingOrCatching && this.isFishWorld || user.state === PlayerState.ACTIVE && !this.isFishWorld
 
-      this.checkDancing(user)
+      this.checkAndHandleDancing(user)
     }
 
-    for (const [name, avatar] of Object.entries(this.userAvatars)){
+    for (const [name, avatar] of Object.entries(this.userAvatars)) {
       const userDisappeared = (!users[avatar.id] && !this.isFishWorld) || (!users[avatar.name] && this.isFishWorld)
       if (userDisappeared) this.userDisappears(name)
     }
@@ -99,16 +99,20 @@ class World {
     delete this.userAvatars[name]
   }
 
-  checkDancing(user: Player) {
-    if(!user.dance_stop_date) return
+  checkAndHandleDancing(user: Player) {
+    if (!user.dance_stop_date) return
 
     const isDancing = !!(new Date(user.dance_stop_date).getTime())
     const currentAvatar = this.userAvatars[user.username]
-    if(currentAvatar.isDancing != isDancing) {
+    if (currentAvatar.isDancing != isDancing) {
       currentAvatar.lastInteractionTime = Date.now()
       currentAvatar.sprite.setAnimation('dance')
     }
     currentAvatar.isDancing = isDancing
+
+    // if (currentAvatar.isDancing) {
+
+    // }
 
     const avatarsInDanceArea = Object.values(this.userAvatars).filter(otherAvatar => otherAvatar !== currentAvatar && Math.abs(otherAvatar.x - currentAvatar.x) <= BASE_DANCE_DISTANCE_PIXELS)
     const nearDancingAvatar = avatarsInDanceArea.some(avatar => avatar.isDancing)
@@ -116,12 +120,15 @@ class World {
       currentAvatar.isInDanceArea = true
       currentAvatar.sprite.setAnimation('dance')
     }
-    else currentAvatar.isInDanceArea = false
+    else {
+      currentAvatar.isInDanceArea = false
+    }
+
   }
 
   feedEmotesAndMessages(users: Players, messages: PlayerMessages, emotes: EmoteReceived[]) {
     for (const [_id, user] of Object.entries(users)) {
-      if(user.state !== PlayerState.ACTIVE) {
+      if (user.state !== PlayerState.ACTIVE) {
         continue
       }
       const avatar = this.userAvatars[user.username]
@@ -189,7 +196,7 @@ class World {
         color: this.userAvatars[user.username].color,
         displaySize: AVATAR_DISPLAY_SIZE,
         animations: this.userAvatars[user.username].sprite.animations,
-        currentAnimation: this.userAvatars[user.username].sprite.currentAnimation
+        currentAnimation: this.userAvatars[user.username].sprite.currentAnimation,
       })
       this.userAvatars[user.username].lastInteractionTime = Date.now()
     }
@@ -329,10 +336,10 @@ export function createAdvancedBubble(config: any) {
 
 
 export function createNewEmojis(messages: string[], x: number, y: number) {
-	const emotes: Emote[] = []
-	for (const message of messages) {
-		emojiDetect.detectStrings(message).map((emoji: string) => {
-			const emote = new Emote({
+  const emotes: Emote[] = []
+  for (const message of messages) {
+    emojiDetect.detectStrings(message).map((emoji: string) => {
+      const emote = new Emote({
         x: x,
         y: y,
         src: `https://cdn.betterttv.net/assets/emoji/${emoji}.svg`,
@@ -343,9 +350,9 @@ export function createNewEmojis(messages: string[], x: number, y: number) {
         dragPhysicsY: -0.02,
       })
       emotes.push(emote)
-      })
-	}
-	return emotes
+    })
+  }
+  return emotes
 }
 
 export function createNewEmote(emoteId: number, x: number, y: number) {

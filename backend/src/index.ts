@@ -11,7 +11,7 @@ async function main() {
 	let dbConnectStr = ''
 	let dbPatchesDir = ''
 
-	if(process.env.DB_CONNECT_STR && process.env.DB_PATCHES_DIR) {
+	if (process.env.DB_CONNECT_STR && process.env.DB_PATCHES_DIR) {
 		dbConnectStr = process.env.DB_CONNECT_STR
 		dbPatchesDir = process.env.DB_PATCHES_DIR
 	} else {
