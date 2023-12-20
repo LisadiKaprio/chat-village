@@ -11,19 +11,20 @@ import cookieParser from 'cookie-parser'
 
 const COOKIE_LIFETIME_MS = 356 * 24 * 60 * 60 * 1000
 
-async function createChannelEntryForUser (db: Db, _chance: Chance.Chance, channelUsername: string, channelDisplayName: string) {
+async function createChannelEntryForUser(db: Db, _chance: Chance.Chance, twitch: Twitch, channelUsername: string, channelDisplayName: string) {
 	await db.insert('cv.channels', { channel_username: channelUsername, channel_display_name: channelDisplayName })
+	await twitch.joinNewChannel(channelUsername)
 }
 
-async function createSessionForUser (db: Db, chance: Chance.Chance, channelUsername: string): Promise<string> {
+async function createSessionForUser(db: Db, chance: Chance.Chance, channelUsername: string): Promise<string> {
 	const sessionId = chance.string({ length: 20, casing: 'lower', alpha: true, numeric: true })
-	
+
 	await db.insert('cv.user_sessions', { channel_username: channelUsername, session_token: sessionId })
-	
+
 	return sessionId
 }
 
-async function getAccessTokenByCode (code: string, clientId: string, clientSecret: string, clientRedirectUri: string) {
+async function getAccessTokenByCode(code: string, clientId: string, clientSecret: string, clientRedirectUri: string) {
 	const queryString = new URLSearchParams({
 		client_id: clientId,
 		client_secret: clientSecret,
@@ -31,7 +32,7 @@ async function getAccessTokenByCode (code: string, clientId: string, clientSecre
 		grant_type: 'authorization_code',
 		redirect_uri: clientRedirectUri,
 	})
-	const tokenResponse: null|Response = await fetch('https://id.twitch.tv/oauth2/token?' + queryString , {
+	const tokenResponse: null | Response = await fetch('https://id.twitch.tv/oauth2/token?' + queryString, {
 		method: 'POST',
 	})
 	const tokenData = await tokenResponse.json()
@@ -40,7 +41,7 @@ async function getAccessTokenByCode (code: string, clientId: string, clientSecre
 	return accessToken
 }
 
-async function getUserByAccessToken (accessToken: string, clientId: string) {
+async function getUserByAccessToken(accessToken: string, clientId: string) {
 	const usersResponse = await fetch('https://api.twitch.tv/helix/users', {
 		method: 'GET',
 		headers: {
@@ -83,14 +84,14 @@ function buildUsersInfo(channelName: string, channelId: number, state: State) {
 }
 
 function buildRaceInfo(raceConstructor: RaceConstructor, channelName: string) {
-	if(!raceConstructor.races[channelName]) {
+	if (!raceConstructor.races[channelName]) {
 		return {
 			bet: 0,
 			status: RaceStatus.OFF,
 			participants: {},
 		}
 	} else {
-		return{
+		return {
 			bet: raceConstructor.races[channelName].currentBet,
 			status: raceConstructor.races[channelName].status,
 			participants: raceConstructor.races[channelName].participants,
@@ -144,7 +145,7 @@ export default class Webserver {
 
 			console.log(`${this.channelSockets[channelName].length} widgets are connected`)
 
-			if(!channelId) {
+			if (!channelId) {
 				console.log('No channel id found! Fetching not possible.')
 				socket.close()
 				return
@@ -167,18 +168,18 @@ export default class Webserver {
 				timeoutRaceInfo = setTimeout(sendRaceInfo, 500)
 			}
 			sendRaceInfo()
-      
+
 			socket.on('message', async (rawData: RawData, _isBinary: boolean) => {
 				const { type, data } = JSON.parse(`${rawData}`)
-				if (type === WebsocketMessageType.FRONTEND_RACE_INFO && raceConstructor.races[channelName] && raceConstructor.races[channelName].status !== RaceStatus.OFF ) {
+				if (type === WebsocketMessageType.FRONTEND_RACE_INFO && raceConstructor.races[channelName] && raceConstructor.races[channelName].status !== RaceStatus.OFF) {
 					raceConstructor.races[channelName].status = RaceStatus.OFF
 					const { boatAvatars }: { boatAvatars: BackendBoatAvatar[] } = data
-					await raceConstructor.handleFinish(db, state, channelName, boatAvatars, twitch) 
+					await raceConstructor.handleFinish(db, state, channelName, boatAvatars, twitch)
 				} else if (type === WebsocketMessageType.FRONTEND_FISH_CATCHING_INFO) {
 					const { avatarIds }: { avatarIds: number[] } = data
 					for (const id of avatarIds) {
 						if (state.players[id].state !== PlayerState.FISHING) break
-						
+
 						const fishPlayer = Object.values(state.allFishPlayers[channelName]).find(player => player.id === id)
 						if (fishPlayer) fishPlayer.catchStartDate = Date.now()
 
@@ -218,19 +219,19 @@ export default class Webserver {
 			const code = req.query.code || ''
 			const accessToken = await getAccessTokenByCode(code, clientId, clientSecret, clientRedirectUri)
 			const user = await getUserByAccessToken(accessToken, clientId)
-		
+
 			const userLogin = user.login
 			const userDisplayName = user.display_name
 			const sessionId = await createSessionForUser(db, this.chance, userLogin)
 
 			const channelEntryId = await getChannelId(db, userLogin)
 			console.log(`Channel with id ${channelEntryId} and username ${userLogin} is attempting to log in...`)
-			if (!channelEntryId) await createChannelEntryForUser(db, this.chance, userLogin, userDisplayName)
-			
+			if (!channelEntryId) await createChannelEntryForUser(db, this.chance, twitch, userLogin, userDisplayName)
+
 			// add cookie to the user response
 			const cookieName = 'auth'
 			res.cookie(cookieName, sessionId, { maxAge: COOKIE_LIFETIME_MS, httpOnly: true })
-		
+
 			// redirect user to the startpage
 			res.redirect('/settings')
 		})
@@ -241,8 +242,8 @@ export default class Webserver {
 			if (!channelUsername) {
 				res.status(401).send()
 			} else {
-				const channelWalkWidgetId = await getWidgetId(db, channelUsername, WidgetName.WALK) 
-				const channelEventWidgetId = await getWidgetId(db, channelUsername, WidgetName.EVENT) 
+				const channelWalkWidgetId = await getWidgetId(db, channelUsername, WidgetName.WALK)
+				const channelEventWidgetId = await getWidgetId(db, channelUsername, WidgetName.EVENT)
 				const channelFishWidgetId = await getWidgetId(db, channelUsername, WidgetName.FISH)
 				res.send({
 					channelUsername: channelUsername,
@@ -257,10 +258,10 @@ export default class Webserver {
 			console.log(`Web-Avatars listening on http://localhost:${portExpress}`)
 		})
 
-		if(process.env.PUB_DIR){
+		if (process.env.PUB_DIR) {
 			app.use('/', express.static(process.env.PUB_DIR))
 			app.all('*', (req: any, res) => {
-				if(!process.env.INDEX_HTML) return
+				if (!process.env.INDEX_HTML) return
 				res.sendFile(process.env.INDEX_HTML)
 			})
 		} else {

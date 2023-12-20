@@ -825,6 +825,10 @@ export default class Twitch {
 		}
 	}
 
+	async joinNewChannel(channelUsername: string) {
+		await this.#client.join(channelUsername)
+	}
+
 	async sayRaceTooFewParticipantsMessage(channelName: string, participantsAmount: number) {
 		const channel = `#${channelName}`
 		await this.#client.say(channel, MessageRaceTooFewParticipants(participantsAmount))
