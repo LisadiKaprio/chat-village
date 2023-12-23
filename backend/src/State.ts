@@ -1,5 +1,5 @@
 import Db from './Db'
-import { EmoteReceived,  MessagesToChannel, Chatter, Chatters, Player, Players, PlayerState, OFFLINE_MINUTES, MINUTE, FrontendCommandsToChannel, FishPlayersToChannel, FISH_WAIT_MINUTES, FishPlayer } from '../../common/src/Types'
+import { EmoteReceived, MessagesToChannel, Chatter, Chatters, Player, Players, PlayerState, OFFLINE_MINUTES, MINUTE, FrontendCommandsToChannel, FishPlayersToChannel, FISH_WAIT_MINUTES, FishPlayer } from '../../common/src/Types'
 import { AvatarDecoration, AvatarDecorationId } from './Visuals'
 import { resetDateToStopDance, updatePlayerState } from './functions'
 import Twitch from './Twitch'
@@ -110,20 +110,20 @@ export default class State {
 	public allFishPlayers: FishPlayersToChannel = {}
 	public dailyItems: AvatarDecoration[] = []
 
-	async loadChattersAndPlayers (db: Db) {
+	async loadChattersAndPlayers(db: Db) {
 		this.chatters = await loadChatters(db)
 		this.players = await loadAndProcessPlayers(db, this)
 	}
 
-	async clearFrontendRelevantData (db: Db, channelUsername: string) {
+	async clearFrontendRelevantData(db: Db, channelUsername: string) {
 		this.newEmotes = this.newEmotes.filter(emote => emote.channel !== channelUsername)
 		this.allNewMessages[channelUsername] = []
 		this.allFrontendCommands[channelUsername] = []
-		
+
 		await this.clearFishPlayersWhoCaught(db, channelUsername)
 	}
 
-	async clearFishPlayersWhoCaught (db: Db, channelUsername: string) { 
+	async clearFishPlayersWhoCaught(db: Db, channelUsername: string) {
 		if (!this.allFishPlayers[channelUsername]) return
 		const caughtPlayers = Object.values(this.allFishPlayers[channelUsername]).filter(fishPlayer => fishPlayer.hasCaught === true)
 		caughtPlayers.forEach(async (fishPlayer) => {
@@ -148,22 +148,22 @@ export default class State {
 		await updatePlayerState(db, playerId, PlayerState.ACTIVE)
 	}
 
-	async refresh (
+	async refresh(
 		db: Db,
 		_twitch: Twitch,
 	): Promise<void> {
 		await this.loadChattersAndPlayers(db)
 
 		for (const player of Object.values(this.players)) {
-			if(!player.dance_stop_date) {
+			if (!player.dance_stop_date) {
 				console.log(`Attention! No dance stop date found for ${player.username}!`)
-				break
+				continue
 			}
 
-			const dateToStopDance = new Date (player.dance_stop_date)
-			if (dateToStopDance.getTime() === 0) break 
-			
-			if (dateToStopDance.getTime() <= Date.now()) {
+			const dateToStopDance = new Date(player.dance_stop_date)
+			if (dateToStopDance.getTime() === 0) continue
+			const now = Date.now()
+			if (dateToStopDance.getTime() <= now) {
 				await resetDateToStopDance(db, player.id)
 				console.log(`${player.username} stopped dancing.`)
 			}
@@ -181,7 +181,7 @@ export default class State {
 			}
 		}
 	}
-  
+
 	async setPlayerOffline(
 		db: Db,
 		playerId: number,
