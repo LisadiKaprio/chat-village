@@ -314,11 +314,13 @@ class Avatar {
     if (action.type == ActionType.WALK) {
       console.log(`${this.name}: walky`)
       if (!this.isDancing && !this.isInDanceArea) this.sprite.setAnimation('walk')
+      else this.sprite.setAnimation('dance')
       this.actionTime = this.chance.integer({ min: this.minWalkingTime, max: this.maxWalkingTime })
       const direction = this.chance.pickone(['left', 'right'])
       this.direction = direction
     } else if (action.type == ActionType.STAND) {
       if (!this.isDancing && !this.isInDanceArea) this.sprite.setAnimation('idle')
+      else this.sprite.setAnimation('dance')
       this.actionTime = this.chance.integer({ min: this.minStandTime, max: this.maxStandTime })
     } else if (action.type == ActionType.SIT) {
       this.sprite.setAnimation('walk')
