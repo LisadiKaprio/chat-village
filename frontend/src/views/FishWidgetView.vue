@@ -35,7 +35,7 @@ export default class FishWidget extends Vue {
   public FISH_CANVAS_HEIGHT = 230
   public FISH_CANVAS_WIDTH = 550
 
-  public async mounted (): Promise<void> {
+  public async mounted(): Promise<void> {
     await verifyWidgetId(WidgetName.FISH, this.channel, this.id)
     assertExists(this.gameContainer)
     assertExists(this.gameCanvas)
@@ -60,7 +60,7 @@ export default class FishWidget extends Vue {
         return
       }
       const catchingAvatarIds = catchingAvatars.map(avatar => avatar.id)
-      this.ws.send(JSON.stringify({ type: WebsocketMessageType.FRONTEND_FISH_CATCHING_INFO, data: { avatarIds: catchingAvatarIds }}))
+      this.ws.send(JSON.stringify({ type: WebsocketMessageType.FRONTEND_FISH_CATCHING_INFO, data: { avatarIds: catchingAvatarIds } }))
       // console.log(catchingAvatars)fishStatus
       for (const avatar of catchingAvatars) {
         this.fishWorld.userAvatars[avatar.name].fishStatus = FishAvatarStatus.WAITING_FOR_CATCH

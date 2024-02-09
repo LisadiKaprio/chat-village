@@ -4,17 +4,11 @@
     Hi, {{ channelUsername }}!
     <v-card variant="tonal">
       <v-list max-width="400">
-        <v-list-item
-          title="1. Create a Browser Source in your OBS."
-        ></v-list-item>
-        <v-list-item lines="three"
-          title="2. Insert the URL, define the dimensions."
-          subtitle="Walk Widget can have whatever dimensions you want. Event Widget is hardcoded to 400x400, and Fish Widget is hardcoded to 550x320."
-        ></v-list-item>
-        <v-list-item lines="two"
-          title="3. Optionally, set frame rate to 60"
-          subtitle="Check the 'Use custom frame rate' checkbox in the browser source settings, and set the FPS to 60."
-        ></v-list-item>
+        <v-list-item title="1. Create a Browser Source in your OBS."></v-list-item>
+        <v-list-item lines="three" title="2. Insert the URL, define the dimensions."
+          subtitle="Walk Widget can have whatever dimensions you want. Event Widget is hardcoded to 400x400, and Fish Widget is hardcoded to 550x320."></v-list-item>
+        <v-list-item lines="two" title="3. Optionally, set frame rate to 60"
+          subtitle="Check the 'Use custom frame rate' checkbox in the browser source settings, and set the FPS to 60."></v-list-item>
       </v-list>
     </v-card>
     <v-btn variant="text" @click="copyWidgetURL(widgetNameEnum.WALK)">🐰 Copy your Walk Widget URL</v-btn>
@@ -48,7 +42,7 @@ export default class SettingsView extends Vue {
         this.walkWidgetId = walkWidgetId
         this.eventWidgetId = eventWidgetId
         this.fishWidgetId = fishWidgetId
-        } else {
+      } else {
         router.push('/')
       }
     } catch (error: unknown) {
@@ -85,7 +79,7 @@ export default class SettingsView extends Vue {
     return `${this.url}/${widgetName}-widget/${this.channelUsername}/${widgetId}`
   }
 
-  private toClipboard (s: string): void {
+  private toClipboard(s: string): void {
     const el = document.createElement('textarea')
     el.value = s
     el.setAttribute('readonly', '')
@@ -104,6 +98,7 @@ export default class SettingsView extends Vue {
   font-weight: normal;
   font-style: normal;
 }
+
 .settings-page {
   font-family: 'CherryBombOne-Regular';
   display: flex;

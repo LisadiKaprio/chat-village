@@ -32,7 +32,7 @@ export default class WalkWidget extends Vue {
   public ws!: WebSocket
   public ws_host: string
 
-  public async mounted (): Promise<void> {
+  public async mounted(): Promise<void> {
     await verifyWidgetId(WidgetName.WALK, this.channel, this.id)
 
     this.ws_host = import.meta.env.VITE_WS_HOST ?? 'ws://localhost:2502'

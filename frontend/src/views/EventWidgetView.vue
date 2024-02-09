@@ -3,28 +3,30 @@
     <img src="..\images\cv-logo-800ms.gif">
     <v-window class="information-window information-text mt-0 mx-6" v-model="tab" v-if="!isRacing">
       <v-window-item :value="eventTabEnum.RACE_INFORMATION">
-        <div >🚤 Type !join to enter a race.</div> 
-        <div >
+        <div>🚤 Type !join to enter a race.</div>
+        <div>
           <template v-if="participantsJoined === 0">💸 Type !join 200 to make a higher initial bet.</template>
           <template v-else>⭐ Current bet: {{ currentBet }} seastars</template>
         </div>
-        <div>{{ participantsJoined === 0 ? '😎 Be the first one to start the race NOW!' : `🏃‍♂️ ${participantsJoined} player(s) already joined the race.` }}</div> 
+        <div>{{ participantsJoined === 0 ? '😎 Be the first one to start the race NOW!' : `🏃‍♂️ ${participantsJoined}
+          player(s) already joined the race.` }}</div>
       </v-window-item>
       <v-window-item :value="eventTabEnum.INTERACTION_INFORMATION">
-        <div>🤗 Type !hug @user to hug.</div> 
-        <div>🔨 Type !bonk @user to bonk a.</div>
+        <div>🤗 Type !hug @user to hug.</div>
+        <div>🔨 Type !bonk @user to bonk.</div>
         <div>😘 You can hug/bonk without specifying who :)</div>
       </v-window-item>
       <v-window-item :value="eventTabEnum.FISH_INFORMATION">
-        <div>🐠 Type fish to start fishing.</div> 
+        <div>🐠 Type fish to start fishing.</div>
         <div>🦘 Type fish to catch the fish when your character starts jumping!</div>
       </v-window-item>
       <v-window-item :value="eventTabEnum.DANCE_INFORMATION">
-        <div>💃 Type !dance to start dancing.</div> 
+        <div>💃 Type !dance to start dancing.</div>
         <div>👯‍♀️ Type !dance 300 to spend more seastars and dance longer!</div>
       </v-window-item>
     </v-window>
-    <canvas class="game-canvas" ref="gameCanvas" :style="!isRacing ? 'display: none' : ''" :height="windowHeight" :width="windowWidth"></canvas>
+    <canvas class="game-canvas" ref="gameCanvas" :style="!isRacing ? 'display: none' : ''" :height="windowHeight"
+      :width="windowWidth"></canvas>
     <div v-if="isRacing" class="timer">{{ raceField.timer }} sec</div>
   </div>
 </template>
@@ -34,7 +36,7 @@ import { Component, Prop, Ref, Vue } from 'vue-facing-decorator'
 import { RaceStatus, WebsocketMessageType, WidgetName } from '../../../common/src/Types'
 import { verifyWidgetId } from '../functions'
 import { assertExists } from '../Helpers'
-import { 
+import {
   CANVAS_MARGIN_VERTICAL,
   PLAYER_SPACE_VERTICAL,
   RaceField,
@@ -69,7 +71,7 @@ export default class EventWidget extends Vue {
   public tabInterval: NodeJS.Timeout | null = null
   public TAB_SWITCH_MS = 20_000
 
-  public async mounted (): Promise<void> {
+  public async mounted(): Promise<void> {
     await verifyWidgetId(WidgetName.EVENT, this.channel, this.id)
     assertExists(this.gameCanvas)
     this.raceField = new RaceField(this.gameCanvas)
@@ -81,7 +83,7 @@ export default class EventWidget extends Vue {
         const { bet, status, participants } = data
         this.currentBet = bet
         this.raceField.status = status
-        if ( status !== RaceStatus.OFF ) this.raceField.participants = participants
+        if (status !== RaceStatus.OFF) this.raceField.participants = participants
         else this.raceField.participants = []
       }
     }
@@ -89,7 +91,7 @@ export default class EventWidget extends Vue {
     let timeoutRaceResults: NodeJS.Timeout
     const sendRaceResults = () => {
       if (this.raceField.status === RaceStatus.FINISHING) {
-        this.ws.send(JSON.stringify({ type: WebsocketMessageType.FRONTEND_RACE_INFO, data: { boatAvatars: this.raceField.backendBoatAvatars() }}))
+        this.ws.send(JSON.stringify({ type: WebsocketMessageType.FRONTEND_RACE_INFO, data: { boatAvatars: this.raceField.backendBoatAvatars() } }))
         this.raceField.status = RaceStatus.OFF
         this.raceField.resetRace()
       }
@@ -97,7 +99,7 @@ export default class EventWidget extends Vue {
     }
     sendRaceResults()
     this.startDrawing()
-    
+
     this.tabInterval = setInterval(() => {
       this.switchInfoTab()
     }, this.TAB_SWITCH_MS)
@@ -134,7 +136,7 @@ export default class EventWidget extends Vue {
     if (!this.raceField) return RaceStatus.OFF
     return this.raceField.status
   }
-  
+
   public get windowHeight(): number {
     if (!this.raceField || this.raceField.status === RaceStatus.OFF) return 0
     if (this.raceField && this.raceField.participants) {
@@ -163,7 +165,7 @@ export default class EventWidget extends Vue {
     }
     requestAnimationFrame(this.drawAtFramerate)
   }
-    
+
 }
 </script>
 
