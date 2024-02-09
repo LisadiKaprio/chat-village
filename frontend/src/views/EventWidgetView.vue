@@ -10,6 +10,10 @@
         </div>
         <div>{{ participantsJoined === 0 ? '😎 Be the first one to start the race NOW!' : `🏃‍♂️ ${participantsJoined}
           player(s) already joined the race.` }}</div>
+        <div v-if="participantsJoined > 0" class="boats">
+          <img src="..\images\boats\boats.png" class="boats-scroller">
+          <img src="..\images\boats\boats.png" class="boats-scroller">
+        </div>
       </v-window-item>
       <v-window-item :value="eventTabEnum.INTERACTION_INFORMATION">
         <div>🤗 Type !hug @user to hug.</div>
@@ -195,5 +199,25 @@ export default class EventWidget extends Vue {
   font-weight: bold;
   color: white;
   text-shadow: 1px 1px 3px black;
+}
+
+.boats {
+  white-space: nowrap;
+  margin: 8px 0;
+  overflow: hidden;
+}
+
+.boats-scroller {
+  animation: 15s slide-to-right infinite linear;
+}
+
+@keyframes slide-to-right {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(0%);
+  }
 }
 </style>
